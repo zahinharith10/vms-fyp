@@ -13,9 +13,11 @@ const guard = usePage().props.auth.user;
         <!-- Sidebar -->
         <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm min-h-screen hidden md:block transition-colors duration-200">
             <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-                <Link :href="route('guard.dashboard')" class="flex items-center">
-                    <ApplicationLogo class="block h-12 w-auto fill-current text-indigo-600" />
-                    <span class="ml-2 font-bold text-base text-gray-800 dark:text-white">Guard Portal</span>
+                <Link :href="route('guard.dashboard')" class="flex items-center gap-2">
+                    <div class="flex-shrink-0" style="width:32px;height:32px;">
+                        <img src="/Logo.png" alt="Logo" style="width:32px;height:32px;object-fit:contain;" />
+                    </div>
+                    <span class="font-bold text-gray-800 dark:text-white">Guard Portal</span>
                 </Link>
                 <ThemeToggle />
             </div>
@@ -58,9 +60,11 @@ const guard = usePage().props.auth.user;
         <div class="flex-1 flex flex-col">
             <!-- Mobile Header -->
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm md:hidden flex justify-between items-center p-4 sticky top-0 z-50">
-                <div class="flex items-center">
-                    <ApplicationLogo class="h-8 w-auto text-indigo-600" />
-                    <span class="ml-2 font-bold text-gray-800 dark:text-white">Guard Portal</span>
+                <div class="flex items-center gap-2">
+                    <div class="flex-shrink-0" style="width:32px;height:32px;">
+                        <img src="/Logo.png" alt="Logo" style="width:32px;height:32px;object-fit:contain;" />
+                    </div>
+                    <span class="font-bold text-gray-800 dark:text-white">Guard Portal</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <ThemeToggle />

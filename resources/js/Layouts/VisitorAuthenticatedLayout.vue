@@ -67,9 +67,11 @@ onErrorCaptured((err) => {
         <div class="flex-1 flex flex-col">
             <!-- Mobile Header -->
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm md:hidden flex justify-between items-center p-4">
-                <Link :href="route('visitor.dashboard')" class="flex items-center">
-                    <ApplicationLogo class="h-8 w-auto" />
-                    <span class="ml-2 font-bold text-gray-800 dark:text-white">Visitor Portal</span>
+                <Link :href="route('visitor.dashboard')" class="flex items-center gap-2">
+                    <div class="flex-shrink-0" style="width:32px;height:32px;">
+                        <img src="/Logo.png" alt="Logo" style="width:32px;height:32px;object-fit:contain;" />
+                    </div>
+                    <span class="font-bold text-gray-800 dark:text-white">Visitor Portal</span>
                 </Link>
                 <div class="flex items-center gap-3">
                     <ThemeToggle />
