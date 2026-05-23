@@ -67,7 +67,10 @@ onErrorCaptured((err) => {
         <div class="flex-1 flex flex-col">
             <!-- Mobile Header -->
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm md:hidden flex justify-between items-center p-4">
-                <div class="font-bold text-lg text-gray-800 dark:text-white">Visitor Portal</div>
+                <Link :href="route('visitor.dashboard')" class="flex items-center">
+                    <ApplicationLogo class="h-8 w-auto" />
+                    <span class="ml-2 font-bold text-gray-800 dark:text-white">Visitor Portal</span>
+                </Link>
                 <div class="flex items-center gap-3">
                     <ThemeToggle />
                     <button @click="showingNavigationDropdown = !showingNavigationDropdown" class="text-gray-500 dark:text-gray-400 focus:outline-none">

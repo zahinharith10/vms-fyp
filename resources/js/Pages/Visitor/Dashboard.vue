@@ -93,20 +93,7 @@ onUnmounted(() => {
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Visitor Dashboard</h2>
         </template>
 
-        <div v-if="$page.props.flash.success" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 mx-6 mt-4" role="alert">
-            <p class="font-bold">Success</p>
-            <p>{{ $page.props.flash.success }}</p>
-        </div>
 
-        <div v-if="$page.props.flash.error" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 mx-6 mt-4" role="alert">
-            <p class="font-bold">Error</p>
-            <p>{{ $page.props.flash.error }}</p>
-        </div>
-
-        <div v-if="!visitor" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 mx-6 mt-4" role="alert">
-            <p class="font-bold">Error</p>
-            <p>Visitor data could not be loaded.</p>
-        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- New Visit Form -->
