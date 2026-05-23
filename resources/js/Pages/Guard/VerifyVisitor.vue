@@ -172,8 +172,8 @@ const checkOut = async (isTemporary = false) => {
         </template>
 
         <div class="max-w-2xl mx-auto">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                <div class="bg-slate-900 p-4 flex justify-between items-center">
+            <div class="bg-white dark:bg-gray-900 rounded-3xl shadow-xl dark:shadow-indigo-950/10 overflow-hidden border border-gray-100 dark:border-gray-800/80 transition-all duration-300">
+                <div class="bg-slate-900 dark:bg-slate-950 p-5 flex justify-between items-center border-b border-gray-800/50">
                      <span class="text-xs font-black text-indigo-400 uppercase tracking-widest">Verification Result</span>
                         <span 
                         class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter"
@@ -191,70 +191,79 @@ const checkOut = async (isTemporary = false) => {
                 </div>
 
                 <div class="p-8">
-                    <div class="flex items-center mb-8 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <!-- Visitor Details Card -->
+                    <div class="flex items-center mb-8 bg-gray-50 dark:bg-gray-800/40 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50 transition-all">
                         <img 
                             v-if="visitData.visitor.photo" 
                             :src="'/storage/' + visitData.visitor.photo" 
-                            class="h-24 w-24 rounded-2xl object-cover mr-6 shadow-md border-2 border-white"
+                            class="h-24 w-24 rounded-2xl object-cover mr-6 shadow-md border-2 border-white dark:border-gray-700"
                         >
-                        <div v-else class="h-24 w-24 rounded-2xl bg-gray-200 flex items-center justify-center mr-6 border-2 border-white">
-                            <span class="text-gray-400 text-4xl">👤</span>
+                        <div v-else class="h-24 w-24 rounded-2xl bg-gray-200 dark:bg-gray-800 flex items-center justify-center mr-6 border-2 border-white dark:border-gray-700">
+                            <span class="text-gray-400 dark:text-gray-650 text-4xl">👤</span>
                         </div>
                         <div>
-                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Visitor Name</p>
-                            <p class="text-2xl font-black text-gray-800 leading-tight">{{ visitData.visitor.name }}</p>
-                            <div class="flex gap-4 mt-1">
-                                <p class="text-indigo-600 font-bold">{{ visitData.visitor.phone }}</p>
-                                <p v-if="visitData.visitor.vehicle_number" class="text-gray-500 font-black uppercase tracking-wider text-sm border-l pl-4 border-gray-200">
+                            <p class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Visitor Name</p>
+                            <p class="text-2xl font-black text-gray-800 dark:text-white leading-tight mt-0.5">{{ visitData.visitor.name }}</p>
+                            <div class="flex gap-4 mt-1.5">
+                                <p class="text-indigo-600 dark:text-indigo-400 font-bold text-sm">{{ visitData.visitor.phone }}</p>
+                                <p v-if="visitData.visitor.vehicle_number" class="text-gray-500 dark:text-gray-400 font-black uppercase tracking-wider text-xs border-l pl-4 border-gray-200 dark:border-gray-700 flex items-center">
                                     🚗 {{ visitData.visitor.vehicle_number }}
                                 </p>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Meta Information Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">destination</p>
-                            <p class="font-black text-gray-800 mt-1">UNIT {{ visitData.unit_number }}</p>
+                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-4 rounded-xl border border-gray-100 dark:border-gray-800/40">
+                            <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">destination</p>
+                            <p class="font-black text-gray-800 dark:text-gray-200 mt-1">UNIT {{ visitData.unit_number }}</p>
                         </div>
-                        <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">visitation purpose</p>
-                            <p class="font-black text-gray-800 mt-1 truncate">{{ visitData.purpose }}</p>
+                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-4 rounded-xl border border-gray-100 dark:border-gray-800/40">
+                            <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">visitation purpose</p>
+                            <p class="font-black text-gray-800 dark:text-gray-200 mt-1 truncate">{{ visitData.purpose }}</p>
                         </div>
-                        <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Visitor Parking</p>
-                            <p v-if="visitData.parking_lot_number" class="font-black text-indigo-650 mt-1">🅿️ LOT {{ visitData.parking_lot_number }}</p>
-                            <p v-else-if="!props.visit.is_delivery && parking && visitData.status === 'Approved'" class="font-black mt-1" :class="parking.available > 0 ? 'text-green-650' : 'text-red-500'">
+                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-4 rounded-xl border border-gray-100 dark:border-gray-800/40">
+                            <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Visitor Parking</p>
+                            <p v-if="visitData.parking_lot_number" class="font-black text-indigo-650 dark:text-indigo-400 mt-1">🅿️ LOT {{ visitData.parking_lot_number }}</p>
+                            <p v-else-if="!props.visit.is_delivery && parking && visitData.status === 'Approved'" class="font-black mt-1" :class="parking.available > 0 ? 'text-green-650 dark:text-green-400' : 'text-red-500 dark:text-red-400'">
                                 {{ parking.available > 0 ? `Auto Assign (${parking.available} free)` : '🚨 PARKING FULL' }}
                             </p>
-                            <p v-else class="font-black text-gray-400 mt-1">N/A</p>
+                            <p v-else class="font-black text-gray-400 dark:text-gray-600 mt-1">N/A</p>
                         </div>
                     </div>
 
                     <!-- Face Recognition Section -->
                     <div v-if="visitData.status === 'Approved' || visitData.status === 'Temporarily Out'" class="mb-8">
-                        <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
-                            <h4 class="text-sm font-black text-indigo-900 uppercase tracking-widest mb-4 flex items-center">
+                        <div class="bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl p-6 border border-indigo-100/60 dark:border-indigo-900/30">
+                            <h4 class="text-sm font-black text-indigo-900 dark:text-indigo-300 uppercase tracking-widest mb-4 flex items-center">
                                 <span class="text-xl mr-2">📸</span> {{ visitData.status === 'Approved' ? 'Identity Verification Required' : 'Re-entry Verification' }}
                             </h4>
                             
-                            <div class="bg-white rounded-xl p-4 shadow-inner">
+                            <div class="bg-white dark:bg-gray-950 rounded-xl p-4 shadow-inner dark:shadow-black/20">
                                 <FaceCapture :allow-upload="false" @face-detected="handleFaceDetected" />
                             </div>
 
-                            <div v-if="faceVerified" class="mt-4 p-3 bg-green-100 text-green-700 rounded-xl flex items-center justify-between font-bold text-sm">
+                            <!-- Success Banner -->
+                            <div v-if="faceVerified" class="mt-4 p-3 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border border-green-200/30 rounded-xl flex items-center justify-between font-bold text-sm">
                                 <span class="flex items-center"><span class="mr-2">✅</span> Identity Verified: Match Confirmed</span>
-                                <span class="text-xs uppercase tracking-wider text-green-600 animate-pulse font-black flex items-center">
-                                    Checking in... <span class="ml-2 inline-block h-3 w-3 rounded-full bg-green-600 animate-ping"></span>
+                                <span class="text-xs uppercase tracking-wider text-green-600 dark:text-green-400 animate-pulse font-black flex items-center">
+                                    Checking in... <span class="ml-2 inline-block h-3 w-3 rounded-full bg-green-600 dark:bg-green-400 animate-ping"></span>
                                 </span>
                             </div>
-                            <div v-else-if="props.visit.is_delivery" class="mt-4 p-3 bg-orange-50 text-orange-800 rounded-xl flex items-center font-bold text-xs border border-orange-100">
+                            
+                            <!-- Delivery Banner -->
+                            <div v-else-if="props.visit.is_delivery" class="mt-4 p-3 bg-orange-50 dark:bg-orange-950/20 text-orange-850 dark:text-orange-400 rounded-xl flex items-center font-bold text-xs border border-orange-100 dark:border-orange-900/30">
                                 <span class="mr-2">⚡</span> Express Pass: Face match is optional for delivery riders. You can authorize entry instantly.
                             </div>
-                            <div v-else-if="verificationError" class="mt-4 p-3 bg-red-100 text-red-700 rounded-xl flex items-center font-bold text-sm">
+                            
+                            <!-- Error Banner -->
+                            <div v-else-if="verificationError" class="mt-4 p-3 bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200/30 rounded-xl flex items-center font-bold text-sm">
                                 <span class="mr-2">❌</span> {{ verificationError }}
                             </div>
-                            <div v-else class="mt-4 p-3 bg-indigo-100 text-indigo-700 rounded-xl flex items-center font-bold text-sm animate-pulse">
+                            
+                            <!-- Pending Banner -->
+                            <div v-else class="mt-4 p-3 bg-indigo-100/60 dark:bg-indigo-950/40 text-indigo-750 dark:text-indigo-300 border border-indigo-200/20 rounded-xl flex items-center font-bold text-sm animate-pulse">
                                 <span class="mr-2">🔍</span> Waiting for face detection...
                             </div>
                         </div>
@@ -262,12 +271,12 @@ const checkOut = async (isTemporary = false) => {
 
                     <!-- Auto Checkout Section -->
                     <div v-if="visitData.status === 'Checked In'" class="mb-8">
-                        <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 text-center">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-3"></div>
-                            <h4 class="text-sm font-black text-indigo-900 uppercase tracking-widest mb-1">
+                        <div class="bg-indigo-50/50 dark:bg-indigo-950/20 rounded-2xl p-6 border border-indigo-100/60 dark:border-indigo-900/30 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-650 dark:border-indigo-400 border-t-transparent mb-3"></div>
+                            <h4 class="text-sm font-black text-indigo-900 dark:text-indigo-300 uppercase tracking-widest mb-1">
                                 {{ visitData.checkout_intent === 'temp' ? '⚡ Processing Temporary Leave' : '⚡ Processing Final Check-out' }}
                             </h4>
-                            <p class="text-xs text-indigo-700 font-medium">
+                            <p class="text-xs text-indigo-700 dark:text-indigo-400 font-medium">
                                 Automating transaction based on the visitor's choice...
                             </p>
                         </div>
@@ -278,7 +287,7 @@ const checkOut = async (isTemporary = false) => {
                         <button 
                             v-if="visitData.status === 'Approved'"
                             @click="checkIn"
-                            class="col-span-2 bg-green-600 hover:bg-green-700 text-white font-black py-5 rounded-2xl text-lg shadow-lg shadow-green-100 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="col-span-2 bg-green-600 hover:bg-green-700 text-white font-black py-5 rounded-2xl text-lg shadow-lg shadow-green-600/10 dark:shadow-none transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             :disabled="isLoading || (!faceVerified && !props.visit.is_delivery)"
                         >
                             ✅ AUTHORIZE CHECK-IN
@@ -286,14 +295,14 @@ const checkOut = async (isTemporary = false) => {
                         <template v-if="visitData.status === 'Checked In'">
                             <button 
                                 @click="checkOut(false)"
-                                class="col-span-1 bg-red-600 hover:bg-red-750 text-white font-black py-5 rounded-2xl text-sm shadow-lg shadow-red-100 transition-all flex items-center justify-center uppercase tracking-wider"
+                                class="col-span-1 bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl text-sm shadow-lg shadow-red-650/10 dark:shadow-none transition-all duration-300 flex items-center justify-center uppercase tracking-wider"
                                 :disabled="isLoading"
                             >
                                 🚪 Final Check-Out
                             </button>
                             <button 
                                 @click="checkOut(true)"
-                                class="col-span-1 bg-orange-600 hover:bg-orange-750 text-white font-black py-5 rounded-2xl text-sm shadow-lg shadow-orange-100 transition-all flex items-center justify-center uppercase tracking-wider"
+                                class="col-span-1 bg-orange-650 hover:bg-orange-700 text-white font-black py-5 rounded-2xl text-sm shadow-lg shadow-orange-650/10 dark:shadow-none transition-all duration-300 flex items-center justify-center uppercase tracking-wider"
                                 :disabled="isLoading"
                             >
                                 ⏱️ Temporary Leave
@@ -302,18 +311,19 @@ const checkOut = async (isTemporary = false) => {
                         
                         <Link 
                             :href="route('guard.scan')"
-                            class="col-span-2 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-black py-4 rounded-2xl transition-all border border-gray-200"
+                            class="col-span-2 text-center bg-gray-100 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700/80 text-gray-800 dark:text-gray-200 font-black py-4 rounded-2xl transition-all duration-300 border border-gray-200 dark:border-gray-750 flex items-center justify-center gap-2"
                         >
                             🔄 SCAN NEW CODE
                         </Link>
                     </div>
 
-                    <div v-if="visitData.status === 'Pending'" class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start">
+                    <!-- Warnings -->
+                    <div v-if="visitData.status === 'Pending'" class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-xl border border-yellow-200 dark:border-yellow-900/30 flex items-start">
                          <span class="mr-3 text-lg">⚠️</span>
-                         <p class="text-xs text-yellow-800 font-medium">
-                            <strong class="uppercase block text-[10px] mb-1">Access Suspended</strong>
+                         <div class="text-xs text-yellow-850 dark:text-yellow-400 font-medium">
+                            <strong class="uppercase block text-[10px] mb-1 font-black">Access Suspended</strong>
                             This visit is waiting for resident approval. The visitor cannot be checked in until approved.
-                         </p>
+                         </div>
                     </div>
                 </div>
             </div>
