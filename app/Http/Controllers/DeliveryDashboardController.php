@@ -33,11 +33,19 @@ class DeliveryDashboardController extends Controller
                 ->generate('DELIVERY_LOG:' . $latestActiveLog->id);
         }
 
+        // Build a nested map: block → floor → [unit_numbers]
+        $houseUnits = \App\Models\HouseUnit::orderBy('block')->orderBy('floor')->orderBy('unit_number')->get();
+        $unitMap = [];
+        foreach ($houseUnits as $unit) {
+            $unitMap[(string)$unit->block][(string)$unit->floor][] = (string)$unit->unit_number;
+        }
+
         return Inertia::render('Delivery/Dashboard', [
             'delivery' => $delivery,
             'logs' => $logs,
             'activeLog' => $latestActiveLog,
             'qrCodeSvg' => $qrCodeSvg,
+            'houseUnits' => $unitMap,
         ]);
     }
 

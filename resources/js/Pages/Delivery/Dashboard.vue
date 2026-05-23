@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -7,6 +7,7 @@ const props = defineProps({
     logs: Array,
     activeLog: Object,
     qrCodeSvg: String,
+    houseUnits: Object, // { block: { floor: [units] } }
 });
 
 const block = ref('');
@@ -16,6 +17,28 @@ const unit = ref('');
 const tripForm = useForm({
     unit_number: '',
 });
+
+// Cascading options derived from houseUnits map
+const blockOptions = computed(() => Object.keys(props.houseUnits || {}).sort((a, b) => Number(a) - Number(b)));
+
+const floorOptions = computed(() => {
+    if (!block.value || !props.houseUnits?.[block.value]) return [];
+    return Object.keys(props.houseUnits[block.value]).sort((a, b) => Number(a) - Number(b));
+});
+
+const unitOptions = computed(() => {
+    if (!block.value || !floor.value || !props.houseUnits?.[block.value]?.[floor.value]) return [];
+    return [...props.houseUnits[block.value][floor.value]].sort((a, b) => Number(a) - Number(b));
+});
+
+const onBlockChange = () => {
+    floor.value = '';
+    unit.value = '';
+};
+
+const onFloorChange = () => {
+    unit.value = '';
+};
 
 const submitTrip = () => {
     tripForm.unit_number = `${block.value} - ${floor.value} - ${unit.value}`;
@@ -160,12 +183,59 @@ const submitTrip = () => {
                         <form @submit.prevent="submitTrip" class="space-y-6">
                             <div>
                                 <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Destination Unit</label>
-                                <div class="flex space-x-2">
-                                    <input v-model="block" type="number" min="1" class="w-1/3 bg-gray-50 border-gray-100 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-3 py-3 text-sm text-center" placeholder="Block" required>
-                                    <input v-model="floor" type="number" min="1" class="w-1/3 bg-gray-50 border-gray-100 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-3 py-3 text-sm text-center" placeholder="Floor" required>
-                                    <input v-model="unit" type="number" min="1" class="w-1/3 bg-gray-50 border-gray-100 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-3 py-3 text-sm text-center" placeholder="Unit" required>
+                                <div class="space-y-4">
+                                    <!-- Block selection -->
+                                    <div>
+                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Block</label>
+                                        <select
+                                            v-model="block"
+                                            @change="onBlockChange"
+                                            class="w-full bg-gray-50 border border-gray-100 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-4 py-3 text-sm text-gray-700 leading-tight"
+                                            required
+                                        >
+                                            <option value="" disabled>Select Block</option>
+                                            <option v-for="b in blockOptions" :key="b" :value="b">Block {{ b }}</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Floor selection -->
+                                    <div>
+                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Floor</label>
+                                        <select
+                                            v-model="floor"
+                                            @change="onFloorChange"
+                                            class="w-full bg-gray-50 border border-gray-100 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-4 py-3 text-sm leading-tight animate-all"
+                                            :class="!block ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'"
+                                            :disabled="!block"
+                                            required
+                                        >
+                                            <option value="" disabled>{{ block ? 'Select Floor' : 'Select Block first' }}</option>
+                                            <option v-for="f in floorOptions" :key="f" :value="f">Floor {{ f }}</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Unit selection -->
+                                    <div>
+                                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Unit No.</label>
+                                        <select
+                                            v-model="unit"
+                                            class="w-full bg-gray-50 border border-gray-100 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-4 py-3 text-sm leading-tight animate-all"
+                                            :class="!floor ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'"
+                                            :disabled="!floor"
+                                            required
+                                        >
+                                            <option value="" disabled>{{ floor ? 'Select Unit' : 'Select Floor first' }}</option>
+                                            <option v-for="u in unitOptions" :key="u" :value="u">Unit {{ u }}</option>
+                                        </select>
+                                    </div>
                                 </div>
+                                <input type="hidden" v-model="tripForm.unit_number">
                                 <div v-if="tripForm.errors.unit_number" class="text-red-500 text-xs font-bold mt-2">{{ tripForm.errors.unit_number }}</div>
+
+                                <!-- Preview selected unit -->
+                                <div v-if="block && floor && unit" class="mt-4 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-xl text-xs font-black text-orange-700 tracking-widest text-center">
+                                    📍 Destination: Block {{ block }} - Floor {{ floor }} - Unit {{ unit }}
+                                </div>
                             </div>
 
                             <button 
