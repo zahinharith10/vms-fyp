@@ -40,7 +40,21 @@ const formatDuration = (log) => {
         return formatMinutes(Math.floor(diffMs / 60000));
     }
 
-    // For visitors: compute sum of sessions
+    // For visitors: use sessions[] as authoritative source (supports unlimited temp leaves)
+    if (log.sessions && log.sessions.length > 0) {
+        let totalMins = 0;
+        for (const session of log.sessions) {
+            const start = new Date(session.check_in_time);
+            const end = session.check_out_time
+                ? new Date(session.check_out_time)
+                : (log.status === 'Checked In' ? new Date() : start);
+            const diffMs = end - start;
+            if (diffMs > 0) totalMins += Math.floor(diffMs / 60000);
+        }
+        return totalMins > 0 ? formatMinutes(totalMins) : '-';
+    }
+
+    // Fallback: legacy first/second columns for old records without sessions
     let totalMins = 0;
     let hasData = false;
 

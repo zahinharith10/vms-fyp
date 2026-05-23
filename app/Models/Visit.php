@@ -28,4 +28,13 @@ class Visit extends Model
     {
         return $this->belongsTo(Visitor::class);
     }
+
+    /**
+     * All individual check-in/check-out sessions for this visit.
+     * Supports unlimited temporary leaves (Approach A).
+     */
+    public function sessions()
+    {
+        return $this->hasMany(VisitSession::class)->orderBy('check_in_time');
+    }
 }

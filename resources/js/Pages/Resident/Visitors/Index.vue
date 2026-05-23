@@ -88,6 +88,20 @@ const formatDuration = (visit) => {
         return formatMinutes(Math.floor(diffMs / 60000));
     }
 
+    // For visitors: use sessions[] as authoritative source (supports unlimited temp leaves)
+    if (visit.sessions && visit.sessions.length > 0) {
+        let totalMins = 0;
+        for (const session of visit.sessions) {
+            const start = new Date(session.check_in_time);
+            const end = session.check_out_time
+                ? new Date(session.check_out_time)
+                : (visit.status === 'Checked In' ? new Date() : start);
+            const diffMs = end - start;
+            if (diffMs > 0) totalMins += Math.floor(diffMs / 60000);
+        }
+        return totalMins > 0 ? formatMinutes(totalMins) : null;
+    }
+
     let totalMins = 0;
     let hasData = false;
 

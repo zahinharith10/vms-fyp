@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\VisitStatusUpdated;
 use App\Models\Visitor;
 use App\Models\Visit;
+use App\Models\VisitSession;
 use App\Models\DeliveryPersonnel;
 use App\Models\DeliveryLog;
 use App\Models\Resident;
@@ -229,6 +230,7 @@ class GuardScanController extends Controller
 
     /**
      * Check in a visitor (update visit status).
+     * Creates a new VisitSession record to support unlimited temporary leaves.
      */
     public function checkIn(Request $request)
     {
@@ -272,16 +274,25 @@ class GuardScanController extends Controller
             }
         }
 
+        $now = now();
+
+        // Create a new session record for this entry (supports unlimited re-entries)
+        VisitSession::create([
+            'visit_id'      => $visit->id,
+            'check_in_time' => $now,
+        ]);
+
+        // Also keep legacy columns updated for backward compatibility
         $updateData = [
-            'status' => 'Checked In',
-            'check_in_time' => now(),
+            'status'             => 'Checked In',
+            'check_in_time'      => $now,
             'parking_lot_number' => $parkingLotNumber,
         ];
 
         if ($visit->status === 'Approved') {
-            $updateData['first_check_in_time'] = now();
-        } elseif ($visit->status === 'Temporarily Out') {
-            $updateData['second_check_in_time'] = now();
+            $updateData['first_check_in_time'] = $now;
+        } elseif ($visit->status === 'Temporarily Out' && is_null($visit->second_check_in_time)) {
+            $updateData['second_check_in_time'] = $now;
         }
 
         $visit->update($updateData);
@@ -351,6 +362,7 @@ class GuardScanController extends Controller
 
     /**
      * Check out a visitor (update visit status).
+     * Closes the latest open VisitSession to support unlimited temporary leaves.
      */
     public function checkOut(Request $request)
     {
@@ -368,22 +380,36 @@ class GuardScanController extends Controller
         }
 
         $isTemporary = $request->input('is_temporary', false);
-
         $newStatus = $isTemporary ? 'Temporarily Out' : 'Checked Out';
+        $now = now();
 
+        // Close the latest open session
+        $openSession = VisitSession::where('visit_id', $visit->id)
+            ->whereNull('check_out_time')
+            ->latest('check_in_time')
+            ->first();
+
+        if ($openSession) {
+            $openSession->update(['check_out_time' => $now]);
+        }
+
+        // Also keep legacy columns updated for backward compatibility
         $updateData = [
-            'status' => $newStatus,
-            'check_out_time' => now(),
+            'status'         => $newStatus,
+            'check_out_time' => $now,
         ];
 
         if ($isTemporary) {
-            $updateData['first_check_out_time'] = now();
-        } else {
-            if ($visit->first_check_out_time) {
-                $updateData['second_check_out_time'] = now();
-            } else {
-                $updateData['first_check_out_time'] = now();
+            if (is_null($visit->first_check_out_time)) {
+                $updateData['first_check_out_time'] = $now;
             }
+        } else {
+            if (is_null($visit->first_check_out_time)) {
+                $updateData['first_check_out_time'] = $now;
+            } elseif (is_null($visit->second_check_out_time)) {
+                $updateData['second_check_out_time'] = $now;
+            }
+            // For 3rd+ leaves, the legacy columns are not updated (sessions table is authoritative)
         }
 
         $visit->update($updateData);
@@ -670,32 +696,35 @@ class GuardScanController extends Controller
         $cutoff = now()->subHours(24);
         $tempCutoff = now()->subHours(6);
 
-        // Auto check-out visits older than 24 hours
-        $oldVisits = Visit::whereIn('status', ['Checked In', 'Temporarily Out'])
+        // Auto check-out visits older than 24 hours that are still Checked In
+        $oldVisits = Visit::where('status', 'Checked In')
             ->where('check_in_time', '<', $cutoff)
             ->get();
 
         foreach ($oldVisits as $v) {
+            $now = now();
+            // Close any open session records
+            VisitSession::where('visit_id', $v->id)
+                ->whereNull('check_out_time')
+                ->update(['check_out_time' => $now]);
+
             $upData = [
-                'status' => 'Checked Out',
-                'check_out_time' => now(),
+                'status'         => 'Checked Out',
+                'check_out_time' => $now,
             ];
-            if ($v->status === 'Checked In') {
-                if ($v->second_check_in_time) {
-                    $upData['second_check_out_time'] = now();
-                } else {
-                    $upData['first_check_out_time'] = now();
-                }
+            if (is_null($v->first_check_out_time)) {
+                $upData['first_check_out_time'] = $now;
+            } elseif (is_null($v->second_check_out_time)) {
+                $upData['second_check_out_time'] = $now;
             }
             $v->update($upData);
         }
 
         // Auto check-out 'Temporarily Out' visits that have been out for more than 6 hours
-        // (These already have first_check_out_time set when they left)
         Visit::where('status', 'Temporarily Out')
             ->where('updated_at', '<', $tempCutoff)
             ->update([
-                'status' => 'Checked Out',
+                'status'         => 'Checked Out',
                 'check_out_time' => now(),
             ]);
 
@@ -704,7 +733,7 @@ class GuardScanController extends Controller
             ->whereNull('exit_time')
             ->where('entry_time', '<', $cutoff)
             ->update([
-                'status' => 'Checked Out',
+                'status'    => 'Checked Out',
                 'exit_time' => now(),
             ]);
 
@@ -712,7 +741,7 @@ class GuardScanController extends Controller
         DeliveryLog::where('status', 'Temporarily Out')
             ->where('updated_at', '<', $tempCutoff)
             ->update([
-                'status' => 'Checked Out',
+                'status'    => 'Checked Out',
                 'exit_time' => now(),
             ]);
     }

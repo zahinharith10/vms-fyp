@@ -25,7 +25,7 @@ class ResidentVisitorController extends Controller
         // Get visits where the unit_number matches the resident's unit
         $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
         
-        $visits = Visit::with('visitor')
+        $visits = Visit::with(['visitor', 'sessions'])
             ->where('unit_number', $unitNumber)
             ->orderBy('created_at', 'desc')
             ->get();

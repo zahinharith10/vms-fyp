@@ -126,12 +126,12 @@ class VisitorController extends Controller
     public function logs()
     {
         return Inertia::render('Admin/Visitors/Logs', [
-            'logs' => \App\Models\Visit::with('visitor')->latest('updated_at')->get()
+            'logs' => \App\Models\Visit::with(['visitor', 'sessions'])->latest('updated_at')->get()
         ]);
     }
     public function exportLogs()
     {
-        $logs = \App\Models\Visit::with('visitor')->latest()->get();
+        $logs = \App\Models\Visit::with(['visitor', 'sessions'])->latest()->get();
         $filename = "visit_logs_" . now()->format('Y-m-d_His') . ".csv";
 
         $headers = [
@@ -148,27 +148,42 @@ class VisitorController extends Controller
             
             fputcsv($file, [
                 'ID', 'Visitor Name', 'Phone', 'IC Number', 'Unit Number', 
-                'Purpose', 'Status', 'First Check In', 'First Check Out', 
-                'Second Check In', 'Second Check Out', 'Total Stay Duration (Mins)'
+                'Purpose', 'Status', 'Sessions Count', 'Total Stay Duration (Mins)'
             ]);
 
             foreach ($logs as $log) {
-                // Calculate Total Stay Duration in Minutes
+                // Calculate Total Stay Duration from visit_sessions (authoritative source)
                 $totalMins = 0;
-                if ($log->first_check_in_time) {
-                    $start1 = new \Carbon\Carbon($log->first_check_in_time);
-                    $end1 = $log->first_check_out_time ? new \Carbon\Carbon($log->first_check_out_time) : ($log->status === 'Checked In' ? now() : $start1);
-                    $totalMins += $start1->diffInMinutes($end1);
-                }
-                if ($log->second_check_in_time) {
-                    $start2 = new \Carbon\Carbon($log->second_check_in_time);
-                    $end2 = $log->second_check_out_time ? new \Carbon\Carbon($log->second_check_out_time) : ($log->status === 'Checked In' ? now() : $start2);
-                    $totalMins += $start2->diffInMinutes($end2);
-                }
-                if (!$log->first_check_in_time && $log->check_in_time) {
-                    $start = new \Carbon\Carbon($log->check_in_time);
-                    $end = $log->check_out_time ? new \Carbon\Carbon($log->check_out_time) : now();
-                    $totalMins = $start->diffInMinutes($end);
+
+                if ($log->sessions->count() > 0) {
+                    // Sum all session durations
+                    foreach ($log->sessions as $session) {
+                        $start = $session->check_in_time;
+                        $end = $session->check_out_time 
+                            ?? ($log->status === 'Checked In' ? now() : $session->check_in_time);
+                        $totalMins += $start->diffInMinutes($end);
+                    }
+                } else {
+                    // Fallback: legacy first/second columns
+                    if ($log->first_check_in_time) {
+                        $start1 = new \Carbon\Carbon($log->first_check_in_time);
+                        $end1 = $log->first_check_out_time 
+                            ? new \Carbon\Carbon($log->first_check_out_time) 
+                            : ($log->status === 'Checked In' ? now() : $start1);
+                        $totalMins += $start1->diffInMinutes($end1);
+                    }
+                    if ($log->second_check_in_time) {
+                        $start2 = new \Carbon\Carbon($log->second_check_in_time);
+                        $end2 = $log->second_check_out_time 
+                            ? new \Carbon\Carbon($log->second_check_out_time) 
+                            : ($log->status === 'Checked In' ? now() : $start2);
+                        $totalMins += $start2->diffInMinutes($end2);
+                    }
+                    if (!$log->first_check_in_time && $log->check_in_time) {
+                        $start = new \Carbon\Carbon($log->check_in_time);
+                        $end = $log->check_out_time ? new \Carbon\Carbon($log->check_out_time) : now();
+                        $totalMins = $start->diffInMinutes($end);
+                    }
                 }
 
                 fputcsv($file, [
@@ -179,10 +194,7 @@ class VisitorController extends Controller
                     $log->unit_number,
                     $log->purpose,
                     $log->status,
-                    $log->first_check_in_time ?: $log->check_in_time,
-                    $log->first_check_out_time ?: $log->check_out_time,
-                    $log->second_check_in_time,
-                    $log->second_check_out_time,
+                    $log->sessions->count(),
                     $totalMins > 0 ? $totalMins : 0,
                 ]);
             }
