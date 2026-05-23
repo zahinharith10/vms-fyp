@@ -338,7 +338,6 @@ class GuardScanController extends Controller
     {
         $request->validate([
             'visit_id' => 'required|exists:visits,id',
-            'is_temporary' => 'nullable|boolean',
         ]);
 
         $visit = Visit::findOrFail($request->visit_id);
@@ -380,7 +379,6 @@ class GuardScanController extends Controller
     {
         $request->validate([
             'log_id' => 'required|exists:delivery_logs,id',
-            'is_temporary' => 'nullable|boolean',
         ]);
 
         $log = DeliveryLog::findOrFail($request->log_id);
