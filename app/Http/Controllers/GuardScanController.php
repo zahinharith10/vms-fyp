@@ -350,6 +350,8 @@ class GuardScanController extends Controller
             ], 400);
         }
 
+        $isTemporary = $request->input('is_temporary', false);
+
         $newStatus = $isTemporary ? 'Temporarily Out' : 'Checked Out';
 
         $visit->update([
