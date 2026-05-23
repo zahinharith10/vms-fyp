@@ -259,7 +259,7 @@ onUnmounted(() => {
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Visitor</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Timestamps</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Checked in → Checked out</th>
                                         <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -307,18 +307,15 @@ onUnmounted(() => {
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
-                                        <div class="flex items-center gap-1">
-                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Requested</span>
-                                            <span class="font-medium text-gray-700">{{ formatMalaysiaDateTime(visit.created_at) }}</span>
-                                        </div>
                                         <div v-if="visit.check_in_time" class="flex items-center gap-1">
-                                            <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Check-in</span>
+                                            <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Checked in</span>
                                             <span class="font-medium text-green-700">{{ formatMalaysiaDateTime(visit.check_in_time) }}</span>
                                         </div>
                                         <div v-if="visit.check_out_time" class="flex items-center gap-1">
-                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Check-out</span>
+                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Checked out</span>
                                             <span class="font-medium text-gray-600">{{ formatMalaysiaDateTime(visit.check_out_time) }}</span>
                                         </div>
+                                        <div v-if="!visit.check_in_time && !visit.check_out_time" class="text-gray-400 italic">—</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
                                         <!-- View QR (Only for Approved or Checked In) -->
@@ -377,7 +374,7 @@ onUnmounted(() => {
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Personnel</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Company</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Timestamps</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Checked in → Checked out</th>
                                         <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -417,18 +414,15 @@ onUnmounted(() => {
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
-                                        <div class="flex items-center gap-1">
-                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Requested</span>
-                                            <span class="font-medium text-gray-700">{{ formatMalaysiaDateTime(log.created_at) }}</span>
-                                        </div>
                                         <div v-if="log.entry_time" class="flex items-center gap-1">
-                                            <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Entry</span>
+                                            <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Checked in</span>
                                             <span class="font-medium text-green-700">{{ formatMalaysiaDateTime(log.entry_time) }}</span>
                                         </div>
                                         <div v-if="log.exit_time" class="flex items-center gap-1">
-                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Exit</span>
+                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Checked out</span>
                                             <span class="font-medium text-gray-600">{{ formatMalaysiaDateTime(log.exit_time) }}</span>
                                         </div>
+                                        <div v-if="!log.entry_time && !log.exit_time" class="text-gray-400 italic">—</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
                                         <!-- Approval Buttons (Only for Pending) -->
@@ -530,13 +524,13 @@ onUnmounted(() => {
 
                             <div v-if="selectedVisit?.check_in_time || selectedVisit?.entry_time" class="col-span-2 border-t border-gray-200/50 pt-4 mt-2 grid grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Check-in Time</p>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Checked in</p>
                                     <p class="text-xs font-bold text-gray-800">
                                         {{ formatMalaysiaDateTime(selectedVisit.check_in_time || selectedVisit.entry_time, { year: 'numeric' }) }}
                                     </p>
                                 </div>
                                 <div v-if="selectedVisit?.check_out_time || selectedVisit?.exit_time">
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Check-out Time</p>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Checked out</p>
                                     <p class="text-xs font-bold text-gray-800">
                                         {{ formatMalaysiaDateTime(selectedVisit.check_out_time || selectedVisit.exit_time, { year: 'numeric' }) }}
                                     </p>
