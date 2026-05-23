@@ -270,14 +270,22 @@ const checkOut = async (isTemporary = false) => {
                         >
                             ✅ AUTHORIZE CHECK-IN
                         </button>
-                        <button 
-                            v-if="visitData.status === 'Checked In'"
-                            @click="checkOut"
-                            class="col-span-2 bg-orange-600 hover:bg-orange-700 text-white font-black py-5 rounded-2xl text-lg shadow-lg shadow-orange-100 transition-all flex items-center justify-center"
-                            :disabled="isLoading"
-                        >
-                            🚪 LOG CHECK-OUT
-                        </button>
+                        <template v-if="visitData.status === 'Checked In'">
+                            <button 
+                                @click="checkOut(false)"
+                                class="col-span-1 bg-red-600 hover:bg-red-750 text-white font-black py-5 rounded-2xl text-sm shadow-lg shadow-red-100 transition-all flex items-center justify-center uppercase tracking-wider"
+                                :disabled="isLoading"
+                            >
+                                🚪 Final Check-Out
+                            </button>
+                            <button 
+                                @click="checkOut(true)"
+                                class="col-span-1 bg-orange-600 hover:bg-orange-750 text-white font-black py-5 rounded-2xl text-sm shadow-lg shadow-orange-100 transition-all flex items-center justify-center uppercase tracking-wider"
+                                :disabled="isLoading"
+                            >
+                                ⏱️ Temporary Leave
+                            </button>
+                        </template>
                         
                         <Link 
                             :href="route('guard.scan')"

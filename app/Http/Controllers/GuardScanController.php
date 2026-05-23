@@ -102,6 +102,7 @@ class GuardScanController extends Controller
     }
     public function dashboard()
     {
+        $this->autoFinalizeOldVisits();
         $today = now()->startOfDay();
 
         // Get active visits with assigned parking lot number
@@ -408,6 +409,7 @@ class GuardScanController extends Controller
      */
     public function activeLogs()
     {
+        $this->autoFinalizeOldVisits();
         $activeVisitors = Visit::with('visitor')
             ->whereIn('status', ['Checked In', 'Temporarily Out'])
             ->get()
@@ -628,11 +630,12 @@ class GuardScanController extends Controller
     }
 
     /**
-     * Automatically check out stale visits and delivery logs that are older than 24 hours.
+     * Automatically check out stale visits and delivery logs that are older than 24 hours (or 6 hours for temporary leave).
      */
     protected function autoFinalizeOldVisits()
     {
         $cutoff = now()->subHours(24);
+        $tempCutoff = now()->subHours(6);
 
         // Auto check-out visits older than 24 hours
         Visit::whereIn('status', ['Checked In', 'Temporarily Out'])
@@ -642,10 +645,26 @@ class GuardScanController extends Controller
                 'check_out_time' => now(),
             ]);
 
+        // Auto check-out 'Temporarily Out' visits that have been out for more than 6 hours
+        Visit::where('status', 'Temporarily Out')
+            ->where('updated_at', '<', $tempCutoff)
+            ->update([
+                'status' => 'Checked Out',
+                'check_out_time' => now(),
+            ]);
+
         // Auto check-out delivery logs older than 24 hours
         DeliveryLog::whereNotNull('entry_time')
             ->whereNull('exit_time')
             ->where('entry_time', '<', $cutoff)
+            ->update([
+                'status' => 'Checked Out',
+                'exit_time' => now(),
+            ]);
+
+        // Auto check-out 'Temporarily Out' delivery logs that have been out for more than 6 hours
+        DeliveryLog::where('status', 'Temporarily Out')
+            ->where('updated_at', '<', $tempCutoff)
             ->update([
                 'status' => 'Checked Out',
                 'exit_time' => now(),
