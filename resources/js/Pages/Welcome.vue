@@ -63,7 +63,10 @@ const backToEmail = () => {
         </div>
 
         <div class="w-full sm:max-w-md mt-6 px-8 py-8 bg-white shadow-2xl overflow-hidden sm:rounded-3xl border border-gray-100">
-            <h2 class="text-2xl font-black text-center mb-8 text-gray-900 tracking-tighter uppercase italic">Access Portal</h2>
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-black text-gray-900 tracking-tight">Welcome to Sri Ayu</h2>
+                <p class="text-sm text-gray-500 mt-1">Sign in with your registered email</p>
+            </div>
             
             <div v-if="errorMessage" class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                 <p class="text-xs font-bold text-red-700 uppercase tracking-widest">{{ errorMessage }}</p>
@@ -71,24 +74,52 @@ const backToEmail = () => {
 
             <!-- Step 1: Email Entry -->
             <form v-if="!showOtpStep" @submit.prevent="requestOtp" class="space-y-6">
-                <!-- Login Type Toggle -->
-                <div class="bg-gray-100 p-1.5 rounded-2xl flex relative">
-                   <button 
-                       type="button"
-                       @click="form.login_type = 'visitor'"
-                       class="flex-1 py-3 text-sm font-black transition-all duration-300 rounded-xl relative z-10 uppercase tracking-widest"
-                       :class="form.login_type === 'visitor' ? 'text-indigo-600 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'"
-                   >
-                       Visitor
-                   </button>
-                   <button 
-                       type="button"
-                       @click="form.login_type = 'delivery'"
-                       class="flex-1 py-3 text-sm font-black transition-all duration-300 rounded-xl relative z-10 uppercase tracking-widest"
-                       :class="form.login_type === 'delivery' ? 'text-indigo-600 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'"
-                   >
-                       Delivery
-                   </button>
+                <!-- Login type: Visitor vs Delivery -->
+                <div>
+                    <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center mb-3">
+                        First, choose how you are visiting
+                    </p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            @click="form.login_type = 'visitor'"
+                            class="flex flex-col items-center rounded-2xl border-2 p-4 transition-all duration-200"
+                            :class="form.login_type === 'visitor'
+                                ? 'border-indigo-500 bg-indigo-50 shadow-md ring-2 ring-indigo-200'
+                                : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/50'"
+                        >
+                            <span class="text-3xl mb-2" aria-hidden="true">👤</span>
+                            <span class="text-sm font-black uppercase tracking-wide"
+                                :class="form.login_type === 'visitor' ? 'text-indigo-700' : 'text-gray-600'">
+                                Visitor
+                            </span>
+                            <span class="text-[10px] text-center mt-1 leading-tight"
+                                :class="form.login_type === 'visitor' ? 'text-indigo-600' : 'text-gray-400'">
+                                Guest visiting a resident
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="form.login_type = 'delivery'"
+                            class="flex flex-col items-center rounded-2xl border-2 p-4 transition-all duration-200"
+                            :class="form.login_type === 'delivery'
+                                ? 'border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200'
+                                : 'border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50/50'"
+                        >
+                            <span class="text-3xl mb-2" aria-hidden="true">📦</span>
+                            <span class="text-sm font-black uppercase tracking-wide"
+                                :class="form.login_type === 'delivery' ? 'text-orange-700' : 'text-gray-600'">
+                                Delivery
+                            </span>
+                            <span class="text-[10px] text-center mt-1 leading-tight"
+                                :class="form.login_type === 'delivery' ? 'text-orange-600' : 'text-gray-400'">
+                                Courier, food, or parcel
+                            </span>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-center text-gray-400 mt-2 italic">
+                        Tap the option that matches you before entering your email
+                    </p>
                 </div>
 
                 <div>
@@ -108,6 +139,12 @@ const backToEmail = () => {
             <div v-else class="space-y-6">
                 <div class="text-center mb-6">
                     <div class="text-green-600 text-4xl mb-2">✓</div>
+                    <span
+                        class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-3"
+                        :class="form.login_type === 'delivery' ? 'bg-orange-100 text-orange-700' : 'bg-indigo-100 text-indigo-700'"
+                    >
+                        {{ form.login_type === 'delivery' ? '📦 Delivery' : '👤 Visitor' }}
+                    </span>
                     <p class="text-sm font-bold text-gray-600">OTP sent to</p>
                     <p class="text-lg font-black text-gray-900 break-all">{{ form.email }}</p>
                     <button @click="backToEmail" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline mt-2">Change Email</button>
