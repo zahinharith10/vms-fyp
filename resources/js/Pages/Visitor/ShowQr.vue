@@ -92,8 +92,7 @@ const displayToken = computed(() => {
                         </div>
 
                         <div class="bg-white p-4 border-2 border-gray-200 rounded-lg shadow-lg">
-                            <div v-html="qrCodeSvg"></div>
-                            <!-- Small overlay text or indicator could go here if needed -->
+                            <img :src="route('qr.dynamic') + '?data=' + encodeURIComponent(qrToken)" class="h-[250px] w-[250px] block object-contain" alt="Visitor Pass QR" />
                         </div>
                         
                         <!-- Parking Map Section -->

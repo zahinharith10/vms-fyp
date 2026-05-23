@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import DeliveryAuthenticatedLayout from '@/Layouts/DeliveryAuthenticatedLayout.vue';
 
 const props = defineProps({
@@ -52,26 +52,6 @@ const submitTrip = () => {
         }
     });
 };
-
-// --- Real-time: Listen on each log channel for status updates ---
-const echoChannels = [];
-
-onMounted(() => {
-    if (!window.Echo || !props.logs) return;
-    props.logs.forEach((log) => {
-        if (['Pending', 'Approved', 'Checked In'].includes(log.status)) {
-            window.Echo.channel(`delivery-log.${log.id}`)
-                .listen('.delivery.status.updated', () => {
-                    router.reload({ only: ['logs', 'activeLog', 'qrCodeSvg'], preserveState: true, preserveScroll: true });
-                });
-            echoChannels.push(`delivery-log.${log.id}`);
-        }
-    });
-});
-
-onUnmounted(() => {
-    echoChannels.forEach((ch) => window.Echo.leaveChannel(ch));
-});
 </script>
 
 <template>

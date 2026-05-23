@@ -58,11 +58,12 @@ const lookupAndRedirect = async (token) => {
     try {
         const response = await axios.post(route('guard.scan.lookup'), { token });
         const visitId = response.data.visit.id;
+        const intent = response.data.visit.checkout_intent || 'final';
         
         if (response.data.is_delivery) {
-            router.visit(route('guard.scan.verify-delivery', visitId));
+            router.visit(route('guard.scan.verify-delivery', visitId) + '?intent=' + intent);
         } else {
-            router.visit(route('guard.scan.verify', visitId));
+            router.visit(route('guard.scan.verify', visitId) + '?intent=' + intent);
         }
     } catch (err) {
         if (err.response?.status === 404) {

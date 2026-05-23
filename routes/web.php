@@ -152,6 +152,16 @@ Route::prefix('resident')->name('resident.')->group(function () {
 Route::get('/pass/{token}', [App\Http\Controllers\VisitorAuthController::class, 'showPublicPass'])->name('public.pass');
 Route::post('/pass/{token}/complete', [App\Http\Controllers\VisitorAuthController::class, 'completePublicPass'])->name('public.pass.complete');
 
+// Dynamic QR Code Generator API
+Route::get('/qr-code', function (Illuminate\Http\Request $request) {
+    $data = $request->query('data');
+    if (empty($data)) {
+        return response('No data provided', 400);
+    }
+    return response(SimpleSoftwareIO\QrCode\Facades\QrCode::size(300)->generate($data))
+        ->header('Content-Type', 'image/svg+xml');
+})->name('qr.dynamic');
+
 // Visitor Routes (Public/Phone Auth)
 Route::name('visitor.')->group(function () {
     // Convenience route for users typing /visitor/login manually

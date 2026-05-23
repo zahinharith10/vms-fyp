@@ -260,6 +260,19 @@ const checkOut = async (isTemporary = false) => {
                         </div>
                     </div>
 
+                    <!-- Auto Checkout Section -->
+                    <div v-if="visitData.status === 'Checked In'" class="mb-8">
+                        <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-3"></div>
+                            <h4 class="text-sm font-black text-indigo-900 uppercase tracking-widest mb-1">
+                                {{ visitData.checkout_intent === 'temp' ? '⚡ Processing Temporary Leave' : '⚡ Processing Final Check-out' }}
+                            </h4>
+                            <p class="text-xs text-indigo-700 font-medium">
+                                Automating transaction based on the visitor's choice...
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="grid grid-cols-2 gap-4 mt-8">
                         <button 

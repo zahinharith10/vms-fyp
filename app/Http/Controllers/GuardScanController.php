@@ -24,14 +24,17 @@ class GuardScanController extends Controller
     /**
      * Show the Verify Visitor page.
      */
-    public function verify(Visit $visit)
+    public function verify(Visit $visit, Request $request)
     {
         $occupiedCount = Visit::whereIn('status', ['Checked In', 'Temporarily Out'])
             ->whereNotNull('parking_lot_number')
             ->count();
 
+        $visitData = $visit->load('visitor');
+        $visitData->checkout_intent = $request->query('intent', 'final');
+
         return Inertia::render('Guard/VerifyVisitor', [
-            'visit' => $visit->load('visitor'),
+            'visit' => $visitData,
             'parking' => [
                 'occupied' => $occupiedCount,
                 'total' => 15,
@@ -63,7 +66,7 @@ class GuardScanController extends Controller
         ]);
     }
 
-    public function verifyDelivery(DeliveryLog $log)
+    public function verifyDelivery(DeliveryLog $log, Request $request)
     {
         return Inertia::render('Guard/VerifyVisitor', [
             'visit' => [
@@ -72,7 +75,8 @@ class GuardScanController extends Controller
                 'unit_number' => $log->destination,
                 'purpose' => 'Delivery Service (' . $log->personnel->company . ')',
                 'visitor' => $log->personnel,
-                'is_delivery' => true
+                'is_delivery' => true,
+                'checkout_intent' => $request->query('intent', 'final')
             ]
         ]);
     }
