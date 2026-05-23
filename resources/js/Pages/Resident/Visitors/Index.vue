@@ -67,6 +67,15 @@ const copyToClipboard = () => {
     }, 2000);
 };
 
+// Format a datetime string to "DD/MM/YY HH:MM"
+const formatTs = (dt) => {
+    if (!dt) return null;
+    return new Date(dt).toLocaleString('en-GB', {
+        day: '2-digit', month: '2-digit', year: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+    });
+};
+
 const formatDuration = (checkInStr, checkOutStr) => {
     if (!checkInStr || !checkOutStr) return null;
     const start = new Date(checkInStr);
@@ -194,7 +203,7 @@ onUnmounted(() => {
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Visitor</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Timestamps</th>
                                         <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -241,8 +250,19 @@ onUnmounted(() => {
                                             {{ visit.status }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-500">
-                                        {{ new Date(visit.created_at).toLocaleDateString('en-GB') }}
+                                    <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
+                                        <div class="flex items-center gap-1">
+                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Requested</span>
+                                            <span class="font-medium text-gray-700">{{ formatTs(visit.created_at) }}</span>
+                                        </div>
+                                        <div v-if="visit.check_in_time" class="flex items-center gap-1">
+                                            <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Check-in</span>
+                                            <span class="font-medium text-green-700">{{ formatTs(visit.check_in_time) }}</span>
+                                        </div>
+                                        <div v-if="visit.check_out_time" class="flex items-center gap-1">
+                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Check-out</span>
+                                            <span class="font-medium text-gray-600">{{ formatTs(visit.check_out_time) }}</span>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
                                         <!-- View QR (Only for Approved or Checked In) -->
@@ -301,7 +321,7 @@ onUnmounted(() => {
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Personnel</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Company</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Timestamps</th>
                                         <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
@@ -340,8 +360,19 @@ onUnmounted(() => {
                                             {{ log.exit_time ? 'Completed' : (log.entry_time ? 'In Progress' : log.status) }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-500">
-                                        {{ new Date(log.created_at).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) }}
+                                    <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
+                                        <div class="flex items-center gap-1">
+                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Requested</span>
+                                            <span class="font-medium text-gray-700">{{ formatTs(log.created_at) }}</span>
+                                        </div>
+                                        <div v-if="log.entry_time" class="flex items-center gap-1">
+                                            <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Entry</span>
+                                            <span class="font-medium text-green-700">{{ formatTs(log.entry_time) }}</span>
+                                        </div>
+                                        <div v-if="log.exit_time" class="flex items-center gap-1">
+                                            <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Exit</span>
+                                            <span class="font-medium text-gray-600">{{ formatTs(log.exit_time) }}</span>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
                                         <!-- Approval Buttons (Only for Pending) -->
