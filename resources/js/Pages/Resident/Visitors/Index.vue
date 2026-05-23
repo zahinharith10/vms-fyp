@@ -76,17 +76,67 @@ const formatTs = (dt) => {
     });
 };
 
-const formatDuration = (checkInStr, checkOutStr) => {
-    if (!checkInStr || !checkOutStr) return null;
-    const start = new Date(checkInStr);
-    const end = new Date(checkOutStr);
-    const diffMs = end - start;
-    if (diffMs < 0) return null;
+const formatDuration = (visit) => {
+    if (!visit) return null;
     
-    const diffMins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    
+    // If it's a delivery log (uses entry_time and exit_time instead of check_in_time)
+    if (visit.entry_time) {
+        const start = new Date(visit.entry_time);
+        const end = visit.exit_time ? new Date(visit.exit_time) : new Date();
+        const diffMs = end - start;
+        if (diffMs < 0) return null;
+        return formatMinutes(Math.floor(diffMs / 60000));
+    }
+
+    let totalMins = 0;
+    let hasData = false;
+
+    // Session 1: First check-in to First check-out
+    if (visit.first_check_in_time) {
+        hasData = true;
+        const start1 = new Date(visit.first_check_in_time);
+        const end1 = visit.first_check_out_time 
+            ? new Date(visit.first_check_out_time) 
+            : (visit.status === 'Checked In' ? new Date() : start1);
+        
+        const diffMs1 = end1 - start1;
+        if (diffMs1 > 0) {
+            totalMins += Math.floor(diffMs1 / 60000);
+        }
+    }
+
+    // Session 2: Second check-in to Second check-out
+    if (visit.second_check_in_time) {
+        hasData = true;
+        const start2 = new Date(visit.second_check_in_time);
+        const end2 = visit.second_check_out_time 
+            ? new Date(visit.second_check_out_time) 
+            : (visit.status === 'Checked In' ? new Date() : start2);
+        
+        const diffMs2 = end2 - start2;
+        if (diffMs2 > 0) {
+            totalMins += Math.floor(diffMs2 / 60000);
+        }
+    }
+
+    // Fallback to legacy fields if no multi-entry fields exist
+    if (!hasData && visit.check_in_time) {
+        const start = new Date(visit.check_in_time);
+        const end = visit.check_out_time ? new Date(visit.check_out_time) : new Date();
+        const diffMs = end - start;
+        if (diffMs > 0) {
+            totalMins = Math.floor(diffMs / 60000);
+            hasData = true;
+        }
+    }
+
+    if (!hasData) return null;
+    return formatMinutes(totalMins);
+};
+
+const formatMinutes = (totalMins) => {
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
     if (hours > 0) {
         return `${hours} hr ${mins} min`;
     }
@@ -493,7 +543,7 @@ onUnmounted(() => {
                                 <div v-if="selectedVisit?.check_out_time || selectedVisit?.exit_time" class="col-span-2">
                                     <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Duration</p>
                                     <p class="text-sm font-black text-indigo-650">
-                                        ⏱️ {{ formatDuration(selectedVisit.check_in_time || selectedVisit.entry_time, selectedVisit.check_out_time || selectedVisit.exit_time) }}
+                                        ⏱️ {{ formatDuration(selectedVisit) }}
                                     </p>
                                 </div>
                             </div>
