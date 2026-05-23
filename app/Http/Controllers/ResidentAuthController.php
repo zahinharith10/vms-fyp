@@ -27,7 +27,7 @@ class ResidentAuthController extends Controller
             'pending_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Pending')->count(),
             'pending_deliveries' => \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->where('status', 'Pending')->count(),
             'active_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Checked In')->count() + \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->whereNotNull('entry_time')->whereNull('exit_time')->count(),
-            'upcoming_visits' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Approved')->count(),
+            'upcoming_visits' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Approved')->count() + \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->where('status', 'Approved')->whereNull('entry_time')->count(),
         ];
         
         $stats['pending_requests'] = $stats['pending_visitors'] + $stats['pending_deliveries'];
