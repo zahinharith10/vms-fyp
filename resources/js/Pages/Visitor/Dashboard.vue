@@ -3,6 +3,7 @@ import VisitorAuthenticatedLayout from '@/Layouts/VisitorAuthenticatedLayout.vue
 import ParkingMap from '@/Components/ParkingMap.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { formatMalaysiaDate } from '@/utils/datetime';
 
 const props = defineProps({
     visitor: Object,
@@ -200,7 +201,7 @@ onUnmounted(() => {
                                     'text-red-650 dark:text-red-400': visit.status === 'Rejected'
                                 }" class="font-black text-xs uppercase tracking-wider">{{ visit.status }}</span>
                             </div>
-                            <div class="text-gray-500 dark:text-gray-400 text-xs mt-1 font-medium">{{ visit.purpose }} • {{ new Date(visit.created_at).toLocaleDateString('en-GB') }}</div>
+                            <div class="text-gray-500 dark:text-gray-400 text-xs mt-1 font-medium">{{ visit.purpose }} • {{ formatMalaysiaDate(visit.created_at) }}</div>
                             <div v-if="visit.parking_lot_number" class="mt-2">
                                 <div class="text-indigo-650 dark:text-indigo-400 font-bold text-xs flex items-center gap-1 mb-1.5">
                                     <span>🅿️</span> Assigned: <span class="bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30 uppercase tracking-widest text-[10px] font-black text-indigo-700 dark:text-indigo-400">Lot {{ visit.parking_lot_number }}</span>

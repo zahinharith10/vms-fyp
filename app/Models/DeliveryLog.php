@@ -17,6 +17,11 @@ class DeliveryLog extends Model
         'destination',
     ];
 
+    protected $casts = [
+        'entry_time' => 'datetime',
+        'exit_time' => 'datetime',
+    ];
+
     public function personnel()
     {
         return $this->belongsTo(DeliveryPersonnel::class, 'delivery_personnel_id');

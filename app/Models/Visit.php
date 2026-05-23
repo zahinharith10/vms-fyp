@@ -24,6 +24,15 @@ class Visit extends Model
         'second_check_out_time',
     ];
 
+    protected $casts = [
+        'check_in_time' => 'datetime',
+        'check_out_time' => 'datetime',
+        'first_check_in_time' => 'datetime',
+        'first_check_out_time' => 'datetime',
+        'second_check_in_time' => 'datetime',
+        'second_check_out_time' => 'datetime',
+    ];
+
     public function visitor()
     {
         return $this->belongsTo(Visitor::class);

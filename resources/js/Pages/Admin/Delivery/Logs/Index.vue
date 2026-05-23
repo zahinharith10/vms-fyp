@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import { ref } from 'vue';
+import { formatMalaysiaDateTime } from '@/utils/datetime';
 
 defineProps({
     logs: Array,
@@ -23,13 +24,6 @@ const closeModal = () => {
     }, 200);
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleString([], {
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    });
-};
 </script>
 
 <template>
@@ -58,8 +52,8 @@ const formatDate = (dateString) => {
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="log in logs" :key="log.id">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">{{ formatDate(log.entry_time || log.created_at) }}</div>
-                                        <div v-if="log.exit_time" class="text-xs text-gray-500">Exit: {{ formatDate(log.exit_time) }}</div>
+                                        <div class="text-sm text-gray-900">{{ formatMalaysiaDateTime(log.entry_time || log.created_at, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</div>
+                                        <div v-if="log.exit_time" class="text-xs text-gray-500">Exit: {{ formatMalaysiaDateTime(log.exit_time, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">

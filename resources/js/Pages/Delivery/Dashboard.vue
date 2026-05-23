@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import DeliveryAuthenticatedLayout from '@/Layouts/DeliveryAuthenticatedLayout.vue';
+import { formatMalaysiaDate } from '@/utils/datetime';
 
 const props = defineProps({
     delivery: Object,
@@ -206,7 +207,7 @@ const submitTrip = () => {
                                     <span v-if="log.exit_time"> | Exit: {{ log.exit_time }}</span>
                                     <span v-else-if="log.status === 'Checked In'"> | Checked In</span>
                                 </div>
-                                <div class="text-gray-400 text-[10px] mt-1">Date: {{ new Date(log.created_at).toLocaleDateString('en-GB') }}</div>
+                                <div class="text-gray-400 text-[10px] mt-1">Date: {{ formatMalaysiaDate(log.created_at) }}</div>
                             </div>
                         </div>
                         <div v-else class="text-gray-500 text-sm italic py-8 text-center flex-1">

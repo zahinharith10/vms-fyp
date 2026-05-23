@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { formatMalaysiaDate, formatMalaysiaTime } from '@/utils/datetime';
 
 const props = defineProps({
     logs: Array,
@@ -200,15 +201,15 @@ const formatMinutes = (totalMins) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                                             <div v-if="log.check_in_time || log.entry_time">
-                                                <p class="font-bold text-gray-800">{{ new Date(log.check_in_time || log.entry_time).toLocaleTimeString() }}</p>
-                                                <p>{{ new Date(log.check_in_time || log.entry_time).toLocaleDateString() }}</p>
+                                                <p class="font-bold text-gray-800">{{ formatMalaysiaTime(log.check_in_time || log.entry_time, { withSeconds: true }) }}</p>
+                                                <p>{{ formatMalaysiaDate(log.check_in_time || log.entry_time) }}</p>
                                             </div>
                                             <div v-else class="italic">Not Entered</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                                             <div v-if="log.check_out_time || log.exit_time">
-                                                <p class="font-bold text-gray-800">{{ new Date(log.check_out_time || log.exit_time).toLocaleTimeString() }}</p>
-                                                <p>{{ new Date(log.check_out_time || log.exit_time).toLocaleDateString() }}</p>
+                                                <p class="font-bold text-gray-800">{{ formatMalaysiaTime(log.check_out_time || log.exit_time, { withSeconds: true }) }}</p>
+                                                <p>{{ formatMalaysiaDate(log.check_out_time || log.exit_time) }}</p>
                                             </div>
                                             <div v-else-if="log.status === 'Checked In'" class="text-indigo-600 font-black animate-pulse">On-Site</div>
                                             <div v-else class="italic">-</div>

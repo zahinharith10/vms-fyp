@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 import { Link } from '@inertiajs/vue3';
+import { formatMalaysiaTime } from '@/utils/datetime';
 
 const isOpen = ref(false);
 const notifications = ref([]);
@@ -47,10 +48,6 @@ onUnmounted(() => {
     if (pollingInterval) clearInterval(pollingInterval);
 });
 
-const formatTime = (time) => {
-    const date = new Date(time);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
 </script>
 
 <template>
@@ -94,7 +91,7 @@ const formatTime = (time) => {
                                         {{ notification.data.type.replace('_', ' ') }}
                                     </span>
                                     <span class="text-[10px] text-gray-400">
-                                        {{ formatTime(notification.created_at) }}
+                                        {{ formatMalaysiaTime(notification.created_at) }}
                                     </span>
                                 </div>
                             </div>

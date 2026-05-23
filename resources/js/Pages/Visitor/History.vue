@@ -2,6 +2,7 @@
 import VisitorAuthenticatedLayout from '@/Layouts/VisitorAuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { formatMalaysiaDateTime } from '@/utils/datetime';
 
 const props = defineProps({
     visitor: Object,
@@ -70,7 +71,7 @@ const cancelVisit = (id) => {
                                 Purpose: <span class="text-gray-900">{{ visit.purpose }}</span>
                             </div>
                             <div class="text-xs text-gray-400 mt-1">
-                                Requested on: {{ new Date(visit.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) }}
+                                Requested on: {{ formatMalaysiaDateTime(visit.created_at, { dateStyle: 'medium', timeStyle: 'short' }) }}
                             </div>
                             <div v-if="visit.parking_lot_number" class="text-xs text-indigo-650 font-bold mt-1.5 flex items-center gap-1">
                                 <span>🅿️</span> Assigned Parking: <span class="bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-widest text-[9px] font-black text-indigo-750">Lot {{ visit.parking_lot_number }}</span>

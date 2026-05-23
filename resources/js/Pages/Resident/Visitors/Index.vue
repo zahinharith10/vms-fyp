@@ -2,6 +2,7 @@
 import ResidentAuthenticatedLayout from '@/Layouts/ResidentAuthenticatedLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { formatMalaysiaDate, formatMalaysiaDateTime } from '@/utils/datetime';
 
 const props = defineProps({
     visits: Array,
@@ -65,15 +66,6 @@ const copyToClipboard = () => {
     setTimeout(() => {
         isCopied.value = false;
     }, 2000);
-};
-
-// Format a datetime string to "DD/MM/YY HH:MM"
-const formatTs = (dt) => {
-    if (!dt) return null;
-    return new Date(dt).toLocaleString('en-GB', {
-        day: '2-digit', month: '2-digit', year: '2-digit',
-        hour: '2-digit', minute: '2-digit',
-    });
 };
 
 const formatDuration = (visit) => {
@@ -317,15 +309,15 @@ onUnmounted(() => {
                                     <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
                                         <div class="flex items-center gap-1">
                                             <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Requested</span>
-                                            <span class="font-medium text-gray-700">{{ formatTs(visit.created_at) }}</span>
+                                            <span class="font-medium text-gray-700">{{ formatMalaysiaDateTime(visit.created_at) }}</span>
                                         </div>
                                         <div v-if="visit.check_in_time" class="flex items-center gap-1">
                                             <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Check-in</span>
-                                            <span class="font-medium text-green-700">{{ formatTs(visit.check_in_time) }}</span>
+                                            <span class="font-medium text-green-700">{{ formatMalaysiaDateTime(visit.check_in_time) }}</span>
                                         </div>
                                         <div v-if="visit.check_out_time" class="flex items-center gap-1">
                                             <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Check-out</span>
-                                            <span class="font-medium text-gray-600">{{ formatTs(visit.check_out_time) }}</span>
+                                            <span class="font-medium text-gray-600">{{ formatMalaysiaDateTime(visit.check_out_time) }}</span>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
@@ -427,15 +419,15 @@ onUnmounted(() => {
                                     <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
                                         <div class="flex items-center gap-1">
                                             <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Requested</span>
-                                            <span class="font-medium text-gray-700">{{ formatTs(log.created_at) }}</span>
+                                            <span class="font-medium text-gray-700">{{ formatMalaysiaDateTime(log.created_at) }}</span>
                                         </div>
                                         <div v-if="log.entry_time" class="flex items-center gap-1">
                                             <span class="font-bold text-green-500 uppercase tracking-wider" style="font-size:9px">Entry</span>
-                                            <span class="font-medium text-green-700">{{ formatTs(log.entry_time) }}</span>
+                                            <span class="font-medium text-green-700">{{ formatMalaysiaDateTime(log.entry_time) }}</span>
                                         </div>
                                         <div v-if="log.exit_time" class="flex items-center gap-1">
                                             <span class="font-bold text-gray-400 uppercase tracking-wider" style="font-size:9px">Exit</span>
-                                            <span class="font-medium text-gray-600">{{ formatTs(log.exit_time) }}</span>
+                                            <span class="font-medium text-gray-600">{{ formatMalaysiaDateTime(log.exit_time) }}</span>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
@@ -529,7 +521,7 @@ onUnmounted(() => {
                             </div>
                             <div>
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Registration Date</p>
-                                <p class="text-sm font-bold text-gray-800">{{ selectedVisit ? new Date(selectedVisit.created_at).toLocaleDateString('en-GB') : '-' }}</p>
+                                <p class="text-sm font-bold text-gray-800">{{ selectedVisit ? formatMalaysiaDate(selectedVisit.created_at) : '-' }}</p>
                             </div>
                             <div v-if="selectedVisit?.parking_lot_number">
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Parking Lot</p>
@@ -540,13 +532,13 @@ onUnmounted(() => {
                                 <div>
                                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Check-in Time</p>
                                     <p class="text-xs font-bold text-gray-800">
-                                        {{ new Date(selectedVisit.check_in_time || selectedVisit.entry_time).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+                                        {{ formatMalaysiaDateTime(selectedVisit.check_in_time || selectedVisit.entry_time, { year: 'numeric' }) }}
                                     </p>
                                 </div>
                                 <div v-if="selectedVisit?.check_out_time || selectedVisit?.exit_time">
                                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Check-out Time</p>
                                     <p class="text-xs font-bold text-gray-800">
-                                        {{ new Date(selectedVisit.check_out_time || selectedVisit.exit_time).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+                                        {{ formatMalaysiaDateTime(selectedVisit.check_out_time || selectedVisit.exit_time, { year: 'numeric' }) }}
                                     </p>
                                 </div>
                                 <div v-else class="flex items-center">

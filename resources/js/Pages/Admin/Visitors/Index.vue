@@ -6,6 +6,7 @@ import ConfirmationModal from '@/Components/ConfirmationModal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { ref, watch } from 'vue';
 import debounce from 'lodash/debounce';
+import { formatMalaysiaDate } from '@/utils/datetime';
 
 const props = defineProps({
     visitors: Object,
@@ -196,7 +197,7 @@ const confirmDelete = () => {
                             <img v-if="selectedVisitor.photo" :src="'/storage/' + selectedVisitor.photo" class="w-full h-full object-cover" alt="Profile">
                             <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 italic">No Photo</div>
                         </div>
-                        <p class="text-xs text-gray-500 italic">Registered on {{ new Date(selectedVisitor.created_at).toLocaleDateString('en-GB') }}</p>
+                        <p class="text-xs text-gray-500 italic">Registered on {{ formatMalaysiaDate(selectedVisitor.created_at) }}</p>
                     </div>
                 </div>
             </div>

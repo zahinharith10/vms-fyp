@@ -3,6 +3,7 @@ import GuardAuthenticatedLayout from '@/Layouts/GuardAuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
+import { formatMalaysiaTime } from '@/utils/datetime';
 
 const props = defineProps({
     activeLogs: Array,
@@ -35,11 +36,6 @@ const checkOut = async (log) => {
     } finally {
         isLoading.value = false;
     }
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 // --- Real-time: auto-reload when any visit/delivery status changes ---
@@ -99,7 +95,7 @@ onUnmounted(() => {
                                 >
                                     🏃 OUT
                                 </span>
-                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Joined at {{ formatDate(log.entry_time) }}</span>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Joined at {{ formatMalaysiaTime(log.entry_time) }}</span>
                             </div>
                             <h4 class="font-black text-gray-900 leading-tight">{{ log.name }}</h4>
                             <div class="grid grid-cols-3 gap-x-4 gap-y-1 mt-2">
