@@ -30,11 +30,12 @@ class GuardScanController extends Controller
             ->whereNotNull('parking_lot_number')
             ->count();
 
-        $visitData = $visit->load('visitor');
-        $visitData->checkout_intent = $request->query('intent', 'final');
+        $visit->load('visitor');
+        $visitArray = $visit->toArray();
+        $visitArray['checkout_intent'] = $request->query('intent', 'final');
 
         return Inertia::render('Guard/VerifyVisitor', [
-            'visit' => $visitData,
+            'visit' => $visitArray,
             'parking' => [
                 'occupied' => $occupiedCount,
                 'total' => 15,
