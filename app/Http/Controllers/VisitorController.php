@@ -129,9 +129,6 @@ class VisitorController extends Controller
             'logs' => \App\Models\Visit::with('visitor')->latest('updated_at')->get()
         ]);
     }
-    /**
-     * Export visit logs as CSV.
-     */
     public function exportLogs()
     {
         $logs = \App\Models\Visit::with('visitor')->latest()->get();
@@ -151,10 +148,29 @@ class VisitorController extends Controller
             
             fputcsv($file, [
                 'ID', 'Visitor Name', 'Phone', 'IC Number', 'Unit Number', 
-                'Purpose', 'Status', 'Check In Time', 'Check Out Time'
+                'Purpose', 'Status', 'First Check In', 'First Check Out', 
+                'Second Check In', 'Second Check Out', 'Total Stay Duration (Mins)'
             ]);
 
             foreach ($logs as $log) {
+                // Calculate Total Stay Duration in Minutes
+                $totalMins = 0;
+                if ($log->first_check_in_time) {
+                    $start1 = new \Carbon\Carbon($log->first_check_in_time);
+                    $end1 = $log->first_check_out_time ? new \Carbon\Carbon($log->first_check_out_time) : ($log->status === 'Checked In' ? now() : $start1);
+                    $totalMins += $start1->diffInMinutes($end1);
+                }
+                if ($log->second_check_in_time) {
+                    $start2 = new \Carbon\Carbon($log->second_check_in_time);
+                    $end2 = $log->second_check_out_time ? new \Carbon\Carbon($log->second_check_out_time) : ($log->status === 'Checked In' ? now() : $start2);
+                    $totalMins += $start2->diffInMinutes($end2);
+                }
+                if (!$log->first_check_in_time && $log->check_in_time) {
+                    $start = new \Carbon\Carbon($log->check_in_time);
+                    $end = $log->check_out_time ? new \Carbon\Carbon($log->check_out_time) : now();
+                    $totalMins = $start->diffInMinutes($end);
+                }
+
                 fputcsv($file, [
                     $log->id,
                     $log->visitor->name ?? 'N/A',
@@ -163,8 +179,11 @@ class VisitorController extends Controller
                     $log->unit_number,
                     $log->purpose,
                     $log->status,
-                    $log->check_in_time,
-                    $log->check_out_time,
+                    $log->first_check_in_time ?: $log->check_in_time,
+                    $log->first_check_out_time ?: $log->check_out_time,
+                    $log->second_check_in_time,
+                    $log->second_check_out_time,
+                    $totalMins > 0 ? $totalMins : 0,
                 ]);
             }
             fclose($file);

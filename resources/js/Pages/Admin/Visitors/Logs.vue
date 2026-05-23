@@ -30,17 +30,66 @@ const getStatusClass = (status) => {
     }
 };
 
-const formatDuration = (checkInStr, checkOutStr) => {
-    if (!checkInStr || !checkOutStr) return null;
-    const start = new Date(checkInStr);
-    const end = new Date(checkOutStr);
-    const diffMs = end - start;
-    if (diffMs < 0) return null;
-    
-    const diffMins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    
+const formatDuration = (log) => {
+    // If it's a delivery log (uses entry_time and exit_time instead of check_in_time)
+    if (log.entry_time) {
+        const start = new Date(log.entry_time);
+        const end = log.exit_time ? new Date(log.exit_time) : new Date();
+        const diffMs = end - start;
+        if (diffMs < 0) return '-';
+        return formatMinutes(Math.floor(diffMs / 60000));
+    }
+
+    // For visitors: compute sum of sessions
+    let totalMins = 0;
+    let hasData = false;
+
+    // Session 1: First check-in to First check-out
+    if (log.first_check_in_time) {
+        hasData = true;
+        const start1 = new Date(log.first_check_in_time);
+        const end1 = log.first_check_out_time 
+            ? new Date(log.first_check_out_time) 
+            : (log.status === 'Checked In' ? new Date() : start1);
+        
+        const diffMs1 = end1 - start1;
+        if (diffMs1 > 0) {
+            totalMins += Math.floor(diffMs1 / 60000);
+        }
+    }
+
+    // Session 2: Second check-in to Second check-out
+    if (log.second_check_in_time) {
+        hasData = true;
+        const start2 = new Date(log.second_check_in_time);
+        const end2 = log.second_check_out_time 
+            ? new Date(log.second_check_out_time) 
+            : (log.status === 'Checked In' ? new Date() : start2);
+        
+        const diffMs2 = end2 - start2;
+        if (diffMs2 > 0) {
+            totalMins += Math.floor(diffMs2 / 60000);
+        }
+    }
+
+    // Fallback to legacy fields if no multi-entry fields exist
+    if (!hasData && log.check_in_time) {
+        const start = new Date(log.check_in_time);
+        const end = log.check_out_time ? new Date(log.check_out_time) : new Date();
+        const diffMs = end - start;
+        if (diffMs > 0) {
+            totalMins = Math.floor(diffMs / 60000);
+            hasData = true;
+        }
+    }
+
+    if (!hasData) return '-';
+    return formatMinutes(totalMins);
+};
+
+const formatMinutes = (totalMins) => {
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
     if (hours > 0) {
         return `${hours} hr ${mins} min`;
     }
@@ -151,7 +200,7 @@ const formatDuration = (checkInStr, checkOutStr) => {
                                             <div v-else class="italic">-</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold text-indigo-600">
-                                            {{ formatDuration(log.check_in_time || log.entry_time, log.check_out_time || log.exit_time) || '-' }}
+                                            {{ formatDuration(log) }}
                                         </td>
                                     </tr>
                                     <tr v-if="filteredLogs.length === 0">
