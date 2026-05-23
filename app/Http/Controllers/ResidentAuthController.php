@@ -20,12 +20,13 @@ class ResidentAuthController extends Controller
         $resident->load('houseUnit');
 
         $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
+        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
 
         $stats = [
             'total_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->count(),
             'pending_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Pending')->count(),
-            'pending_deliveries' => \App\Models\DeliveryLog::where('destination', $unitNumber)->where('status', 'Pending')->count(),
-            'active_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Checked In')->count() + \App\Models\DeliveryLog::where('destination', $unitNumber)->whereNotNull('entry_time')->whereNull('exit_time')->count(),
+            'pending_deliveries' => \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->where('status', 'Pending')->count(),
+            'active_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Checked In')->count() + \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->whereNotNull('entry_time')->whereNull('exit_time')->count(),
             'upcoming_visits' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Approved')->count(),
         ];
         

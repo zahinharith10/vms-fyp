@@ -29,8 +29,10 @@ class ResidentVisitorController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+
         $deliveries = DeliveryLog::with('personnel')
-            ->where('destination', $unitNumber)
+            ->where('destination', $deliveryUnitNumber)
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -175,8 +177,8 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
         
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
-        if ($log->destination !== $unitNumber || $log->status !== 'Pending') {
+        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+        if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Pending') {
             abort(403);
         }
 
@@ -196,8 +198,8 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
         
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
-        if ($log->destination !== $unitNumber || $log->status !== 'Pending') {
+        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+        if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Pending') {
             abort(403);
         }
 
