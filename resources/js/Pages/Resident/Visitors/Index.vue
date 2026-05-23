@@ -89,6 +89,13 @@ const newVisitToast = ref(null);  // { visitor_name, purpose }
 const echoChannels = [];
 
 onMounted(() => {
+    // Deep-link active tab via query parameters
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['pending', 'visitors', 'deliveries'].includes(tabParam)) {
+        activeTab.value = tabParam;
+    }
+
     if (!window.Echo) return;
     const page = usePage();
     const resident = page.props.auth?.resident;

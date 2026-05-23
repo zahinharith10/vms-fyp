@@ -39,32 +39,44 @@ defineProps({
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <!-- Total Visitors -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-gray-400">
+                    <Link 
+                        :href="route('resident.visitors.index', { tab: 'visitors' })"
+                        class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-gray-400 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                    >
                         <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Visitors</div>
                         <div class="mt-2 text-3xl font-black text-gray-900">{{ stats.total_visitors }}</div>
                         <div class="text-xs text-gray-400 mt-1 italic">Lifetime total</div>
-                    </div>
+                    </Link>
 
                     <!-- Pending Approval -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-yellow-400">
+                    <Link 
+                        :href="route('resident.visitors.index', { tab: 'pending' })"
+                        class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-yellow-400 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                    >
                         <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Pending Approval</div>
                         <div class="mt-2 text-3xl font-black text-yellow-600">{{ stats.pending_requests }}</div>
                         <div class="text-xs text-gray-400 mt-1 italic">Action required</div>
-                    </div>
+                    </Link>
 
                     <!-- Upcoming Visits -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-blue-400">
+                    <Link 
+                        :href="route('resident.visitors.index', { tab: 'visitors' })"
+                        class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-blue-400 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                    >
                         <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Upcoming Visits</div>
                         <div class="mt-2 text-3xl font-black text-blue-600">{{ stats.upcoming_visits }}</div>
                         <div class="text-xs text-gray-400 mt-1 italic">Approved but not in</div>
-                    </div>
+                    </Link>
 
                     <!-- Active Now -->
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-green-400">
+                    <Link 
+                        :href="route('resident.visitors.index', { tab: 'visitors' })"
+                        class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-green-400 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                    >
                         <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Active Visitors</div>
                         <div class="mt-2 text-3xl font-black text-green-600">{{ stats.active_visitors }}</div>
                         <div class="text-xs text-gray-400 mt-1 italic">Currently on-site</div>
-                    </div>
+                    </Link>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
