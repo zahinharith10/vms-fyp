@@ -267,8 +267,8 @@ class VisitorAuthController extends Controller
 
         // Security: only show QR if it belongs to the authenticated visitor
 
-        // Only show QR for Approved or Checked In visits
-        if (!in_array($visit->status, ['Approved', 'Checked In'])) {
+        // Only show QR for Approved, Checked In, or Temporarily Out visits
+        if (!in_array($visit->status, ['Approved', 'Checked In', 'Temporarily Out'])) {
             return redirect()->route('visitor.dashboard')
                 ->with('error', 'QR code is not available for this visit status.');
         }

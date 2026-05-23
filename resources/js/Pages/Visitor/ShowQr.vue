@@ -91,6 +91,14 @@ const displayToken = computed(() => {
                             </p>
                         </div>
 
+                        <div v-if="visit.status === 'Temporarily Out'" class="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-2xl text-center w-full max-w-xs">
+                            <span class="text-2xl block mb-1">🏃</span>
+                            <h4 class="text-sm font-black text-orange-950 uppercase tracking-widest">Temporarily Out</h4>
+                            <p class="text-[10px] text-orange-700 font-bold mt-0.5 leading-relaxed">
+                                You have checked out temporarily. Present this QR code at the gate to re-enter.
+                            </p>
+                        </div>
+
                         <div class="bg-white p-4 border-2 border-gray-200 rounded-lg shadow-lg">
                             <img :src="route('qr.dynamic') + '?data=' + encodeURIComponent(qrToken)" class="h-[250px] w-[250px] block object-contain" alt="Visitor Pass QR" />
                         </div>
