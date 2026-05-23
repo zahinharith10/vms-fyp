@@ -41,25 +41,25 @@ onErrorCaptured((err) => {
             
             <nav class="mt-6 px-4 space-y-2">
                 <div class="px-4 mb-4">
-                     <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Welcome,</p>
-                     <p class="text-sm font-bold text-gray-800 dark:text-gray-200 truncate">{{ visitor?.name || 'Guest' }}</p>
+                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Welcome,</p>
+                     <p class="text-sm font-bold text-gray-800 truncate">{{ visitor?.name || 'Guest' }}</p>
                 </div>
 
-                <Link :href="route('visitor.dashboard')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('visitor.dashboard') }">
+                <Link :href="route('visitor.dashboard')" class="flex items-center px-4 py-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 text-indigo-700 font-bold shadow-sm': route().current('visitor.dashboard') }">
                     <span class="mr-3 text-xl">📊</span> Dashboard
                 </Link>
 
-                <Link :href="route('visitor.visits.history')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('visitor.visits.history') }">
+                <Link :href="route('visitor.visits.history')" class="flex items-center px-4 py-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 text-indigo-700 font-bold shadow-sm': route().current('visitor.visits.history') }">
                     <span class="mr-3 text-xl">🕒</span> Visit History
                 </Link>
 
-                <Link :href="route('visitor.profile')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('visitor.profile') }">
+                <Link :href="route('visitor.profile')" class="flex items-center px-4 py-3 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 text-indigo-700 font-bold shadow-sm': route().current('visitor.profile') }">
                     <span class="mr-3 text-xl">👤</span> My Profile
                 </Link>
 
-                <div class="border-t border-gray-200 dark:border-gray-800 my-4"></div>
+                <div class="border-t border-gray-200 my-4"></div>
 
-                <Link :href="route('visitor.logout')" method="post" as="button" class="w-full text-left flex items-center px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md">
+                <Link :href="route('visitor.logout')" method="post" as="button" class="w-full text-left flex items-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-md">
                     <span class="mr-2">🚪</span> Log Out
                 </Link>
             </nav>
@@ -68,27 +68,24 @@ onErrorCaptured((err) => {
         <!-- Main Content -->
         <div class="flex-1 flex flex-col">
             <!-- Mobile Header -->
-            <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm md:hidden flex justify-between items-center p-4">
-                <div class="font-bold text-lg text-gray-800 dark:text-white">Visitor Portal</div>
-                <div class="flex items-center gap-3">
-                    <ThemeToggle />
-                    <button @click="showingNavigationDropdown = !showingNavigationDropdown" class="text-gray-500 dark:text-gray-400 focus:outline-none">
-                         <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
+            <header class="bg-white shadow md:hidden flex justify-between items-center p-4">
+                <div class="font-bold text-lg">Visitor Portal</div>
+                <button @click="showingNavigationDropdown = !showingNavigationDropdown" class="text-gray-500 focus:outline-none">
+                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
             </header>
             
             <!-- Mobile Menu Dropdown -->
-             <div v-if="showingNavigationDropdown" class="md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 space-y-2">
-                 <Link :href="route('visitor.dashboard')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Dashboard</Link>
-                 <Link :href="route('visitor.visits.history')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Visit History</Link>
-                 <Link :href="route('visitor.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>
+             <div v-if="showingNavigationDropdown" class="md:hidden bg-white border-b border-gray-200 p-4">
+                 <Link :href="route('visitor.dashboard')" class="block py-2 text-gray-700">Dashboard</Link>
+                 <Link :href="route('visitor.visits.history')" class="block py-2 text-gray-700">Visit History</Link>
+                 <Link :href="route('visitor.logout')" method="post" as="button" class="block py-2 text-red-600 w-full text-left">Log Out</Link>
              </div>
 
             <!-- Page Heading -->
-            <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm" v-if="$slots.header">
+            <header class="bg-white shadow" v-if="$slots.header">
                 <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>
