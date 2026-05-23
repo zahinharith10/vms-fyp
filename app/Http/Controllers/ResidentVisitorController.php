@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\VisitStatusUpdated;
+use App\Events\DeliveryStatusUpdated;
 use App\Models\Visit;
 use App\Models\Visitor;
 use App\Models\DeliveryLog;
@@ -187,6 +188,8 @@ class ResidentVisitorController extends Controller
             // Note: entry_time will be set by guard upon check-in
         ]);
 
+        broadcast(new DeliveryStatusUpdated($log->id, 'Approved'));
+
         return redirect()->back()->with('success', 'Delivery request approved!');
     }
 
@@ -204,6 +207,8 @@ class ResidentVisitorController extends Controller
         }
 
         $log->update(['status' => 'Rejected']);
+
+        broadcast(new DeliveryStatusUpdated($log->id, 'Rejected'));
 
         return redirect()->back()->with('success', 'Delivery request rejected.');
     }

@@ -1,7 +1,7 @@
 <script setup>
 import GuardAuthenticatedLayout from '@/Layouts/GuardAuthenticatedLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
 const props = defineProps({
@@ -41,6 +41,19 @@ const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
+
+// --- Real-time: auto-reload when any visit/delivery status changes ---
+let echoChannel = null;
+onMounted(() => {
+    if (!window.Echo) return;
+    echoChannel = window.Echo.channel('guard.updates')
+        .listen('.visit.status.updated', () => {
+            router.reload({ only: ['activeLogs'], preserveState: true, preserveScroll: true });
+        });
+});
+onUnmounted(() => {
+    if (echoChannel) window.Echo.leaveChannel('guard.updates');
+});
 </script>
 
 <template>
