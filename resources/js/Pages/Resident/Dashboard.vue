@@ -37,7 +37,7 @@ defineProps({
                 </div>
 
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <!-- Total Visitors -->
                     <Link 
                         :href="route('resident.visitors.index', { tab: 'visitors' })"
@@ -58,14 +58,24 @@ defineProps({
                         <div class="text-xs text-gray-400 mt-1 italic">Action required</div>
                     </Link>
 
-                    <!-- Upcoming Visits -->
+                    <!-- Upcoming Visitors -->
                     <Link 
                         :href="route('resident.visitors.index', { tab: 'visitors' })"
                         class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-blue-400 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                     >
-                        <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Upcoming Visits</div>
-                        <div class="mt-2 text-3xl font-black text-blue-600">{{ stats.upcoming_visits }}</div>
-                        <div class="text-xs text-gray-400 mt-1 italic">Approved but not in</div>
+                        <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Upcoming Guests</div>
+                        <div class="mt-2 text-3xl font-black text-blue-600">{{ stats.upcoming_visitors }}</div>
+                        <div class="text-xs text-gray-400 mt-1 italic">Approved guests</div>
+                    </Link>
+
+                    <!-- Upcoming Deliveries -->
+                    <Link 
+                        :href="route('resident.visitors.index', { tab: 'deliveries' })"
+                        class="block bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-orange-500 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                    >
+                        <div class="text-gray-500 text-xs font-bold uppercase tracking-wider">Upcoming Deliveries</div>
+                        <div class="mt-2 text-3xl font-black text-orange-600">{{ stats.upcoming_deliveries }}</div>
+                        <div class="text-xs text-gray-400 mt-1 italic">Approved riders</div>
                     </Link>
 
                     <!-- Active Now -->
