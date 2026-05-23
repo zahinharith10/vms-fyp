@@ -18,6 +18,10 @@ class Visit extends Model
         'check_out_time',
         'qr_code_token',
         'parking_lot_number',
+        'first_check_in_time',
+        'first_check_out_time',
+        'second_check_in_time',
+        'second_check_out_time',
     ];
 
     public function visitor()
