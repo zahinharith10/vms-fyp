@@ -232,7 +232,7 @@ onUnmounted(() => {
                                 </div>
                             </div>
                             
-                            <div v-if="['Approved', 'Checked In'].includes(visit.status)" class="mt-2 pt-2 border-t border-gray-100">
+                            <div v-if="['Approved', 'Checked In', 'Temporarily Out'].includes(visit.status)" class="mt-2 pt-2 border-t border-gray-100">
                                 <Link :href="route('visitor.visits.qr', visit.id)" class="inline-block text-indigo-600 font-bold hover:underline">
                                     View QR Code
                                 </Link>

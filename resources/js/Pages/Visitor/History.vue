@@ -76,9 +76,8 @@ const cancelVisit = (id) => {
                                 <span>🅿️</span> Assigned Parking: <span class="bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-widest text-[9px] font-black text-indigo-750">Lot {{ visit.parking_lot_number }}</span>
                             </div>
                         </div>
-
                         <div class="flex-shrink-0 flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
-                            <Link v-if="['Approved', 'Checked In'].includes(visit.status)" :href="route('visitor.visits.qr', visit.id)" class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
+                            <Link v-if="['Approved', 'Checked In', 'Temporarily Out'].includes(visit.status)" :href="route('visitor.visits.qr', visit.id)" class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150">
                                 View QR Code
                             </Link>
                             

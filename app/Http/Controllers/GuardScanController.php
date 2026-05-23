@@ -271,11 +271,19 @@ class GuardScanController extends Controller
             }
         }
 
-        $visit->update([
+        $updateData = [
             'status' => 'Checked In',
             'check_in_time' => now(),
             'parking_lot_number' => $parkingLotNumber,
-        ]);
+        ];
+
+        if ($visit->status === 'Approved') {
+            $updateData['first_check_in_time'] = now();
+        } elseif ($visit->status === 'Temporarily Out') {
+            $updateData['second_check_in_time'] = now();
+        }
+
+        $visit->update($updateData);
 
         // Notify Resident
         $resident = null;
@@ -358,10 +366,22 @@ class GuardScanController extends Controller
 
         $newStatus = $isTemporary ? 'Temporarily Out' : 'Checked Out';
 
-        $visit->update([
+        $updateData = [
             'status' => $newStatus,
-            'check_out_time' => $isTemporary ? null : now(),
-        ]);
+            'check_out_time' => now(),
+        ];
+
+        if ($isTemporary) {
+            $updateData['first_check_out_time'] = now();
+        } else {
+            if ($visit->first_check_out_time) {
+                $updateData['second_check_out_time'] = now();
+            } else {
+                $updateData['first_check_out_time'] = now();
+            }
+        }
+
+        $visit->update($updateData);
 
         // Broadcast check-out status to visitor's phone and guard dashboard
         broadcast(new VisitStatusUpdated(
@@ -642,14 +662,27 @@ class GuardScanController extends Controller
         $tempCutoff = now()->subHours(6);
 
         // Auto check-out visits older than 24 hours
-        Visit::whereIn('status', ['Checked In', 'Temporarily Out'])
+        $oldVisits = Visit::whereIn('status', ['Checked In', 'Temporarily Out'])
             ->where('check_in_time', '<', $cutoff)
-            ->update([
+            ->get();
+
+        foreach ($oldVisits as $v) {
+            $upData = [
                 'status' => 'Checked Out',
                 'check_out_time' => now(),
-            ]);
+            ];
+            if ($v->status === 'Checked In') {
+                if ($v->second_check_in_time) {
+                    $upData['second_check_out_time'] = now();
+                } else {
+                    $upData['first_check_out_time'] = now();
+                }
+            }
+            $v->update($upData);
+        }
 
         // Auto check-out 'Temporarily Out' visits that have been out for more than 6 hours
+        // (These already have first_check_out_time set when they left)
         Visit::where('status', 'Temporarily Out')
             ->where('updated_at', '<', $tempCutoff)
             ->update([
