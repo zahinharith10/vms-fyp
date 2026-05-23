@@ -52,11 +52,16 @@ const stopPolling = () => {
 };
 
 onMounted(() => {
+    // Safely retrieve intent from URL query parameter (since Laravel doesn't serialize dynamic properties on Eloquent models)
+    const urlParams = new URLSearchParams(window.location.search);
+    const intent = urlParams.get('intent') || props.visit.checkout_intent || 'final';
+    visitData.value.checkout_intent = intent;
+
     if (visitData.value.status === 'Pending') {
         startPolling();
     } else if (visitData.value.status === 'Checked In') {
         // Automatically trigger check-out based on intent
-        const isTemporary = visitData.value.checkout_intent === 'temp';
+        const isTemporary = intent === 'temp';
         setTimeout(() => {
             checkOut(isTemporary);
         }, 1000); // 1s delay for visual feedback
