@@ -66,7 +66,7 @@ const captureAndSubmit = async () => {
     <div class="min-h-screen bg-gray-100 flex flex-col justify-center items-center py-12 px-4 sm:px-6 lg:px-8">
         <!-- Logo Header -->
         <div class="mb-6 flex flex-col items-center">
-            <img src="/Logo.png" class="w-40 h-auto mix-blend-multiply" />
+            <img src="/Logo.png" alt="Sri Ayu Apartment" class="w-40 h-auto" />
             <h1 class="text-2xl font-black text-gray-800 tracking-tighter uppercase italic mt-2">Sri Ayu Residency</h1>
         </div>
 

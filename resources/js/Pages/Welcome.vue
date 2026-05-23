@@ -58,7 +58,7 @@ const backToEmail = () => {
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
         <div>
             <Link href="/">
-                <img src="/Logo.png" class="w-40 h-auto mix-blend-multiply" />
+                <img src="/Logo.png" alt="Sri Ayu Apartment" class="w-40 h-auto" />
             </Link>
         </div>
 

@@ -53,7 +53,7 @@ const resident = usePage().props.auth.user; // Get authenticated resident
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm md:hidden flex justify-between items-center p-4">
                 <Link :href="route('resident.dashboard')" class="flex items-center gap-2">
                     <div class="flex-shrink-0" style="width:32px;height:32px;">
-                        <img src="/Logo.png" alt="Logo" style="width:32px;height:32px;object-fit:contain;" />
+                        <img src="/Logo.png" alt="Sri Ayu Apartment" style="width:32px;height:32px;object-fit:contain;" />
                     </div>
                     <span class="font-bold text-gray-800 dark:text-white">My Home</span>
                 </Link>
