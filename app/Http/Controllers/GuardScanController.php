@@ -303,12 +303,16 @@ class GuardScanController extends Controller
         }
 
         // Broadcast check-in status to visitor's phone and guard dashboard
-        broadcast(new VisitStatusUpdated(
-            $visit->id,
-            'Checked In',
-            $parkingLotNumber,
-            $visit->unit_number
-        ));
+        try {
+            broadcast(new VisitStatusUpdated(
+                $visit->id,
+                'Checked In',
+                $parkingLotNumber,
+                $visit->unit_number
+            ));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -384,12 +388,16 @@ class GuardScanController extends Controller
         $visit->update($updateData);
 
         // Broadcast check-out status to visitor's phone and guard dashboard
-        broadcast(new VisitStatusUpdated(
-            $visit->id,
-            $newStatus,
-            $visit->parking_lot_number,
-            $visit->unit_number
-        ));
+        try {
+            broadcast(new VisitStatusUpdated(
+                $visit->id,
+                $newStatus,
+                $visit->parking_lot_number,
+                $visit->unit_number
+            ));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

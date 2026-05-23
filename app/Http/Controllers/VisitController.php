@@ -84,12 +84,16 @@ class VisitController extends Controller
         if ($resident) {
             $resident->notify(new VisitRequestNotification($visit->load('visitor')));
             // Broadcast real-time notification to resident's unit channel
-            broadcast(new NewVisitRequested(
-                $visit->id,
-                $visitor->name,
-                $request->unit_number,
-                $request->purpose
-            ));
+            try {
+                broadcast(new NewVisitRequested(
+                    $visit->id,
+                    $visitor->name,
+                    $request->unit_number,
+                    $request->purpose
+                ));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            }
         }
 
         return redirect()->back()->with('success', 'Visit request submitted successfully!');

@@ -145,7 +145,11 @@ class ResidentVisitorController extends Controller
             'qr_code_token' => Str::uuid()->toString(),
         ]);
 
-        broadcast(new VisitStatusUpdated($visit->id, 'Approved', null, $visit->unit_number));
+        try {
+            broadcast(new VisitStatusUpdated($visit->id, 'Approved', null, $visit->unit_number));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Visit request approved!');
     }
@@ -165,7 +169,11 @@ class ResidentVisitorController extends Controller
 
         $visit->update(['status' => 'Rejected']);
 
-        broadcast(new VisitStatusUpdated($visit->id, 'Rejected', null, $visit->unit_number));
+        try {
+            broadcast(new VisitStatusUpdated($visit->id, 'Rejected', null, $visit->unit_number));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Visit request rejected.');
     }
@@ -188,7 +196,11 @@ class ResidentVisitorController extends Controller
             // Note: entry_time will be set by guard upon check-in
         ]);
 
-        broadcast(new DeliveryStatusUpdated($log->id, 'Approved'));
+        try {
+            broadcast(new DeliveryStatusUpdated($log->id, 'Approved'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Delivery request approved!');
     }
@@ -208,7 +220,11 @@ class ResidentVisitorController extends Controller
 
         $log->update(['status' => 'Rejected']);
 
-        broadcast(new DeliveryStatusUpdated($log->id, 'Rejected'));
+        try {
+            broadcast(new DeliveryStatusUpdated($log->id, 'Rejected'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+        }
 
         return redirect()->back()->with('success', 'Delivery request rejected.');
     }
