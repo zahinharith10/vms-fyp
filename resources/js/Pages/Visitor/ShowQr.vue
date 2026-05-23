@@ -20,12 +20,16 @@ onMounted(() => {
     // Listen for real-time status updates on this specific visit
     echoChannel = window.Echo.channel(`visit.${props.visit.id}`)
         .listen('.visit.status.updated', (e) => {
-            // Reload only the visit prop from server — instant, no full page reload
-            router.reload({
-                only: ['visit'],
-                preserveState: true,
-                preserveScroll: true,
-            });
+            if (e.status === 'Checked Out') {
+                router.visit(route('visitor.dashboard'));
+            } else {
+                // Reload only the visit prop from server — instant, no full page reload
+                router.reload({
+                    only: ['visit'],
+                    preserveState: true,
+                    preserveScroll: true,
+                });
+            }
         });
 });
 
