@@ -22,7 +22,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        if (config('app.env') !== 'local') {
+        $host = request()->getHost();
+        if ($host !== 'localhost' && $host !== '127.0.0.1' && !str_starts_with($host, '192.168.')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
     }
