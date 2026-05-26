@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\VisitStatusUpdated;
 use App\Events\DeliveryStatusUpdated;
+use App\Events\VisitStatusUpdated;
+use App\Models\DeliveryLog;
 use App\Models\Visit;
 use App\Models\Visitor;
-use App\Models\DeliveryLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -21,25 +21,25 @@ class ResidentVisitorController extends Controller
     public function index()
     {
         $resident = Auth::guard('resident')->user();
-        
+
         // Get visits where the unit_number matches the resident's unit
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
-        
+        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
+
         $visits = Visit::with(['visitor', 'sessions'])
             ->where('unit_number', $unitNumber)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+        $deliveryUnitNumber = $resident->houseUnit->block.' - '.$resident->houseUnit->floor.' - '.$resident->houseUnit->unit_number;
 
         $deliveries = DeliveryLog::with('personnel')
             ->where('destination', $deliveryUnitNumber)
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         return Inertia::render('Resident/Visitors/Index', [
             'visits' => $visits,
-            'deliveries' => $deliveries
+            'deliveries' => $deliveries,
         ]);
     }
 
@@ -68,11 +68,11 @@ class ResidentVisitorController extends Controller
             ->orWhere('phone', $request->phone)
             ->first();
 
-        if (!$visitor) {
+        if (! $visitor) {
             // Check cross-role collision with Delivery to prevent errors
             if (\App\Models\DeliveryPersonnel::where('email', $request->email)->exists()) {
                 return back()->withErrors([
-                    'email' => 'This email address is already registered as a delivery personnel.'
+                    'email' => 'This email address is already registered as a delivery personnel.',
                 ]);
             }
 
@@ -88,9 +88,9 @@ class ResidentVisitorController extends Controller
 
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
 
-        $token = 'PRE_REG_' . Str::random(40);
+        $token = 'PRE_REG_'.Str::random(40);
 
         $visit = Visit::create([
             'visitor_id' => $visitor->id,
@@ -103,7 +103,6 @@ class ResidentVisitorController extends Controller
         return redirect()->route('resident.visitors.index')->with('success', 'Visitor pre-registered successfully! Click "Share Pass" to copy the guest entry link.');
     }
 
-
     /**
      * Show the QR code for a specific visit.
      */
@@ -111,21 +110,20 @@ class ResidentVisitorController extends Controller
     {
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        
+
         // Security: only show QR if it belongs to the resident's unit
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
         if ($visit->unit_number !== $unitNumber) {
             abort(403);
         }
 
         $visit->load('visitor');
-        
+
         return Inertia::render('Resident/Visitors/ShowQr', [
             'visit' => $visit,
             'qrCodeSvg' => (string) QrCode::size(300)->generate($visit->qr_code_token),
         ]);
     }
-
 
     /**
      * Approve a pending visit request.
@@ -134,8 +132,8 @@ class ResidentVisitorController extends Controller
     {
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
+
+        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
         if ($visit->unit_number !== $unitNumber || $visit->status !== 'Pending') {
             abort(403);
         }
@@ -148,7 +146,7 @@ class ResidentVisitorController extends Controller
         try {
             broadcast(new VisitStatusUpdated($visit->id, 'Approved', null, $visit->unit_number));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
         }
 
         return redirect()->back()->with('success', 'Visit request approved!');
@@ -161,8 +159,8 @@ class ResidentVisitorController extends Controller
     {
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
+
+        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
         if ($visit->unit_number !== $unitNumber || $visit->status !== 'Pending') {
             abort(403);
         }
@@ -172,7 +170,7 @@ class ResidentVisitorController extends Controller
         try {
             broadcast(new VisitStatusUpdated($visit->id, 'Rejected', null, $visit->unit_number));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
         }
 
         return redirect()->back()->with('success', 'Visit request rejected.');
@@ -185,8 +183,8 @@ class ResidentVisitorController extends Controller
     {
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        
-        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+
+        $deliveryUnitNumber = $resident->houseUnit->block.' - '.$resident->houseUnit->floor.' - '.$resident->houseUnit->unit_number;
         if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Pending') {
             abort(403);
         }
@@ -196,10 +194,12 @@ class ResidentVisitorController extends Controller
             // Note: entry_time will be set by guard upon check-in
         ]);
 
+        $log->run?->refreshStatus();
+
         try {
             broadcast(new DeliveryStatusUpdated($log->id, 'Approved'));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
         }
 
         return redirect()->back()->with('success', 'Delivery request approved!');
@@ -212,18 +212,20 @@ class ResidentVisitorController extends Controller
     {
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        
-        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+
+        $deliveryUnitNumber = $resident->houseUnit->block.' - '.$resident->houseUnit->floor.' - '.$resident->houseUnit->unit_number;
         if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Pending') {
             abort(403);
         }
 
         $log->update(['status' => 'Rejected']);
 
+        $log->run?->refreshStatus();
+
         try {
             broadcast(new DeliveryStatusUpdated($log->id, 'Rejected'));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
         }
 
         return redirect()->back()->with('success', 'Delivery request rejected.');

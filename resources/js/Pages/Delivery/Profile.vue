@@ -72,7 +72,7 @@ const updateProfile = async () => {
 
     <DeliveryAuthenticatedLayout>
         <template #header>
-            <h2 class="text-3xl font-black text-gray-900 tracking-tighter uppercase italic">My Profile</h2>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">My Profile</h2>
             <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Manage your identity and vehicle information.</p>
         </template>
 
@@ -87,7 +87,7 @@ const updateProfile = async () => {
         <div class="py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-8">
                 <!-- Profile Information -->
-                <div class="p-10 bg-white shadow-2xl shadow-gray-100 sm:rounded-[40px] border border-gray-100">
+                <div class="p-10 bg-white dark:bg-gray-900 shadow-2xl shadow-gray-100 dark:shadow-gray-950 sm:rounded-[40px] border border-gray-100 dark:border-gray-800">
                     <!-- Avatar Section -->
                     <div class="flex items-center mb-10">
                         <div 
@@ -99,9 +99,9 @@ const updateProfile = async () => {
                              <div v-else class="text-4xl">🏢</div>
                         </div>
                         <div class="ml-6">
-                            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tighter italic">Personnel Details</h3>
-                            <p class="text-sm font-bold text-orange-600 uppercase tracking-widest">{{ delivery.company }} Driver Account</p>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 cursor-pointer hover:text-orange-500" @click="isZoomOpen = true">Click photo to zoom</p>
+                            <h3 class="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">Personnel Details</h3>
+                            <p class="text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest">{{ delivery.company }} Driver Account</p>
+                            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1 cursor-pointer hover:text-orange-500" @click="isZoomOpen = true">Click photo to zoom</p>
                         </div>
                     </div>
 
@@ -110,40 +110,40 @@ const updateProfile = async () => {
                             <!-- Name -->
                             <div>
                                 <label for="name" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Driver Full Name</label>
-                                <input id="name" type="text" v-model="form.name" class="block w-full border-gray-100 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 shadow-inner" required />
+                                <input id="name" type="text" v-model="form.name" class="block w-full border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 dark:text-white shadow-inner" required />
                                 <div v-if="form.errors.name" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.name }}</div>
                             </div>
 
                             <!-- Phone -->
                             <div>
                                 <label for="phone" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Phone Number</label>
-                                <input id="phone" type="text" v-model="form.phone" class="block w-full border-gray-100 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 shadow-inner" required />
+                                <input id="phone" type="text" v-model="form.phone" class="block w-full border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 dark:text-white shadow-inner" required />
                                 <div v-if="form.errors.phone" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.phone }}</div>
                             </div>
 
                             <!-- Vehicle Number -->
                             <div>
                                 <label for="vehicle_number" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Vehicle Plate Number</label>
-                                <input id="vehicle_number" type="text" v-model="form.vehicle_number" class="block w-full border-gray-100 bg-gray-50 focus:bg-white focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 shadow-inner uppercase italic" required />
+                                <input id="vehicle_number" type="text" v-model="form.vehicle_number" class="block w-full border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 dark:text-white shadow-inner uppercase italic" required />
                                 <div v-if="form.errors.vehicle_number" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.vehicle_number }}</div>
                             </div>
 
                             <!-- IC Number (Locked) -->
                             <div>
-                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">IC Number (Verified)</label>
-                                <div class="block w-full bg-gray-100 py-4 px-4 rounded-2xl font-black text-gray-400 italic tracking-widest">
+                                <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">IC Number (Verified)</label>
+                                <div class="block w-full bg-gray-100 dark:bg-gray-800 py-4 px-4 rounded-2xl font-black text-gray-400 dark:text-gray-500 italic tracking-widest border border-gray-200 dark:border-gray-700">
                                     {{ delivery.ic_number }}
                                 </div>
-                                <p class="mt-2 text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">Contact Admin to change verified identity.</p>
+                                <p class="mt-2 text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest italic">Contact Admin to change verified identity.</p>
                             </div>
                         </div>
 
                          <!-- Face Verification Section -->
-                        <div class="border-t border-gray-100 pt-8">
+                        <div class="border-t border-gray-100 dark:border-gray-800 pt-8">
                             <div class="flex items-center justify-between mb-6">
                                 <div>
-                                    <h4 class="text-sm font-black text-gray-900 uppercase tracking-widest italic">Face Verification</h4>
-                                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Manage your visual identity for building access.</p>
+                                    <h4 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest italic">Face Verification</h4>
+                                    <p class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">Manage your visual identity for building access.</p>
                                 </div>
                                 <button 
                                     type="button" 
@@ -154,7 +154,7 @@ const updateProfile = async () => {
                                 </button>
                             </div>
 
-                            <div v-show="showFaceCapture" class="bg-gray-50 p-6 rounded-[32px] border border-gray-100 shadow-inner">
+                            <div v-show="showFaceCapture" class="bg-gray-50 dark:bg-gray-800 p-6 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-inner">
                                 <!-- Capture Mode -->
                                 <div v-if="!capturedPhotoPreview">
                                     <FaceCapture ref="faceCaptureRef" @face-detected="onFaceDetected" />
@@ -197,7 +197,7 @@ const updateProfile = async () => {
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-end pt-10 border-t border-gray-50">
+                        <div class="flex items-center justify-end pt-10 border-t border-gray-50 dark:border-gray-800">
                             <Transition
                                 enter-active-class="transition ease-in-out"
                                 enter-from-class="opacity-0"
@@ -221,7 +221,7 @@ const updateProfile = async () => {
                 </div>
 
                 <!-- Guidance Info -->
-                <div class="bg-gray-900 rounded-[40px] p-10 text-white relative overflow-hidden">
+                <div class="bg-gray-900 dark:bg-black rounded-[40px] p-10 text-white relative overflow-hidden">
                     <div class="relative z-10 flex flex-col md:flex-row items-center">
                         <div class="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center text-3xl mb-4 md:mb-0 md:mr-8">📢</div>
                         <div>

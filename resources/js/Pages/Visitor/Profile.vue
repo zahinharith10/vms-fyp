@@ -87,7 +87,7 @@ const updateProfile = async () => {
 
     <VisitorAuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">My Profile</h2>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">My Profile</h2>
         </template>
 
         <!-- Zoom Modal -->
@@ -101,10 +101,10 @@ const updateProfile = async () => {
         <div class="py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
                 <!-- Flash Messages -->
-                <div v-if="$page.props.flash.info" class="p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 font-bold rounded shadow-sm">
+                <div v-if="$page.props.flash.info" class="p-4 bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-400 text-blue-700 dark:text-blue-400 font-bold rounded shadow-sm">
                     {{ $page.props.flash.info }}
                 </div>
-                <div v-if="$page.props.flash.success" class="p-4 bg-green-50 border-l-4 border-green-400 text-green-700 font-bold rounded shadow-sm">
+                <div v-if="$page.props.flash.success" class="p-4 bg-green-50 dark:bg-green-950/30 border-l-4 border-green-400 text-green-700 dark:text-green-400 font-bold rounded shadow-sm">
                     {{ $page.props.flash.success }}
                 </div>
 
@@ -120,7 +120,7 @@ const updateProfile = async () => {
                 </div>
 
                 <!-- Profile Information -->
-                <div class="p-8 bg-white shadow-xl sm:rounded-3xl border border-gray-100">
+                <div class="p-8 bg-white dark:bg-gray-900 shadow-xl dark:shadow-indigo-950/10 sm:rounded-3xl border border-gray-100 dark:border-gray-800">
                     <!-- Avatar Section -->
                     <div class="flex items-center mb-8">
                         <div 
@@ -132,9 +132,9 @@ const updateProfile = async () => {
                              <span v-else class="text-3xl">👋</span>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-lg font-black text-gray-900 uppercase tracking-tighter">Your Profile</h3>
-                            <p class="text-sm font-bold text-gray-500">Update your visitor information for faster check-ins.</p>
-                            <p class="text-xs text-purple-600 font-bold mt-1 cursor-pointer" @click="isZoomOpen = true">Click photo to zoom</p>
+                            <h3 class="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tighter">Your Profile</h3>
+                            <p class="text-sm font-bold text-gray-500 dark:text-gray-400">Update your visitor information for faster check-ins.</p>
+                            <p class="text-xs text-purple-600 dark:text-purple-400 font-bold mt-1 cursor-pointer" @click="isZoomOpen = true">Click photo to zoom</p>
                         </div>
                     </div>
 
@@ -142,50 +142,50 @@ const updateProfile = async () => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Name -->
                             <div>
-                                <label for="name" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Full Name</label>
-                                <input id="name" type="text" v-model="form.name" class="block w-full border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold text-gray-700" required />
-                                <div v-if="form.errors.name" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.name }}</div>
+                                <label for="name" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Full Name</label>
+                                <input id="name" type="text" v-model="form.name" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" required />
+                                <div v-if="form.errors.name" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.name }}</div>
                             </div>
 
                             <!-- Phone -->
                             <div>
-                                <label for="phone" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Phone Number</label>
-                                <input id="phone" type="text" v-model="form.phone" class="block w-full border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold text-gray-700" required />
-                                <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.phone }}</div>
+                                <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Phone Number</label>
+                                <input id="phone" type="text" v-model="form.phone" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" required />
+                                <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
                             </div>
 
                             <!-- IC Number -->
                             <div>
-                                <label for="ic_number" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">IC / Identification Number</label>
-                                <input id="ic_number" type="text" v-model="form.ic_number" class="block w-full border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold text-gray-700" placeholder="Required" required />
-                                <div v-if="form.errors.ic_number" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.ic_number }}</div>
+                                <label for="ic_number" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / Identification Number</label>
+                                <input id="ic_number" type="text" v-model="form.ic_number" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" placeholder="Required" required />
+                                <div v-if="form.errors.ic_number" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.ic_number }}</div>
                             </div>
 
                             <!-- Vehicle Number -->
                             <div>
-                                <label for="vehicle_number" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Vehicle Plate Number</label>
-                                <input id="vehicle_number" type="text" v-model="form.vehicle_number" class="block w-full border-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold text-gray-700 uppercase" placeholder="e.g. ABC1234" required />
-                                <div v-if="form.errors.vehicle_number" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.vehicle_number }}</div>
+                                <label for="vehicle_number" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Vehicle Plate Number</label>
+                                <input id="vehicle_number" type="text" v-model="form.vehicle_number" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold uppercase" placeholder="e.g. ABC1234" required />
+                                <div v-if="form.errors.vehicle_number" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.vehicle_number }}</div>
                             </div>
                         </div>
 
                         <!-- Face Verification Section -->
-                        <div class="border-t border-gray-100 pt-6">
+                        <div class="border-t border-gray-100 dark:border-gray-800 pt-6">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
-                                    <h4 class="text-sm font-black text-gray-900 uppercase tracking-widest">Face Verification</h4>
-                                    <p class="text-xs text-gray-500 font-bold">Manage your registered face for guard house access.</p>
+                                    <h4 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Face Verification</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-bold">Manage your registered face for guard house access.</p>
                                 </div>
                                 <button 
                                     type="button" 
                                     @click="showFaceCapture = !showFaceCapture"
-                                    class="text-xs font-black uppercase tracking-widest text-purple-600 hover:text-purple-800 underline"
+                                    class="text-xs font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline"
                                 >
                                     {{ showFaceCapture ? 'Cancel Update' : 'Update Photo' }}
                                 </button>
                             </div>
 
-                            <div v-show="showFaceCapture" class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                            <div v-show="showFaceCapture" class="bg-gray-50 dark:bg-gray-850/40 p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
                                 <!-- Capture Mode -->
                                 <div v-if="!capturedPhotoPreview">
                                     <FaceCapture ref="faceCaptureRef" @face-detected="onFaceDetected" />
@@ -228,14 +228,14 @@ const updateProfile = async () => {
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-end pt-6 border-t border-gray-50">
+                        <div class="flex items-center justify-end pt-6 border-t border-gray-50 dark:border-gray-800">
                             <Transition
                                 enter-active-class="transition ease-in-out"
                                 enter-from-class="opacity-0"
                                 leave-active-class="transition ease-in-out"
                                 leave-to-class="opacity-0"
                             >
-                                <p v-if="status" class="text-sm text-green-600 font-black mr-4 uppercase tracking-widest flex items-center">
+                                <p v-if="status" class="text-sm text-green-600 dark:text-green-400 font-black mr-4 uppercase tracking-widest flex items-center">
                                     <span class="mr-2">✅</span> {{ status }}
                                 </p>
                             </Transition>
@@ -252,12 +252,12 @@ const updateProfile = async () => {
                 </div>
 
                 <!-- Guidance Info -->
-                <div class="bg-indigo-50 rounded-3xl p-6 border border-indigo-100">
+                <div class="bg-indigo-50 dark:bg-indigo-950/20 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-900/30">
                     <div class="flex">
                         <span class="text-2xl mr-4">ℹ️</span>
                         <div>
-                            <p class="font-black text-indigo-900 text-xs uppercase tracking-widest mb-1">Identity Information</p>
-                            <p class="text-indigo-700 text-sm font-bold">Keeping your name and phone number accurate ensures that residents can recognize your requests and guards can verify your entry quickly.</p>
+                            <p class="font-black text-indigo-900 dark:text-indigo-400 text-xs uppercase tracking-widest mb-1">Identity Information</p>
+                            <p class="text-indigo-700 dark:text-indigo-300 text-sm font-bold">Keeping your name and phone number accurate ensures that residents can recognize your requests and guards can verify your entry quickly.</p>
                         </div>
                     </div>
                 </div>

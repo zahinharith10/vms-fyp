@@ -31,6 +31,10 @@ const delivery = usePage().props.auth.user;
                     <span class="mr-3 text-xl">🚚</span> Dashboard
                 </Link>
 
+                <Link :href="route('delivery.dashboard', { tab: 'history' })" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('delivery.dashboard') && $page.url.includes('tab=history') }">
+                    <span class="mr-3 text-xl">📋</span> History
+                </Link>
+
                 <Link :href="route('delivery.profile')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('delivery.profile') }">
                     <span class="mr-3 text-xl">👤</span> My Profile
                 </Link>

@@ -27,4 +27,9 @@ class DeliveryPersonnel extends Authenticatable
     {
         return $this->hasMany(DeliveryLog::class);
     }
+
+    public function runs()
+    {
+        return $this->hasMany(DeliveryRun::class, 'delivery_personnel_id');
+    }
 }

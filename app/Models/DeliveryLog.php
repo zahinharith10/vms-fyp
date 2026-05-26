@@ -11,6 +11,7 @@ class DeliveryLog extends Model
 
     protected $fillable = [
         'delivery_personnel_id',
+        'delivery_run_id',
         'status',
         'entry_time',
         'exit_time',
@@ -25,5 +26,10 @@ class DeliveryLog extends Model
     public function personnel()
     {
         return $this->belongsTo(DeliveryPersonnel::class, 'delivery_personnel_id');
+    }
+
+    public function run()
+    {
+        return $this->belongsTo(DeliveryRun::class, 'delivery_run_id');
     }
 }

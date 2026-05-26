@@ -117,7 +117,7 @@ const checkIn = async (bypassVerification = false) => {
             : route('guard.scan.checkin');
             
         const payload = props.visit.is_delivery 
-            ? { log_id: visitData.value.id } 
+            ? (visitData.value.run_id ? { run_id: visitData.value.run_id } : { log_id: visitData.value.id })
             : { visit_id: visitData.value.id };
 
         const response = await axios.post(checkInRoute, payload);
@@ -145,7 +145,9 @@ const checkOut = async (isTemporary = false) => {
             : route('guard.scan.checkout');
             
         const payload = props.visit.is_delivery 
-            ? { log_id: visitData.value.id, is_temporary: isTemporary } 
+            ? (visitData.value.run_id
+                ? { run_id: visitData.value.run_id, is_temporary: isTemporary }
+                : { log_id: visitData.value.id, is_temporary: isTemporary })
             : { visit_id: visitData.value.id, is_temporary: isTemporary };
 
         const response = await axios.post(checkOutRoute, payload);
@@ -211,6 +213,23 @@ const checkOut = async (isTemporary = false) => {
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Multi-stop destinations -->
+                    <div
+                        v-if="visitData.is_multi && visitData.destinations?.length"
+                        class="mb-6 bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 rounded-2xl p-4"
+                    >
+                        <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2">Delivery stops ({{ visitData.destinations.length }})</p>
+                        <ul class="space-y-1">
+                            <li
+                                v-for="(destination, index) in visitData.destinations"
+                                :key="destination"
+                                class="text-sm font-bold text-gray-800 dark:text-gray-200"
+                            >
+                                {{ index + 1 }}. {{ destination }}
+                            </li>
+                        </ul>
                     </div>
 
                     <!-- Meta Information Grid -->

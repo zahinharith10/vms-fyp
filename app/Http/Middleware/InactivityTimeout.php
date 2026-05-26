@@ -47,7 +47,7 @@ class InactivityTimeout
                 } elseif ($activeGuard === 'resident') {
                     $redirectRoute = route('resident.login');
                 } elseif ($activeGuard === 'visitor') {
-                    $redirectRoute = route('welcome');
+                    $redirectRoute = route('visitor.login');
                 }
 
                 Auth::guard($activeGuard)->logout();

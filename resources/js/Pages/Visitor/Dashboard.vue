@@ -91,7 +91,7 @@ onUnmounted(() => {
 
     <VisitorAuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Visitor Dashboard</h2>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">Visitor Dashboard</h2>
         </template>
 
 
@@ -162,7 +162,6 @@ onUnmounted(() => {
                             <label class="block text-gray-850 dark:text-gray-250 text-sm font-black uppercase tracking-wider mb-2">Purpose</label>
                             <select v-model="form.purpose" class="shadow border border-gray-200 dark:border-gray-800 rounded-xl w-full py-3 px-4 text-gray-800 dark:text-gray-200 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-950 transition-all font-bold mb-3">
                                 <option>Visit Friend/Family</option>
-                                <option>Maintenance</option>
                                 <option>Other</option>
                             </select>
 
@@ -190,7 +189,7 @@ onUnmounted(() => {
                 <div class="p-8 flex flex-col h-full">
                     <h3 class="text-lg font-black mb-6 text-gray-800 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">Recent Visits</h3>
                     <div v-if="visitor?.visits && visitor.visits.length > 0" class="space-y-3">
-                        <div v-for="visit in visitor.visits" :key="visit.id" class="p-4 rounded-2xl border border-gray-150 dark:border-gray-800/60 text-sm bg-gray-50/50 dark:bg-gray-850/40 transition-all">
+                        <div v-for="visit in visitor.visits" :key="visit.id" class="p-4 rounded-2xl border border-gray-150 dark:border-gray-800/60 text-sm  dark:bg-gray-850/40 transition-all">
                             <div class="flex justify-between">
                                 <span class="font-black text-gray-900 dark:text-white">UNIT {{ visit.unit_number }}</span>
                                 <span :class="{

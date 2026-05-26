@@ -96,7 +96,7 @@ const confirmDelete = () => {
                                 <tr>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Photo</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">IC Number</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Plate Number</th>
                                     <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -114,7 +114,7 @@ const confirmDelete = () => {
                                         {{ visitor.name }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-700">
-                                        {{ visitor.phone || '-' }}
+                                        {{ visitor.email || '-' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-700">
                                         {{ visitor.ic_number || '-' }}
@@ -171,6 +171,10 @@ const confirmDelete = () => {
                         <div>
                             <p class="text-xs font-semibold text-gray-400 uppercase">Name</p>
                             <p class="text-lg font-medium text-gray-900">{{ selectedVisitor.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase">Email Address</p>
+                            <p class="text-gray-700 break-all">{{ selectedVisitor.email || 'N/A' }}</p>
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-400 uppercase">Phone Number</p>

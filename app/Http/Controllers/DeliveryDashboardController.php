@@ -2,115 +2,145 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreDeliveryTripRequest;
+use App\Models\DeliveryLog;
+use App\Models\DeliveryRun;
+use App\Services\DeliveryTripService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Models\DeliveryLog;
 
 class DeliveryDashboardController extends Controller
 {
     public function index()
     {
         $delivery = Auth::guard('delivery')->user();
-        
-        if (!$delivery) {
+
+        if (! $delivery) {
             return redirect('/');
         }
 
         $logs = DeliveryLog::where('delivery_personnel_id', $delivery->id)
+            ->with('run')
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
 
-        $latestActiveLog = DeliveryLog::where('delivery_personnel_id', $delivery->id)
-            ->whereNull('exit_time')
-            ->orderBy('created_at', 'desc')
+        $activeRun = DeliveryRun::query()
+            ->where('delivery_personnel_id', $delivery->id)
+            ->whereHas('logs', fn ($query) => $query->whereNull('exit_time'))
+            ->with('logs')
+            ->latest()
             ->first();
 
+        $latestActiveLog = $activeRun?->logs->first(fn (DeliveryLog $log) => $log->exit_time === null)
+            ?? DeliveryLog::where('delivery_personnel_id', $delivery->id)
+                ->whereNull('exit_time')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
         $qrCodeSvg = null;
-        if ($latestActiveLog) {
+        if ($activeRun) {
             $qrCodeSvg = (string) \SimpleSoftwareIO\QrCode\Facades\QrCode::size(250)
-                ->generate('DELIVERY_LOG:' . $latestActiveLog->id);
+                ->generate('DELIVERY_RUN:'.$activeRun->id);
+        } elseif ($latestActiveLog) {
+            $qrCodeSvg = (string) \SimpleSoftwareIO\QrCode\Facades\QrCode::size(250)
+                ->generate('DELIVERY_LOG:'.$latestActiveLog->id);
         }
 
         // Build a nested map: block → floor → [unit_numbers]
         $houseUnits = \App\Models\HouseUnit::orderBy('block')->orderBy('floor')->orderBy('unit_number')->get();
         $unitMap = [];
         foreach ($houseUnits as $unit) {
-            $unitMap[(string)$unit->block][(string)$unit->floor][] = (string)$unit->unit_number;
+            $unitMap[(string) $unit->block][(string) $unit->floor][] = (string) $unit->unit_number;
         }
 
         return Inertia::render('Delivery/Dashboard', [
             'delivery' => $delivery,
             'logs' => $logs,
             'activeLog' => $latestActiveLog,
+            'activeRun' => $activeRun,
             'qrCodeSvg' => $qrCodeSvg,
             'houseUnits' => $unitMap,
         ]);
     }
 
-    public function createTrip(Request $request)
+    public function createTrip(StoreDeliveryTripRequest $request, DeliveryTripService $deliveryTripService)
     {
         $delivery = Auth::guard('delivery')->user();
-        if (!$delivery) {
+        if (! $delivery) {
             return redirect('/');
         }
 
-        $request->validate([
-            'unit_number' => [
-                'required',
-                'string',
-                function ($attribute, $value, $fail) {
-                    $parts = explode(' - ', $value);
-                    if (count($parts) !== 3) {
-                        return $fail('The unit number must be in the format: Block - Floor - House Number');
-                    }
-                    [$block, $floor, $unit] = array_map('trim', $parts);
+        $hasOpenRun = DeliveryRun::query()
+            ->where('delivery_personnel_id', $delivery->id)
+            ->whereHas('logs', fn ($query) => $query->whereNull('exit_time'))
+            ->exists();
 
-                    $exists = \App\Models\HouseUnit::where('block', $block)
-                        ->where('floor', $floor)
-                        ->where('unit_number', $unit)
-                        ->exists();
+        if ($hasOpenRun) {
+            return redirect()->back()->with('error', 'You already have an active delivery trip. Please complete or check out before starting a new one.');
+        }
 
-                    if (!$exists) {
-                        $fail('The selected destination unit does not exist in our records.');
-                    }
-                }
-            ]
-        ]);
+        $destinations = $request->input('delivery_type') === 'multi'
+            ? array_values(array_unique($request->input('unit_numbers', [])))
+            : [$request->string('unit_number')->toString()];
 
-        $parts = explode(' - ', $request->unit_number);
-        [$block, $floor, $unit] = array_map('trim', $parts);
-        $houseUnit = \App\Models\HouseUnit::where('block', $block)
-            ->where('floor', $floor)
-            ->where('unit_number', $unit)
-            ->first();
+        $run = $deliveryTripService->createRun(
+            $delivery,
+            $request->input('delivery_type'),
+            $destinations
+        );
 
-        // Check auto-approve toggle for any resident in this unit
-        $hasAutoApprove = $houseUnit 
-            ? $houseUnit->residents()->where('auto_approve_deliveries', true)->exists() 
-            : false;
+        $approvedCount = $run->logs->where('status', 'Approved')->count();
+        $pendingCount = $run->logs->where('status', 'Pending')->count();
 
-        $status = $hasAutoApprove ? 'Approved' : 'Pending';
-
-        DeliveryLog::create([
-            'delivery_personnel_id' => $delivery->id,
-            'destination' => $request->unit_number,
-            'status' => $status,
-        ]);
-
-        $msg = $hasAutoApprove 
-            ? 'Trip created and auto-approved by resident!' 
-            : 'Trip created. Waiting for resident approval.';
+        if ($request->input('delivery_type') === 'multi') {
+            $msg = "Multi-stop trip created with {$run->logs->count()} units.";
+            if ($approvedCount > 0) {
+                $msg .= " {$approvedCount} auto-approved.";
+            }
+            if ($pendingCount > 0) {
+                $msg .= " {$pendingCount} waiting for resident approval.";
+            }
+        } else {
+            $msg = $approvedCount > 0
+                ? 'Trip created and auto-approved by resident!'
+                : 'Trip created. Waiting for resident approval.';
+        }
 
         return redirect()->back()->with('success', $msg);
+    }
+
+    public function cancelTrip($run)
+    {
+        $delivery = Auth::guard('delivery')->user();
+        if (! $delivery) {
+            return redirect('/');
+        }
+
+        $run = DeliveryRun::where('id', $run)
+            ->where('delivery_personnel_id', $delivery->id)
+            ->first();
+
+        if (! $run) {
+            return redirect()->back()->with('error', 'Trip not found.');
+        }
+
+        if (! in_array($run->status, ['Pending', 'Approved'])) {
+            return redirect()->back()->with('error', 'Only pending or approved trips can be cancelled.');
+        }
+
+        $run->logs()->delete();
+        $run->delete();
+
+        return redirect()->back()->with('success', 'Trip cancelled successfully.');
     }
 
     public function register(Request $request)
     {
         return Inertia::render('Delivery/Register', [
             'phone' => $request->query('phone'),
-            'email' => $request->query('email')
+            'email' => $request->query('email'),
         ]);
     }
 
@@ -154,7 +184,7 @@ class DeliveryDashboardController extends Controller
     public function profile()
     {
         return Inertia::render('Delivery/Profile', [
-            'delivery' => Auth::guard('delivery')->user()
+            'delivery' => Auth::guard('delivery')->user(),
         ]);
     }
 
@@ -164,7 +194,7 @@ class DeliveryDashboardController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20|unique:delivery_personnels,phone,' . $delivery->id,
+            'phone' => 'required|string|max:20|unique:delivery_personnels,phone,'.$delivery->id,
             'vehicle_number' => 'required|string|max:20',
             'face_descriptor' => 'nullable', // Array or JSON string
             'photo' => 'nullable|image|max:2048',
@@ -175,11 +205,11 @@ class DeliveryDashboardController extends Controller
         $delivery->vehicle_number = $request->vehicle_number;
 
         if ($request->has('face_descriptor') && $request->face_descriptor) {
-             $descriptor = $request->face_descriptor;
-             if (is_array($descriptor)) {
-                 $descriptor = json_encode($descriptor);
-             }
-             $delivery->face_descriptor = $descriptor;
+            $descriptor = $request->face_descriptor;
+            if (is_array($descriptor)) {
+                $descriptor = json_encode($descriptor);
+            }
+            $delivery->face_descriptor = $descriptor;
         }
 
         if ($request->hasFile('photo')) {
@@ -197,6 +227,7 @@ class DeliveryDashboardController extends Controller
         Auth::guard('delivery')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }

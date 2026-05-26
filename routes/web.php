@@ -197,6 +197,7 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
     Route::middleware('auth:delivery')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\DeliveryDashboardController::class, 'index'])->name('dashboard');
         Route::post('/trips', [App\Http\Controllers\DeliveryDashboardController::class, 'createTrip'])->name('trips.store');
+        Route::delete('/trips/{run}', [App\Http\Controllers\DeliveryDashboardController::class, 'cancelTrip'])->name('trips.cancel');
         Route::get('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'profile'])->name('profile');
         Route::patch('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'updateProfile'])->name('profile.update');
         Route::post('/logout', [App\Http\Controllers\DeliveryDashboardController::class, 'destroy'])->name('logout');

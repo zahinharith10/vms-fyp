@@ -3,17 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Events\VisitStatusUpdated;
-use App\Models\Visitor;
-use App\Models\Visit;
-use App\Models\VisitSession;
-use App\Models\DeliveryPersonnel;
 use App\Models\DeliveryLog;
+use App\Models\DeliveryPersonnel;
+use App\Models\DeliveryRun;
 use App\Models\Resident;
+use App\Models\Visit;
+use App\Models\Visitor;
+use App\Models\VisitSession;
 use App\Notifications\VisitRequestNotification;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Notification;
+use Inertia\Inertia;
 
 class GuardScanController extends Controller
 {
@@ -40,8 +40,8 @@ class GuardScanController extends Controller
             'parking' => [
                 'occupied' => $occupiedCount,
                 'total' => 15,
-                'available' => max(0, 15 - $occupiedCount)
-            ]
+                'available' => max(0, 15 - $occupiedCount),
+            ],
         ]);
     }
 
@@ -63,23 +63,40 @@ class GuardScanController extends Controller
                     'photo' => $visit->visitor->photo,
                     'vehicle_number' => $visit->visitor->vehicle_number,
                     'face_descriptor' => $visit->visitor->face_descriptor,
-                ]
-            ]
+                ],
+            ],
         ]);
     }
 
     public function verifyDelivery(DeliveryLog $log, Request $request)
     {
+        $log->load(['personnel', 'run.logs']);
+
+        $visit = [
+            'id' => $log->id,
+            'status' => $log->status,
+            'unit_number' => $log->destination,
+            'purpose' => 'Delivery Service ('.$log->personnel->company.')',
+            'visitor' => $log->personnel,
+            'is_delivery' => true,
+            'checkout_intent' => $request->query('intent', 'final'),
+        ];
+
+        if ($log->run) {
+            $visit['run_id'] = $log->run->id;
+            $visit['is_delivery_run'] = true;
+            $visit['is_multi'] = $log->run->type === 'multi';
+            $visit['destinations'] = $log->run->logs->pluck('destination')->values()->all();
+            $visit['status'] = $log->run->status;
+
+            if ($log->run->type === 'multi') {
+                $visit['unit_number'] = $log->run->logs->count().' units';
+                $visit['purpose'] = 'Multi-stop delivery ('.$log->personnel->company.')';
+            }
+        }
+
         return Inertia::render('Guard/VerifyVisitor', [
-            'visit' => [
-                'id' => $log->id,
-                'status' => $log->status,
-                'unit_number' => $log->destination,
-                'purpose' => 'Delivery Service (' . $log->personnel->company . ')',
-                'visitor' => $log->personnel,
-                'is_delivery' => true,
-                'checkout_intent' => $request->query('intent', 'final')
-            ]
+            'visit' => $visit,
         ]);
     }
 
@@ -88,24 +105,42 @@ class GuardScanController extends Controller
      */
     public function showDelivery(DeliveryLog $log)
     {
+        $log->load(['personnel', 'run.logs']);
+
+        $visit = [
+            'id' => $log->id,
+            'status' => $log->status,
+            'unit_number' => $log->destination,
+            'purpose' => 'Delivery Service ('.$log->personnel->company.')',
+            'visitor' => [
+                'name' => $log->personnel->name,
+                'phone' => $log->personnel->phone,
+                'photo' => $log->personnel->photo,
+                'vehicle_number' => $log->personnel->vehicle_number,
+                'face_descriptor' => $log->personnel->face_descriptor,
+            ],
+            'is_delivery' => true,
+        ];
+
+        if ($log->run) {
+            $visit['run_id'] = $log->run->id;
+            $visit['is_delivery_run'] = true;
+            $visit['is_multi'] = $log->run->type === 'multi';
+            $visit['destinations'] = $log->run->logs->pluck('destination')->values()->all();
+            $visit['status'] = $log->run->status;
+
+            if ($log->run->type === 'multi') {
+                $visit['unit_number'] = $log->run->logs->count().' units';
+                $visit['purpose'] = 'Multi-stop delivery ('.$log->personnel->company.')';
+            }
+        }
+
         return response()->json([
             'success' => true,
-            'visit' => [
-                'id' => $log->id,
-                'status' => $log->status,
-                'unit_number' => $log->destination,
-                'purpose' => 'Delivery Service (' . $log->personnel->company . ')',
-                'visitor' => [
-                    'name' => $log->personnel->name,
-                    'phone' => $log->personnel->phone,
-                    'photo' => $log->personnel->photo,
-                    'vehicle_number' => $log->personnel->vehicle_number,
-                    'face_descriptor' => $log->personnel->face_descriptor,
-                ],
-                'is_delivery' => true
-            ]
+            'visit' => $visit,
         ]);
     }
+
     public function dashboard()
     {
         $this->autoFinalizeOldVisits();
@@ -164,14 +199,55 @@ class GuardScanController extends Controller
         $this->autoFinalizeOldVisits();
 
         $tokenParts = explode(':', $request->token);
-        
+
+        if ($tokenParts[0] === 'DELIVERY_RUN') {
+            $runId = $tokenParts[1] ?? null;
+            $run = DeliveryRun::with(['personnel', 'logs'])
+                ->where('id', $runId)
+                ->first();
+
+            if (! $run || $run->logs->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid delivery QR code. No matching trip found.',
+                ], 404);
+            }
+
+            $primaryLog = $run->logs->first();
+
+            return response()->json([
+                'success' => true,
+                'is_delivery' => true,
+                'visit' => [
+                    'id' => $primaryLog->id,
+                    'run_id' => $run->id,
+                    'is_delivery_run' => true,
+                    'is_multi' => $run->type === 'multi',
+                    'destinations' => $run->logs->pluck('destination')->values()->all(),
+                    'visitor_name' => $run->personnel->name ?? 'Unknown',
+                    'visitor_phone' => $run->personnel->phone ?? '-',
+                    'visitor_photo' => $run->personnel->photo ?? null,
+                    'unit_number' => $run->type === 'multi'
+                        ? $run->logs->count().' units'
+                        : $primaryLog->destination,
+                    'purpose' => $run->type === 'multi'
+                        ? 'Multi-stop delivery ('.($run->personnel->company ?? 'Unknown').')'
+                        : 'Delivery ('.($run->personnel->company ?? 'Unknown').')',
+                    'status' => $run->status,
+                    'created_at' => $run->created_at->format('Y-m-d H:i'),
+                    'face_descriptor' => $run->personnel->face_descriptor ?? null,
+                    'checkout_intent' => 'final',
+                ],
+            ]);
+        }
+
         if ($tokenParts[0] === 'DELIVERY_LOG') {
             $logId = $tokenParts[1] ?? null;
             $log = DeliveryLog::with('personnel')
                 ->where('id', $logId)
                 ->first();
 
-            if (!$log) {
+            if (! $log) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid delivery QR code. No matching log found.',
@@ -187,7 +263,7 @@ class GuardScanController extends Controller
                     'visitor_phone' => $log->personnel->phone ?? '-',
                     'visitor_photo' => $log->personnel->photo ?? null,
                     'unit_number' => $log->destination,
-                    'purpose' => 'Delivery (' . ($log->personnel->company ?? 'Unknown') . ')',
+                    'purpose' => 'Delivery ('.($log->personnel->company ?? 'Unknown').')',
                     'status' => $log->status,
                     'created_at' => $log->created_at->format('Y-m-d H:i'),
                     'face_descriptor' => $log->personnel->face_descriptor ?? null,
@@ -203,7 +279,7 @@ class GuardScanController extends Controller
             ->where('qr_code_token', $cleanToken)
             ->first();
 
-        if (!$visit) {
+        if (! $visit) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid QR code. No matching visit found.',
@@ -240,16 +316,16 @@ class GuardScanController extends Controller
 
         $visit = Visit::findOrFail($request->visit_id);
 
-        if (!in_array($visit->status, ['Approved', 'Temporarily Out'])) {
+        if (! in_array($visit->status, ['Approved', 'Temporarily Out'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only Approved or Temporarily Out visits can be checked in. Current status: ' . $visit->status,
+                'message' => 'Only Approved or Temporarily Out visits can be checked in. Current status: '.$visit->status,
             ], 400);
         }
 
         $visitor = $visit->visitor;
-        $hasVehicle = $visitor && !empty($visitor->vehicle_number) && $visitor->vehicle_number !== '-' && strtolower($visitor->vehicle_number) !== 'n/a';
-        
+        $hasVehicle = $visitor && ! empty($visitor->vehicle_number) && $visitor->vehicle_number !== '-' && strtolower($visitor->vehicle_number) !== 'n/a';
+
         $parkingLotNumber = $visit->parking_lot_number;
         if ($hasVehicle && is_null($parkingLotNumber)) {
             // Find occupied parking lots
@@ -257,15 +333,15 @@ class GuardScanController extends Controller
                 ->whereNotNull('parking_lot_number')
                 ->pluck('parking_lot_number')
                 ->toArray();
-            
+
             // Find the first available lot
             for ($i = 1; $i <= 15; $i++) {
-                if (!in_array($i, $occupiedLots)) {
+                if (! in_array($i, $occupiedLots)) {
                     $parkingLotNumber = $i;
                     break;
                 }
             }
-            
+
             if (is_null($parkingLotNumber)) {
                 return response()->json([
                     'success' => false,
@@ -278,14 +354,14 @@ class GuardScanController extends Controller
 
         // Create a new session record for this entry (supports unlimited re-entries)
         VisitSession::create([
-            'visit_id'      => $visit->id,
+            'visit_id' => $visit->id,
             'check_in_time' => $now,
         ]);
 
         // Also keep legacy columns updated for backward compatibility
         $updateData = [
-            'status'             => 'Checked In',
-            'check_in_time'      => $now,
+            'status' => 'Checked In',
+            'check_in_time' => $now,
             'parking_lot_number' => $parkingLotNumber,
         ];
 
@@ -323,7 +399,7 @@ class GuardScanController extends Controller
                 $visit->unit_number
             ));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
         }
 
         return response()->json([
@@ -338,12 +414,43 @@ class GuardScanController extends Controller
     public function checkInDelivery(Request $request)
     {
         $request->validate([
-            'log_id' => 'required|exists:delivery_logs,id',
+            'log_id' => 'required_without:run_id|exists:delivery_logs,id',
+            'run_id' => 'required_without:log_id|exists:delivery_runs,id',
         ]);
+
+        if ($request->filled('run_id')) {
+            $run = DeliveryRun::with('logs')->findOrFail($request->run_id);
+            $logsToCheckIn = $run->logs->filter(fn (DeliveryLog $log) => in_array($log->status, ['Approved', 'Temporarily Out'], true));
+
+            if ($logsToCheckIn->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No approved delivery stops are ready for check-in.',
+                ], 400);
+            }
+
+            $now = now();
+            foreach ($logsToCheckIn as $log) {
+                $log->update([
+                    'entry_time' => $now,
+                    'status' => 'Checked In',
+                ]);
+            }
+
+            $run->update([
+                'entry_time' => $now,
+                'status' => 'Checked In',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Delivery trip checked in successfully!',
+            ]);
+        }
 
         $log = DeliveryLog::findOrFail($request->log_id);
 
-        if (!in_array($log->status, ['Approved', 'Temporarily Out'])) {
+        if (! in_array($log->status, ['Approved', 'Temporarily Out'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only Approved or Temporarily Out deliveries can be checked in.',
@@ -352,7 +459,10 @@ class GuardScanController extends Controller
 
         $log->update([
             'entry_time' => now(),
+            'status' => 'Checked In',
         ]);
+
+        $log->run?->refreshStatus();
 
         return response()->json([
             'success' => true,
@@ -395,7 +505,7 @@ class GuardScanController extends Controller
 
         // Also keep legacy columns updated for backward compatibility
         $updateData = [
-            'status'         => $newStatus,
+            'status' => $newStatus,
             'check_out_time' => $now,
         ];
 
@@ -423,7 +533,7 @@ class GuardScanController extends Controller
                 $visit->unit_number
             ));
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
         }
 
         return response()->json([
@@ -438,24 +548,59 @@ class GuardScanController extends Controller
     public function checkOutDelivery(Request $request)
     {
         $request->validate([
-            'log_id' => 'required|exists:delivery_logs,id',
+            'log_id' => 'required_without:run_id|exists:delivery_logs,id',
+            'run_id' => 'required_without:log_id|exists:delivery_runs,id',
         ]);
+
+        $isTemporary = $request->boolean('is_temporary');
+
+        if ($request->filled('run_id')) {
+            $run = DeliveryRun::with('logs')->findOrFail($request->run_id);
+            $logsToCheckOut = $run->logs->filter(fn (DeliveryLog $log) => $log->entry_time && ! $log->exit_time);
+
+            if ($logsToCheckOut->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Personnel must be checked in and not already checked out.',
+                ], 400);
+            }
+
+            $now = now();
+            foreach ($logsToCheckOut as $log) {
+                $log->update([
+                    'status' => $isTemporary ? 'Temporarily Out' : 'Checked Out',
+                    'exit_time' => $isTemporary ? null : $now,
+                ]);
+            }
+
+            if (! $isTemporary) {
+                $run->update([
+                    'status' => 'Checked Out',
+                    'exit_time' => $now,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $isTemporary ? 'Delivery trip marked as Temporarily Out.' : 'Delivery trip checked out successfully!',
+            ]);
+        }
 
         $log = DeliveryLog::findOrFail($request->log_id);
 
-        if (!$log->entry_time || $log->exit_time) {
+        if (! $log->entry_time || $log->exit_time) {
             return response()->json([
                 'success' => false,
                 'message' => 'Personnel must be checked in and not already checked out.',
             ], 400);
         }
 
-        $isTemporary = $request->input('is_temporary', false);
-
         $log->update([
             'status' => $isTemporary ? 'Temporarily Out' : 'Checked Out',
             'exit_time' => $isTemporary ? null : now(),
         ]);
+
+        $log->run?->refreshStatus();
 
         return response()->json([
             'success' => true,
@@ -501,7 +646,7 @@ class GuardScanController extends Controller
                     'photo' => $log->personnel->photo,
                     'vehicle_number' => $log->personnel->vehicle_number,
                     'unit_number' => $log->destination,
-                    'purpose' => 'Delivery (' . $log->personnel->company . ')',
+                    'purpose' => 'Delivery ('.$log->personnel->company.')',
                     'entry_time' => $log->entry_time,
                     'is_delivery' => true,
                     'status' => $log->status,
@@ -539,25 +684,27 @@ class GuardScanController extends Controller
                 function ($attribute, $value, $fail) {
                     $parts = explode(' - ', $value);
                     if (count($parts) !== 3) {
-                        $fail('The ' . $attribute . ' must be in the format Block - Floor - Number.');
+                        $fail('The '.$attribute.' must be in the format Block - Floor - Number.');
+
                         return;
                     }
 
                     foreach ($parts as $part) {
-                        if (!ctype_digit(trim($part)) || (int)trim($part) <= 0) {
-                            $fail('Each part of the ' . $attribute . ' must be a positive integer.');
+                        if (! ctype_digit(trim($part)) || (int) trim($part) <= 0) {
+                            $fail('Each part of the '.$attribute.' must be a positive integer.');
+
                             return;
                         }
                     }
 
-                                        [$block, $floor, $unit] = array_map('trim', $parts);
+                    [$block, $floor, $unit] = array_map('trim', $parts);
 
                     $exists = \App\Models\HouseUnit::where('block', $block)
                         ->where('floor', $floor)
                         ->where('unit_number', $unit)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $fail('The selected house unit does not exist.');
                     }
                 },
@@ -592,7 +739,7 @@ class GuardScanController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Visitor registered successfully. Waiting for resident approval.',
-            'redirect' => route('guard.scan.verify', $visit->id)
+            'redirect' => route('guard.scan.verify', $visit->id),
         ]);
     }
 
@@ -613,25 +760,27 @@ class GuardScanController extends Controller
                 function ($attribute, $value, $fail) {
                     $parts = explode(' - ', $value);
                     if (count($parts) !== 3) {
-                        $fail('The ' . $attribute . ' must be in the format Block - Floor - Number.');
+                        $fail('The '.$attribute.' must be in the format Block - Floor - Number.');
+
                         return;
                     }
 
                     foreach ($parts as $part) {
-                        if (!ctype_digit(trim($part)) || (int)trim($part) <= 0) {
-                            $fail('Each part of the ' . $attribute . ' must be a positive integer.');
+                        if (! ctype_digit(trim($part)) || (int) trim($part) <= 0) {
+                            $fail('Each part of the '.$attribute.' must be a positive integer.');
+
                             return;
                         }
                     }
 
-                                        [$block, $floor, $unit] = array_map('trim', $parts);
+                    [$block, $floor, $unit] = array_map('trim', $parts);
 
                     $exists = \App\Models\HouseUnit::where('block', $block)
                         ->where('floor', $floor)
                         ->where('unit_number', $unit)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $fail('The selected house unit does not exist.');
                     }
                 },
@@ -665,8 +814,8 @@ class GuardScanController extends Controller
             ->first();
 
         // Check auto-approve toggle for any resident in this unit
-        $hasAutoApprove = $houseUnit 
-            ? $houseUnit->residents()->where('auto_approve_deliveries', true)->exists() 
+        $hasAutoApprove = $houseUnit
+            ? $houseUnit->residents()->where('auto_approve_deliveries', true)->exists()
             : false;
 
         $status = $hasAutoApprove ? 'Approved' : 'Pending';
@@ -677,14 +826,14 @@ class GuardScanController extends Controller
             'status' => $status,
         ]);
 
-        $message = $hasAutoApprove 
-            ? 'Delivery registered successfully. Auto-approved by resident!' 
+        $message = $hasAutoApprove
+            ? 'Delivery registered successfully. Auto-approved by resident!'
             : 'Delivery registered successfully. Waiting for resident approval.';
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'redirect' => route('guard.scan.verify-delivery', $log->id)
+            'redirect' => route('guard.scan.verify-delivery', $log->id),
         ]);
     }
 
@@ -709,7 +858,7 @@ class GuardScanController extends Controller
                 ->update(['check_out_time' => $now]);
 
             $upData = [
-                'status'         => 'Checked Out',
+                'status' => 'Checked Out',
                 'check_out_time' => $now,
             ];
             if (is_null($v->first_check_out_time)) {
@@ -724,7 +873,7 @@ class GuardScanController extends Controller
         Visit::where('status', 'Temporarily Out')
             ->where('updated_at', '<', $tempCutoff)
             ->update([
-                'status'         => 'Checked Out',
+                'status' => 'Checked Out',
                 'check_out_time' => now(),
             ]);
 
@@ -733,7 +882,7 @@ class GuardScanController extends Controller
             ->whereNull('exit_time')
             ->where('entry_time', '<', $cutoff)
             ->update([
-                'status'    => 'Checked Out',
+                'status' => 'Checked Out',
                 'exit_time' => now(),
             ]);
 
@@ -741,9 +890,8 @@ class GuardScanController extends Controller
         DeliveryLog::where('status', 'Temporarily Out')
             ->where('updated_at', '<', $tempCutoff)
             ->update([
-                'status'    => 'Checked Out',
+                'status' => 'Checked Out',
                 'exit_time' => now(),
             ]);
     }
 }
-
