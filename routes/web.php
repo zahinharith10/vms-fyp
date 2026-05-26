@@ -206,3 +206,21 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
     Route::get('/api/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/api/notifications/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
 });
+
+Route::get('/create-storage-link', function () {
+    try {
+        Illuminate\Support\Facades\Artisan::call('storage:link');
+        return 'Storage link output: <br><pre>' . Illuminate\Support\Facades\Artisan::output() . '</pre>';
+    } catch (\Exception $e) {
+        return 'Error creating link: ' . $e->getMessage();
+    }
+});
+
+Route::get('/run-migrations', function () {
+    try {
+        Illuminate\Support\Facades\Artisan::call('migrate');
+        return 'Migration output: <br><pre>' . Illuminate\Support\Facades\Artisan::output() . '</pre>';
+    } catch (\Exception $e) {
+        return 'Error running migrations: ' . $e->getMessage();
+    }
+});
