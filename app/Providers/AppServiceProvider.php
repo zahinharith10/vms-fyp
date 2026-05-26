@@ -18,13 +18,14 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+        public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
 
-        $host = request()->getHost();
-        if ($host !== 'localhost' && $host !== '127.0.0.1' && !str_starts_with($host, '192.168.')) {
+        // Only force HTTPS when the environment is set to production
+        if (app()->environment('production')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
     }
+
 }
