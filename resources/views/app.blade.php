@@ -12,6 +12,12 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Reverb Configurations for Dynamic WebSockets -->
+        <meta name="reverb-key" content="{{ env('REVERB_APP_KEY') }}">
+        <meta name="reverb-host" content="{{ env('REVERB_HOST') }}">
+        <meta name="reverb-port" content="{{ env('REVERB_PORT') }}">
+        <meta name="reverb-scheme" content="{{ env('REVERB_SCHEME', 'http') }}">
+
         <!-- Scripts -->
         <script>
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
