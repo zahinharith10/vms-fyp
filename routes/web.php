@@ -207,13 +207,47 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
     Route::post('/api/notifications/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
 });
 
-Route::get('/create-storage-link', function () {
-    try {
-        Illuminate\Support\Facades\Artisan::call('storage:link');
-        return 'Storage link output: <br><pre>' . Illuminate\Support\Facades\Artisan::output() . '</pre>';
-    } catch (\Exception $e) {
-        return 'Error creating link: ' . $e->getMessage();
+Route::get('/fix-storage-link', function () {
+    $publicStoragePath = public_path('storage');
+    $targetPath = storage_path('app/public');
+    
+    $out = [];
+    $out[] = "Public storage path: " . $publicStoragePath;
+    $out[] = "Target storage path: " . $targetPath;
+    
+    // Check if target exists
+    if (!file_exists($targetPath)) {
+        $out[] = "WARNING: Target path does not exist! Creating it...";
+        mkdir($targetPath, 0755, true);
     }
+    
+    // Check if public/storage already exists
+    if (file_exists($publicStoragePath) || is_link($publicStoragePath)) {
+        $out[] = "Public storage exists or is a symlink. Checking type...";
+        if (is_link($publicStoragePath)) {
+            $out[] = "It is a symlink. Deleting link...";
+            unlink($publicStoragePath);
+        } else if (is_dir($publicStoragePath)) {
+            $out[] = "It is a real folder. Renaming to backup...";
+            rename($publicStoragePath, $publicStoragePath . '_backup_' . time());
+        } else {
+            $out[] = "It is a file. Deleting file...";
+            unlink($publicStoragePath);
+        }
+    }
+    
+    // Create symlink
+    try {
+        if (symlink($targetPath, $publicStoragePath)) {
+            $out[] = "SUCCESS: Created symbolic link successfully!";
+        } else {
+            $out[] = "FAILED: symlink() returned false.";
+        }
+    } catch (\Exception $e) {
+        $out[] = "ERROR creating symlink: " . $e->getMessage();
+    }
+    
+    return implode("<br>\n", $out);
 });
 
 Route::get('/run-migrations', function () {
@@ -224,3 +258,5 @@ Route::get('/run-migrations', function () {
         return 'Error running migrations: ' . $e->getMessage();
     }
 });
+
+
