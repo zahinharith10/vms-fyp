@@ -202,10 +202,12 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
         Route::patch('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'updateProfile'])->name('profile.update');
         Route::post('/logout', [App\Http\Controllers\DeliveryDashboardController::class, 'destroy'])->name('logout');
     });
-    // Notifications API
-    Route::get('/api/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/api/notifications/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
 });
+
+// Notifications API
+Route::get('/api/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+Route::post('/api/notifications/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+
 
 Route::get('/fix-storage-link', function () {
     $publicStoragePath = public_path('storage');
@@ -258,5 +260,7 @@ Route::get('/run-migrations', function () {
         return 'Error running migrations: ' . $e->getMessage();
     }
 });
+
+
 
 
