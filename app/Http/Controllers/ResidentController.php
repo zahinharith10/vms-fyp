@@ -195,7 +195,26 @@ class ResidentController extends Controller
             $data['password'] = bcrypt($request->password);
         }
 
+        // Detect email change — reset verification and resend email
+        $emailChanged = $request->filled('email') && $request->email !== $resident->email;
+        if ($emailChanged) {
+            $newToken = Str::random(60);
+            $data['verification_token'] = $newToken;
+            $data['status'] = 'inactive';
+        }
+
         $resident->update($data);
+
+        if ($emailChanged) {
+            try {
+                Mail::to($resident->email)->send(new ResidentVerificationMail($resident));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Resident re-verification email failed: ' . $e->getMessage());
+            }
+
+            return redirect()->route('admin.residents.index')
+                ->with('success', 'Resident email updated. A new verification email has been sent to ' . $resident->email . '.');
+        }
 
         return redirect()->route('admin.residents.index')
             ->with('success', 'Resident updated successfully.');
