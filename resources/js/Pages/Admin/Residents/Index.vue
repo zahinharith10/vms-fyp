@@ -86,26 +86,26 @@ const confirmDelete = () => {
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="(resident, index) in residents?.data || []" :key="resident.id" class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500 font-semibold">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm leading-5 text-gray-500 font-semibold">
                                         {{ (residents.from || 1) + index }}.
                                     </td>
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 font-medium text-gray-900">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm leading-5 font-medium text-gray-900">
                                         <Link :href="route('admin.residents.show', resident.id)" class="text-indigo-600 hover:text-indigo-900 font-bold hover:underline transition duration-150 text-left">
                                             {{ resident.name }}
                                         </Link>
                                         <div class="text-xs text-gray-400">{{ resident.ic_number }}</div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-700">
-                                        <span v-if="resident.house_unit" class="bg-gray-100 px-2 py-1 rounded">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm leading-5 text-gray-700">
+                                        <span v-if="resident.house_unit" class="bg-gray-100 px-2 py-1 rounded whitespace-nowrap font-mono text-xs">
                                             {{ resident.house_unit.formatted_unit }}
                                         </span>
                                         <span v-else class="text-red-500 text-xs">Unassigned</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm leading-5 text-gray-500">
                                         <div>{{ resident.phone }}</div>
                                         <div class="text-xs">{{ resident.email }}</div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm leading-5">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize"
                                               :class="{
                                                   'bg-green-100 text-green-800': resident.type === 'owner',
