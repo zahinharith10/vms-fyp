@@ -12,7 +12,7 @@ const form = useForm({
     email: '',
     password: '',
     ic_number: '',
-    type: 'tenant', // Default
+    type: 'owner', // Default
     house_unit_id: '',
 });
 
@@ -58,7 +58,6 @@ const submit = () => {
                                 <label class="block font-medium text-sm text-gray-700">Type</label>
                                 <select v-model="form.type" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full mt-1">
                                     <option value="owner">Owner</option>
-                                    <option value="tenant">Tenant</option>
                                     <option value="family">Family Member</option>
                                 </select>
                                 <div v-if="form.errors.type" class="text-red-600 text-sm mt-1">{{ form.errors.type }}</div>

@@ -23,14 +23,29 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
 
         // Get visits where the unit_number matches the resident's unit
-        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->formatted_unit;
 
         $visits = Visit::with(['visitor', 'sessions'])
             ->where('unit_number', $unitNumber)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($visit) {
+                $totalSecs = 0;
+                foreach ($visit->sessions as $sess) {
+                    if ($sess->check_in_time) {
+                        $end = $sess->check_out_time ?? ($visit->status === 'Checked In' ? now() : null);
+                        if ($end) {
+                            $diff = (int) $sess->check_in_time->diffInSeconds($end, false);
+                            if ($diff > 0) $totalSecs += $diff;
+                        }
+                    }
+                }
+                $visit->sessions_count = $visit->sessions->count();
+                $visit->total_duration_minutes = $totalSecs > 0 ? intdiv($totalSecs, 60) : 0;
+                return $visit;
+            });
 
-        $deliveryUnitNumber = $resident->houseUnit->block.' - '.$resident->houseUnit->floor.' - '.$resident->houseUnit->unit_number;
+        $deliveryUnitNumber = $resident->houseUnit->formatted_unit;
 
         $deliveries = DeliveryLog::with('personnel')
             ->where('destination', $deliveryUnitNumber)
@@ -41,6 +56,7 @@ class ResidentVisitorController extends Controller
             'visits' => $visits,
             'deliveries' => $deliveries,
         ]);
+
     }
 
     /**
@@ -88,7 +104,7 @@ class ResidentVisitorController extends Controller
 
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
-        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->formatted_unit;
 
         $token = 'PRE_REG_'.Str::random(40);
 
@@ -97,6 +113,7 @@ class ResidentVisitorController extends Controller
             'unit_number' => $unitNumber,
             'purpose' => $request->purpose,
             'status' => 'Approved', // Pre-approved by host!
+            'approved_by' => $resident->name,
             'qr_code_token' => $token,
         ]);
 
@@ -112,7 +129,7 @@ class ResidentVisitorController extends Controller
         $resident->loadMissing('houseUnit');
 
         // Security: only show QR if it belongs to the resident's unit
-        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->formatted_unit;
         if ($visit->unit_number !== $unitNumber) {
             abort(403);
         }
@@ -133,7 +150,7 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
 
-        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->formatted_unit;
         if ($visit->unit_number !== $unitNumber || $visit->status !== 'Pending') {
             abort(403);
         }
@@ -141,6 +158,7 @@ class ResidentVisitorController extends Controller
         $visit->update([
             'status' => 'Approved',
             'qr_code_token' => Str::uuid()->toString(),
+            'approved_by' => $resident->name,
         ]);
 
         try {
@@ -160,12 +178,15 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
 
-        $unitNumber = $resident->houseUnit->block.'-'.$resident->houseUnit->floor.'-'.$resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->formatted_unit;
         if ($visit->unit_number !== $unitNumber || $visit->status !== 'Pending') {
             abort(403);
         }
 
-        $visit->update(['status' => 'Rejected']);
+        $visit->update([
+            'status' => 'Rejected',
+            'approved_by' => $resident->name,
+        ]);
 
         try {
             broadcast(new VisitStatusUpdated($visit->id, 'Rejected', null, $visit->unit_number));
@@ -184,13 +205,14 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
 
-        $deliveryUnitNumber = $resident->houseUnit->block.' - '.$resident->houseUnit->floor.' - '.$resident->houseUnit->unit_number;
+        $deliveryUnitNumber = $resident->houseUnit->formatted_unit;
         if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Pending') {
             abort(403);
         }
 
         $log->update([
             'status' => 'Approved',
+            'approved_by' => $resident->name,
             // Note: entry_time will be set by guard upon check-in
         ]);
 
@@ -213,12 +235,15 @@ class ResidentVisitorController extends Controller
         $resident = Auth::guard('resident')->user();
         $resident->loadMissing('houseUnit');
 
-        $deliveryUnitNumber = $resident->houseUnit->block.' - '.$resident->houseUnit->floor.' - '.$resident->houseUnit->unit_number;
+        $deliveryUnitNumber = $resident->houseUnit->formatted_unit;
         if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Pending') {
             abort(403);
         }
 
-        $log->update(['status' => 'Rejected']);
+        $log->update([
+            'status' => 'Rejected',
+            'approved_by' => $resident->name,
+        ]);
 
         $log->run?->refreshStatus();
 

@@ -32,14 +32,14 @@ const submit = () => {
                 </div>
 
                 <!-- Registration Card -->
-                <div class="p-8 bg-white shadow-xl sm:rounded-3xl border border-gray-100">
+                <div class="p-8 bg-white dark:bg-gray-900 shadow-xl dark:shadow-none sm:rounded-3xl border border-gray-100 dark:border-gray-800">
                     <div class="flex items-center mb-8">
-                        <div class="h-16 w-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-3xl">
+                        <div class="h-16 w-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center text-3xl">
                             ➕
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-lg font-black text-gray-900 uppercase tracking-tighter">Pre-Register Visitor (VIP Entry)</h3>
-                            <p class="text-sm font-bold text-gray-500">Provide guest information to generate a pre-approved digital pass.</p>
+                            <h3 class="text-lg font-black text-gray-900 dark:text-gray-100 uppercase tracking-tighter">Pre-Register Visitor (VIP Entry)</h3>
+                            <p class="text-sm font-bold text-gray-500 dark:text-gray-400">Provide guest information to generate a pre-approved digital pass.</p>
                         </div>
                     </div>
 
@@ -48,53 +48,53 @@ const submit = () => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Name -->
                             <div class="col-span-1 md:col-span-2">
-                                <label for="name" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Visitor's Full Name</label>
+                                <label for="name" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Visitor's Full Name</label>
                                 <input 
                                     id="name" 
                                     type="text" 
                                     placeholder="e.g. John Doe"
                                     v-model="form.name" 
-                                    class="block w-full border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 py-3 px-4" 
+                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
                                     required 
                                 />
-                                <div v-if="form.errors.name" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.name }}</div>
+                                <div v-if="form.errors.name" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.name }}</div>
                             </div>
 
                             <!-- Phone Number -->
                             <div>
-                                <label for="phone" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Visitor's Phone Number</label>
+                                <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Visitor's Phone Number</label>
                                 <input 
                                     id="phone" 
                                     type="text" 
                                     placeholder="e.g. 0123456789"
                                     v-model="form.phone" 
-                                    class="block w-full border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 py-3 px-4" 
+                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
                                     required 
                                 />
-                                <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.phone }}</div>
+                                <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
                             </div>
 
                             <!-- Email Address -->
                             <div>
-                                <label for="email" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Visitor's Email Address</label>
+                                <label for="email" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Visitor's Email Address</label>
                                 <input 
                                     id="email" 
                                     type="email" 
                                     placeholder="e.g. visitor@example.com"
                                     v-model="form.email" 
-                                    class="block w-full border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 py-3 px-4" 
+                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
                                     required 
                                 />
-                                <div v-if="form.errors.email" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.email }}</div>
+                                <div v-if="form.errors.email" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.email }}</div>
                             </div>
 
                             <!-- Purpose of Visit -->
                             <div class="col-span-1 md:col-span-2">
-                                <label for="purpose" class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Purpose of Visit</label>
+                                <label for="purpose" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Purpose of Visit</label>
                                 <select 
                                     id="purpose" 
                                     v-model="form.purpose" 
-                                    class="block w-full border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 py-3 px-4"
+                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4"
                                 >
                                     <option value="Casual Visit">Casual Visit (Family/Friend)</option>
                                     <option value="Contractor / Repair">Contractor / Repair Service</option>
@@ -102,12 +102,12 @@ const submit = () => {
                                     <option value="Emergency Visit">Emergency Visit</option>
                                     <option value="Other">Other</option>
                                 </select>
-                                <div v-if="form.errors.purpose" class="mt-2 text-sm text-red-600 font-bold">{{ form.errors.purpose }}</div>
+                                <div v-if="form.errors.purpose" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.purpose }}</div>
                             </div>
                         </div>
 
                         <!-- Info Alert -->
-                        <div class="p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-2xl text-sm font-semibold text-indigo-800">
+                        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500 rounded-r-2xl text-sm font-semibold text-indigo-800 dark:text-indigo-300">
                             💡 **How VIP Pre-Registration Works:** Once registered, we will generate an instant approved entry pass. You can copy the unique link and send it to your guest. If the guest is completely new to the system, they will simply take a quick selfie to activate their QR code before arriving!
                         </div>
 

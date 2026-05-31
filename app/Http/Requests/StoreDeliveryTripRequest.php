@@ -23,6 +23,7 @@ class StoreDeliveryTripRequest extends FormRequest
             'unit_number' => ['nullable', 'string', new ValidHouseUnitDestination],
             'unit_numbers' => ['nullable', 'array'],
             'unit_numbers.*' => ['nullable', 'string', 'distinct', new ValidHouseUnitDestination],
+            'host_name' => ['required', 'string', 'max:255'],
         ];
 
         // Add conditional rules based on delivery_type
@@ -42,26 +43,39 @@ class StoreDeliveryTripRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $normalizeUnit = function ($val) {
+            if (empty($val)) return $val;
+            $parts = preg_split('/\s*-\s*/', trim((string) $val));
+            if (count($parts) !== 3) return $val;
+            $normaliseSegment = fn($s) => is_numeric($s) ? (string)(int)$s : trim($s);
+            return $normaliseSegment($parts[0]) . '-' . $normaliseSegment($parts[1]) . '-' . $normaliseSegment($parts[2]);
+        };
+
         // If this is a single-stop request, remove any unit_numbers sent by the frontend
         if ($this->input('delivery_type') === 'single') {
             $this->request->remove('unit_numbers');
+            if ($this->has('unit_number')) {
+                $unit = $this->input('unit_number');
+                if (is_array($unit)) {
+                    $unit = reset($unit);
+                }
+                $this->merge([
+                    'unit_number' => is_null($unit) ? $unit : $normalizeUnit(strval($unit)),
+                ]);
+            }
         } elseif ($this->has('unit_numbers')) {
+            $normalizedUnits = array_map(function($u) use ($normalizeUnit) {
+                return $normalizeUnit(strval($u));
+            }, array_filter($this->input('unit_numbers')));
+            
             $this->merge([
-                'unit_numbers' => array_map('strval', array_filter($this->input('unit_numbers'))),
+                'unit_numbers' => array_map('strval', $normalizedUnits),
             ]);
         }
-        // Ensure unit_number is a string even if frontend accidentally sends it as an array
+
         // If this is a multi-stop request, remove any unit_number sent by the frontend
         if ($this->input('delivery_type') === 'multi') {
             $this->request->remove('unit_number');
-        } elseif ($this->has('unit_number')) {
-            $unit = $this->input('unit_number');
-            if (is_array($unit)) {
-                $unit = reset($unit);
-            }
-            $this->merge([
-                'unit_number' => is_null($unit) ? $unit : strval($unit),
-            ]);
         }
     }
 

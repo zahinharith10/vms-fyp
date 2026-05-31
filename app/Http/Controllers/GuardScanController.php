@@ -660,12 +660,16 @@ class GuardScanController extends Controller
         ]);
     }
 
-    /**
-     * Show the registration form for Guard.
-     */
     public function showRegistration()
     {
-        return Inertia::render('Guard/Register');
+        $units = \App\Models\HouseUnit::orderBy('block')
+            ->orderBy('floor')
+            ->orderBy('unit_number')
+            ->get();
+
+        return Inertia::render('Guard/Register', [
+            'units' => $units
+        ]);
     }
 
     /**
@@ -673,8 +677,23 @@ class GuardScanController extends Controller
      */
     public function registerVisitor(Request $request)
     {
+        $normalizeUnit = function ($val) {
+            if (empty($val)) return $val;
+            $parts = preg_split('/\s*-\s*/', trim((string) $val));
+            if (count($parts) !== 3) return $val;
+            $normaliseSegment = fn($s) => is_numeric($s) ? (string)(int)$s : trim($s);
+            return $normaliseSegment($parts[0]) . '-' . $normaliseSegment($parts[1]) . '-' . $normaliseSegment($parts[2]);
+        };
+
+        if ($request->has('unit_number')) {
+            $request->merge([
+                'unit_number' => $normalizeUnit($request->unit_number),
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:visitors',
             'phone' => 'required|string|unique:visitors',
             'ic_number' => 'required|string|max:255',
             'vehicle_number' => 'required|string|max:20',
@@ -682,9 +701,9 @@ class GuardScanController extends Controller
                 'required',
                 'string',
                 function ($attribute, $value, $fail) {
-                    $parts = explode(' - ', $value);
+                    $parts = explode('-', $value);
                     if (count($parts) !== 3) {
-                        $fail('The '.$attribute.' must be in the format Block - Floor - Number.');
+                        $fail('The '.$attribute.' must be in the format Block-Floor-House Number.');
 
                         return;
                     }
@@ -709,6 +728,7 @@ class GuardScanController extends Controller
                     }
                 },
             ],
+            'host_name' => 'required|string|max:255',
             'purpose' => 'required|string',
             'face_descriptor' => 'required',
             'photo' => 'nullable|image|max:2048',
@@ -721,6 +741,7 @@ class GuardScanController extends Controller
 
         $visitor = Visitor::create([
             'name' => $request->name,
+            'email' => $request->email,
             'phone' => $request->phone,
             'ic_number' => $request->ic_number,
             'vehicle_number' => $request->vehicle_number,
@@ -732,6 +753,7 @@ class GuardScanController extends Controller
             'visitor_id' => $visitor->id,
             'unit_number' => $request->unit_number,
             'purpose' => $request->purpose,
+            'host_name' => $request->host_name,
             'status' => 'Pending', // Enforce Pending status for guard-registered visitors
             'qr_code_token' => Str::random(40),
         ]);
@@ -748,8 +770,23 @@ class GuardScanController extends Controller
      */
     public function registerDelivery(Request $request)
     {
+        $normalizeUnit = function ($val) {
+            if (empty($val)) return $val;
+            $parts = preg_split('/\s*-\s*/', trim((string) $val));
+            if (count($parts) !== 3) return $val;
+            $normaliseSegment = fn($s) => is_numeric($s) ? (string)(int)$s : trim($s);
+            return $normaliseSegment($parts[0]) . '-' . $normaliseSegment($parts[1]) . '-' . $normaliseSegment($parts[2]);
+        };
+
+        if ($request->has('unit_number')) {
+            $request->merge([
+                'unit_number' => $normalizeUnit($request->unit_number),
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:delivery_personnels',
             'phone' => 'required|string|unique:delivery_personnels',
             'company' => 'required|string',
             'vehicle_number' => 'required|string',
@@ -758,9 +795,9 @@ class GuardScanController extends Controller
                 'required',
                 'string',
                 function ($attribute, $value, $fail) {
-                    $parts = explode(' - ', $value);
+                    $parts = explode('-', $value);
                     if (count($parts) !== 3) {
-                        $fail('The '.$attribute.' must be in the format Block - Floor - Number.');
+                        $fail('The '.$attribute.' must be in the format Block-Floor-House Number.');
 
                         return;
                     }
@@ -785,6 +822,7 @@ class GuardScanController extends Controller
                     }
                 },
             ],
+            'host_name' => 'nullable|string|max:255',
             'face_descriptor' => 'required',
             'photo' => 'nullable|image|max:2048',
         ]);
@@ -796,6 +834,7 @@ class GuardScanController extends Controller
 
         $delivery = DeliveryPersonnel::create([
             'name' => $request->name,
+            'email' => $request->email,
             'phone' => $request->phone,
             'company' => $request->company,
             'vehicle_type' => 'Other', // Default or could be a field
@@ -806,7 +845,7 @@ class GuardScanController extends Controller
             'status' => 'Active',
         ]);
 
-        $parts = explode(' - ', $request->unit_number);
+        $parts = explode('-', $request->unit_number);
         [$block, $floor, $unit] = array_map('trim', $parts);
         $houseUnit = \App\Models\HouseUnit::where('block', $block)
             ->where('floor', $floor)
@@ -814,16 +853,20 @@ class GuardScanController extends Controller
             ->first();
 
         // Check auto-approve toggle for any resident in this unit
-        $hasAutoApprove = $houseUnit
-            ? $houseUnit->residents()->where('auto_approve_deliveries', true)->exists()
-            : false;
+        $autoApprover = $houseUnit
+            ? $houseUnit->residents()->where('auto_approve_deliveries', true)->first()
+            : null;
 
+        $hasAutoApprove = !is_null($autoApprover);
         $status = $hasAutoApprove ? 'Approved' : 'Pending';
+        $approvedBy = $hasAutoApprove ? $autoApprover->name . ' (Auto-Approved)' : null;
 
         $log = DeliveryLog::create([
             'delivery_personnel_id' => $delivery->id,
             'destination' => $request->unit_number ?? 'N/A',
+            'host_name' => $request->host_name,
             'status' => $status,
+            'approved_by' => $approvedBy,
         ]);
 
         $message = $hasAutoApprove

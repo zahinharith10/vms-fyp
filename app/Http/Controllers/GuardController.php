@@ -8,6 +8,7 @@ use App\Models\Guard;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 
 class GuardController extends Controller
 {
@@ -51,8 +52,9 @@ class GuardController extends Controller
             ],
             'phone' => 'required|string',
             'email' => 'required|email|unique:guards',
-            'password' => 'required|string|min:6',
-            'shift' => 'required|string',
+            'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'shift' => 'required|array',
+            'shift.*' => 'required|string|in:Morning,Afternoon,Night',
             'status' => 'required|string',
             'photo' => 'nullable|image|max:2048',
         ], [
@@ -105,9 +107,11 @@ class GuardController extends Controller
             ],
             'phone' => 'required|string',
             'email' => 'required|email|unique:guards,email,' . $guard->id,
-            'shift' => 'required|string',
+            'shift' => 'required|array',
+            'shift.*' => 'required|string|in:Morning,Afternoon,Night',
             'status' => 'required|string',
             'photo' => 'nullable|image|max:2048',
+            'password' => ['nullable', Password::min(8)->mixedCase()->numbers()->symbols()],
         ], [
             'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 900101-14-1234) or a valid Passport Number (must contain letters, e.g. A1234567).'
         ]);

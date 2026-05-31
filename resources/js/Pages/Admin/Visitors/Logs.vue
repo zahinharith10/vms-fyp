@@ -10,6 +10,7 @@ const props = defineProps({
 
 const filterStatus = ref('All');
 const searchQuery = ref('');
+const expandedRows = ref(new Set());
 
 const filteredLogs = computed(() => {
     return props.logs.filter(log => {
@@ -20,6 +21,33 @@ const filteredLogs = computed(() => {
     });
 });
 
+const toggleRow = (logId) => {
+    if (expandedRows.value.has(logId)) {
+        expandedRows.value.delete(logId);
+    } else {
+        expandedRows.value.add(logId);
+    }
+    // Trigger reactivity
+    expandedRows.value = new Set(expandedRows.value);
+};
+
+const isExpanded = (logId) => expandedRows.value.has(logId);
+
+const hasSessions = (log) => log.sessions && log.sessions.length > 0;
+
+// Use the first session's check_in_time as the authoritative arrival time.
+// Falls back to log.check_in_time for legacy visits with no session rows.
+const getFirstCheckIn = (log) => {
+    if (hasSessions(log)) return log.sessions[0].check_in_time;
+    return log.check_in_time || log.entry_time || null;
+};
+
+// Use the last session's check_out_time as the authoritative exit time.
+const getLastCheckOut = (log) => {
+    if (hasSessions(log)) return log.sessions[log.sessions.length - 1].check_out_time || null;
+    return log.check_out_time || log.exit_time || null;
+};
+
 const getStatusClass = (status) => {
     switch (status) {
         case 'Checked In': return 'bg-green-100 text-green-800 border-green-200';
@@ -29,6 +57,14 @@ const getStatusClass = (status) => {
         case 'Rejected': return 'bg-red-100 text-red-800 border-red-200';
         default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+};
+
+const getSessionLabel = (index, total) => {
+    if (total === 1) return 'Visit';
+    if (index === 0) return '1st Session';
+    if (index === 1) return '2nd Session';
+    if (index === 2) return '3rd Session';
+    return `${index + 1}th Session`;
 };
 
 const formatDuration = (log) => {
@@ -49,6 +85,31 @@ const formatDuration = (log) => {
     return '-';
 };
 
+const formatSessionDuration = (session, logStatus) => {
+    if (!session.check_in_time) return '-';
+    const start = new Date(session.check_in_time);
+    const end = session.check_out_time
+        ? new Date(session.check_out_time)
+        : (logStatus === 'Checked In' ? new Date() : null);
+    if (!end) return '-';
+    const diffMs = end - start;
+    if (diffMs < 0) return '-';
+    return formatSeconds(Math.floor(diffMs / 1000));
+};
+
+// For session-level: precise HH:MM:SS computed from timestamps
+const formatSeconds = (totalSecs) => {
+    const hours = Math.floor(totalSecs / 3600);
+    const mins  = Math.floor((totalSecs % 3600) / 60);
+    const secs  = totalSecs % 60;
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    parts.push(`${String(mins).padStart(hours > 0 ? 2 : 1, '0')}m`);
+    parts.push(`${String(secs).padStart(2, '0')}s`);
+    return parts.join(' ');
+};
+
+// For overall total (backend-rounded to minutes)
 const formatMinutes = (totalMins) => {
     const hours = Math.floor(totalMins / 60);
     const mins = totalMins % 60;
@@ -103,6 +164,11 @@ const formatMinutes = (totalMins) => {
                             </div>
                         </div>
 
+                        <!-- Hint -->
+                        <p class="text-xs text-gray-400 mb-3 italic">
+                            💡 Click the <strong>▾ arrow</strong> in the Sessions column to expand individual session times.
+                        </p>
+
                         <!-- Table -->
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200 border border-gray-100">
@@ -119,60 +185,149 @@ const formatMinutes = (totalMins) => {
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-100">
-                                    <tr v-for="log in filteredLogs" :key="log.id" class="hover:bg-gray-50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 mr-3">
-                                                    <img v-if="log.visitor.photo" :src="'/storage/' + log.visitor.photo" class="h-full w-full object-cover" />
-                                                    <div v-else class="h-full w-full flex items-center justify-center text-xs font-bold text-gray-400">
-                                                        {{ log.visitor.name.charAt(0) }}
+                                    <template v-for="log in filteredLogs" :key="log.id">
+                                        <!-- Main Row -->
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 mr-3">
+                                                        <img v-if="log.visitor.photo" :src="'/storage/' + log.visitor.photo" class="h-full w-full object-cover" />
+                                                        <div v-else class="h-full w-full flex items-center justify-center text-xs font-bold text-gray-400">
+                                                            {{ log.visitor.name.charAt(0) }}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-sm font-bold text-gray-900">{{ log.visitor.name }}</div>
+                                                        <div class="text-xs text-gray-500">{{ log.visitor.phone }}</div>
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <div class="text-sm font-bold text-gray-900">{{ log.visitor.name }}</div>
-                                                    <div class="text-xs text-gray-500">{{ log.visitor.phone }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-black text-sm border border-indigo-100">
+                                                    {{ log.unit_number }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {{ log.purpose }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span :class="getStatusClass(log.status)" class="px-2 py-1 text-xs font-bold rounded-full border uppercase tracking-wider">
+                                                    {{ log.status }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                                <div v-if="getFirstCheckIn(log)">
+                                                    <p class="font-bold text-gray-800">{{ formatMalaysiaTime(getFirstCheckIn(log), { withSeconds: true }) }}</p>
+                                                    <p>{{ formatMalaysiaDate(getFirstCheckIn(log)) }}</p>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-black text-sm border border-indigo-100">
-                                                {{ log.unit_number }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {{ log.purpose }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span :class="getStatusClass(log.status)" class="px-2 py-1 text-xs font-bold rounded-full border uppercase tracking-wider">
-                                                {{ log.status }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                                            <div v-if="log.check_in_time || log.entry_time">
-                                                <p class="font-bold text-gray-800">{{ formatMalaysiaTime(log.check_in_time || log.entry_time, { withSeconds: true }) }}</p>
-                                                <p>{{ formatMalaysiaDate(log.check_in_time || log.entry_time) }}</p>
-                                            </div>
-                                            <div v-else class="italic">Not Entered</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                                            <div v-if="log.check_out_time || log.exit_time">
-                                                <p class="font-bold text-gray-800">{{ formatMalaysiaTime(log.check_out_time || log.exit_time, { withSeconds: true }) }}</p>
-                                                <p>{{ formatMalaysiaDate(log.check_out_time || log.exit_time) }}</p>
-                                            </div>
-                                            <div v-else-if="log.status === 'Checked In'" class="text-indigo-600 font-black animate-pulse">On-Site</div>
-                                            <div v-else class="italic">-</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold">
-                                            <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-md">
-                                                {{ log.sessions_count }} {{ log.sessions_count === 1 ? 'session' : 'sessions' }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold text-indigo-600">
-                                            {{ formatDuration(log) }}
-                                        </td>
-                                    </tr>
+                                                <div v-else class="italic">Not Entered</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                                <div v-if="getLastCheckOut(log)">
+                                                    <p class="font-bold text-gray-800">{{ formatMalaysiaTime(getLastCheckOut(log), { withSeconds: true }) }}</p>
+                                                    <p>{{ formatMalaysiaDate(getLastCheckOut(log)) }}</p>
+                                                </div>
+                                                <div v-else-if="log.status === 'Checked In'" class="text-indigo-600 font-black animate-pulse">On-Site</div>
+                                                <div v-else class="italic">-</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold">
+                                                <div class="flex items-center gap-1">
+                                                    <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-md">
+                                                        {{ log.sessions_count }} {{ log.sessions_count === 1 ? 'session' : 'sessions' }}
+                                                    </span>
+                                                    <!-- Expand chevron button — only shown for multi-session visits -->
+                                                    <button
+                                                        v-if="hasSessions(log) && log.sessions.length > 1"
+                                                        @click.stop="toggleRow(log.id)"
+                                                        class="p-1 rounded hover:bg-indigo-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                                        :title="isExpanded(log.id) ? 'Collapse sessions' : 'Expand sessions'"
+                                                    >
+                                                        <svg
+                                                            :class="['w-3.5 h-3.5 text-indigo-500 transition-transform duration-200', isExpanded(log.id) ? 'rotate-180' : '']"
+                                                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                        >
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold text-indigo-600">
+                                                {{ formatDuration(log) }}
+                                            </td>
+                                        </tr>
+
+                                        <!-- Expanded Session Breakdown Row -->
+                                        <tr v-if="hasSessions(log) && log.sessions.length > 1 && isExpanded(log.id)" :key="'expanded-' + log.id">
+                                            <td colspan="8" class="px-0 py-0 bg-indigo-50 border-t border-indigo-100">
+                                                <div class="px-8 py-4">
+                                                    <p class="text-xs font-black text-indigo-600 uppercase tracking-widest mb-3">Session Breakdown</p>
+                                                    <div class="flex flex-col gap-2">
+                                                        <div
+                                                            v-for="(session, index) in log.sessions"
+                                                            :key="session.id"
+                                                            class="flex items-center gap-4 bg-white rounded-lg border border-indigo-100 px-4 py-3 shadow-sm"
+                                                        >
+                                                            <!-- Session label -->
+                                                            <div class="w-24 shrink-0">
+                                                                <span class="px-2 py-0.5 rounded-md text-xs font-black bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                                                    {{ getSessionLabel(index, log.sessions.length) }}
+                                                                </span>
+                                                            </div>
+
+                                                            <!-- Check-in -->
+                                                            <div class="flex items-center gap-2 min-w-0">
+                                                                <div class="w-2 h-2 rounded-full bg-green-500 shrink-0"></div>
+                                                                <div>
+                                                                    <p class="text-xs text-gray-400">Check-in</p>
+                                                                    <p class="text-sm font-bold text-gray-800">
+                                                                        {{ formatMalaysiaTime(session.check_in_time, { withSeconds: true }) }}
+                                                                    </p>
+                                                                    <p class="text-xs text-gray-400">{{ formatMalaysiaDate(session.check_in_time) }}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Arrow -->
+                                                            <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                                            </svg>
+
+                                                            <!-- Check-out / Temporary Leave -->
+                                                            <div class="flex items-center gap-2 min-w-0">
+                                                                <div
+                                                                    :class="[
+                                                                        'w-2 h-2 rounded-full shrink-0',
+                                                                        session.check_out_time ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'
+                                                                    ]"
+                                                                ></div>
+                                                                <div>
+                                                                    <p class="text-xs text-gray-400">
+                                                                        {{ session.check_out_time
+                                                                            ? (index < log.sessions.length - 1 ? 'Temporary Leave' : 'Check-out')
+                                                                            : 'Still On-Site' }}
+                                                                    </p>
+                                                                    <p v-if="session.check_out_time" class="text-sm font-bold text-gray-800">
+                                                                        {{ formatMalaysiaTime(session.check_out_time, { withSeconds: true }) }}
+                                                                    </p>
+                                                                    <p v-if="session.check_out_time" class="text-xs text-gray-400">{{ formatMalaysiaDate(session.check_out_time) }}</p>
+                                                                    <p v-else class="text-sm font-bold text-yellow-600 animate-pulse">On-Site</p>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Session duration -->
+                                                            <div class="ml-auto shrink-0">
+                                                                <span class="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg text-xs font-bold">
+                                                                    {{ formatSessionDuration(session, log.status) }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+
                                     <tr v-if="filteredLogs.length === 0">
-                                        <td colspan="7" class="px-6 py-8 text-center text-gray-500 italic">
+                                        <td colspan="8" class="px-6 py-8 text-center text-gray-500 italic">
                                             No visit logs found matching your criteria.
                                         </td>
                                     </tr>

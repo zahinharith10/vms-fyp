@@ -11,7 +11,7 @@ const delivery = usePage().props.auth.user;
 <template>
     <div class="flex min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         <!-- Sidebar -->
-        <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm min-h-screen hidden md:block transition-colors duration-200">
+        <aside class="w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm min-h-screen hidden md:block transition-colors duration-200">
             <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                 <Link :href="route('delivery.dashboard')" class="flex items-center">
                     <ApplicationLogo class="block h-12 w-auto fill-current text-indigo-600" />
@@ -37,6 +37,12 @@ const delivery = usePage().props.auth.user;
 
                 <Link :href="route('delivery.profile')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('delivery.profile') }">
                     <span class="mr-3 text-xl">👤</span> My Profile
+                </Link>
+
+                <div class="border-t border-gray-200 dark:border-gray-800 my-4"></div>
+
+                <Link :href="route('manual.index')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('manual.index') }">
+                    <span class="mr-3 text-xl">📖</span> User Manual
                 </Link>
 
                 <div class="border-t border-gray-200 dark:border-gray-800 my-4"></div>
@@ -69,9 +75,10 @@ const delivery = usePage().props.auth.user;
 
             <!-- Mobile Menu Dropdown -->
             <div v-if="showingNavigationDropdown" class="md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 space-y-2">
-                <Link :href="route('delivery.dashboard')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Dashboard</Link>
-                <Link :href="route('delivery.profile')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">My Profile</Link>
-                <Link :href="route('delivery.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>
+                  <Link :href="route('delivery.dashboard', { tab: 'history' })" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">History</Link>
+                  <Link :href="route('delivery.profile')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">My Profile</Link>
+                  <Link :href="route('manual.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">User Manual</Link>
+                  <Link :href="route('delivery.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>
             </div>
 
             <!-- Page Heading -->

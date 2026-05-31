@@ -10,56 +10,61 @@ use Symfony\Component\HttpFoundation\Response;
 class InactivityTimeout
 {
     /**
+     * Inactivity timeout per guard (in seconds).
+     * Guards use shared guardhouse terminals → 30 min.
+     * All other authenticated roles → 15 min.
+     */
+    protected array $timeouts = [
+        'guard'    => 30 * 60,  // 30 minutes — shared guardhouse device
+        'admin'    => 15 * 60,  // 15 minutes
+        'resident' => 15 * 60,  // 15 minutes
+        'visitor'  => 15 * 60,  // 15 minutes
+        'delivery' => 15 * 60,  // 15 minutes
+        'web'      => 15 * 60,  // 15 minutes (default Laravel users)
+    ];
+
+    /**
+     * Redirect routes per guard on timeout.
+     */
+    protected array $loginRoutes = [
+        'guard'    => 'guard.login',
+        'admin'    => 'admin.login',
+        'resident' => 'resident.login',
+    ];
+
+    /**
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $timeout = 15 * 60; // 15 minutes
-
-        // Check if the user is authenticated as a guard
-        if (Auth::guard('guard')->check()) {
-            // Update last activity but never log them out
-            session(['last_activity' => time()]);
-            return $next($request);
-        }
-
-        // List of other guards subject to timeout
-        $guardsToCheck = ['admin', 'resident', 'visitor', 'delivery', 'web'];
-        $activeGuard = null;
-
-        foreach ($guardsToCheck as $guardName) {
-            if (Auth::guard($guardName)->check()) {
-                $activeGuard = $guardName;
-                break;
+        foreach ($this->timeouts as $guardName => $timeout) {
+            if (!Auth::guard($guardName)->check()) {
+                continue;
             }
-        }
 
-        if ($activeGuard) {
-            $lastActivity = session('last_activity');
+            $lastActivity = session('last_activity_' . $guardName);
 
             if ($lastActivity && (time() - $lastActivity > $timeout)) {
-                // Determine redirect route based on guard
-                $redirectRoute = '/';
-                if ($activeGuard === 'admin') {
-                    $redirectRoute = route('admin.login');
-                } elseif ($activeGuard === 'resident') {
-                    $redirectRoute = route('resident.login');
-                } elseif ($activeGuard === 'visitor') {
-                    $redirectRoute = route('visitor.login');
-                }
+                $redirectRoute = isset($this->loginRoutes[$guardName])
+                    ? route($this->loginRoutes[$guardName])
+                    : '/';
 
-                Auth::guard($activeGuard)->logout();
+                Auth::guard($guardName)->logout();
                 session()->invalidate();
                 session()->regenerateToken();
 
-                return redirect($redirectRoute)->with('error', 'You have been logged out due to inactivity.');
+                return redirect($redirectRoute)
+                    ->with('error', 'You have been logged out due to inactivity.');
             }
 
-            session(['last_activity' => time()]);
+            // Update the per-guard last-activity timestamp
+            session(['last_activity_' . $guardName => time()]);
+            break; // Only one guard can be active per request
         }
 
         return $next($request);
     }
 }
+

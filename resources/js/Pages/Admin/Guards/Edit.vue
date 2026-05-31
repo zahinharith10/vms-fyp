@@ -84,13 +84,31 @@ const submit = () => {
                                 </div>
 
                                 <!-- Shift -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Shift</label>
-                                    <select v-model="form.shift" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        <option value="Morning">Morning</option>
-                                        <option value="Night">Night</option>
-                                        <option value="Rotating">Rotating</option>
-                                    </select>
+                                <div class="col-span-1 md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Shift Assignment(s)</label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <label class="flex items-start p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <input type="checkbox" v-model="form.shift" value="Morning" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <div class="ml-2.5">
+                                                <span class="block text-xs font-bold text-gray-800">Morning Shift</span>
+                                                <span class="block text-[10px] text-gray-500 font-medium">07:00 – 15:00<br>(7:00 AM - 3:00 PM)</span>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <input type="checkbox" v-model="form.shift" value="Afternoon" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <div class="ml-2.5">
+                                                <span class="block text-xs font-bold text-gray-800">Afternoon Shift</span>
+                                                <span class="block text-[10px] text-gray-500 font-medium">15:00 – 23:00<br>(3:00 PM - 11:00 PM)</span>
+                                            </div>
+                                        </label>
+                                        <label class="flex items-start p-2.5 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                            <input type="checkbox" v-model="form.shift" value="Night" class="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                            <div class="ml-2.5">
+                                                <span class="block text-xs font-bold text-gray-800">Night Shift</span>
+                                                <span class="block text-[10px] text-gray-500 font-medium">23:00 – 07:00<br>(11:00 PM - 7:00 AM)</span>
+                                            </div>
+                                        </label>
+                                    </div>
                                     <div v-if="form.errors.shift" class="text-red-600 text-sm mt-1">{{ form.errors.shift }}</div>
                                 </div>
 

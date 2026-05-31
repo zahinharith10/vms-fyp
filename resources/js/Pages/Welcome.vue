@@ -3,8 +3,13 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { ref } from 'vue';
 
+// Check if email is passed as a query parameter (from a pre-registered digital pass link)
+const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+const queryEmail = urlParams ? urlParams.get('email') : '';
+const isLockedEmail = ref(!!queryEmail);
+
 const form = useForm({
-    email: '',
+    email: queryEmail || '',
     login_type: 'visitor', // Default to visitor
 });
 
@@ -82,11 +87,15 @@ const backToEmail = () => {
                     <div class="grid grid-cols-2 gap-3">
                         <button
                             type="button"
-                            @click="form.login_type = 'visitor'"
+                            @click="!isLockedEmail && (form.login_type = 'visitor')"
+                            :disabled="isLockedEmail"
                             class="flex flex-col items-center rounded-2xl border-2 p-4 transition-all duration-200"
-                            :class="form.login_type === 'visitor'
-                                ? 'border-indigo-500 bg-indigo-50 shadow-md ring-2 ring-indigo-200'
-                                : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/50'"
+                            :class="[
+                                form.login_type === 'visitor'
+                                    ? 'border-indigo-500 bg-indigo-50 shadow-md ring-2 ring-indigo-200'
+                                    : 'border-gray-200 bg-gray-50 hover:border-indigo-300 hover:bg-indigo-50/50',
+                                isLockedEmail ? 'opacity-60 cursor-not-allowed' : ''
+                            ]"
                         >
                             <span class="text-3xl mb-2" aria-hidden="true">👤</span>
                             <span class="text-sm font-black uppercase tracking-wide"
@@ -100,11 +109,15 @@ const backToEmail = () => {
                         </button>
                         <button
                             type="button"
-                            @click="form.login_type = 'delivery'"
+                            @click="!isLockedEmail && (form.login_type = 'delivery')"
+                            :disabled="isLockedEmail"
                             class="flex flex-col items-center rounded-2xl border-2 p-4 transition-all duration-200"
-                            :class="form.login_type === 'delivery'
-                                ? 'border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200'
-                                : 'border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50/50'"
+                            :class="[
+                                form.login_type === 'delivery'
+                                    ? 'border-orange-500 bg-orange-50 shadow-md ring-2 ring-orange-200'
+                                    : 'border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50/50',
+                                isLockedEmail ? 'opacity-60 cursor-not-allowed' : ''
+                            ]"
                         >
                             <span class="text-3xl mb-2" aria-hidden="true">📦</span>
                             <span class="text-sm font-black uppercase tracking-wide"
@@ -124,7 +137,7 @@ const backToEmail = () => {
 
                 <div>
                     <label for="email" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Authenticated Email Address</label>
-                    <input id="email" type="email" placeholder="e.g. yourname@example.com" class="mt-1 block w-full border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm py-4 font-bold text-gray-700" v-model="form.email" required autofocus />
+                    <input id="email" type="email" placeholder="e.g. yourname@example.com" class="mt-1 block w-full border-gray-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm py-4 font-bold text-gray-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed" v-model="form.email" required autofocus :disabled="isLockedEmail" />
                     <div v-if="form.errors.email" class="text-red-500 font-bold text-xs mt-2 uppercase italic tracking-widest">{{ form.errors.email }}</div>
                 </div>
 
@@ -147,7 +160,7 @@ const backToEmail = () => {
                     </span>
                     <p class="text-sm font-bold text-gray-600">OTP sent to</p>
                     <p class="text-lg font-black text-gray-900 break-all">{{ form.email }}</p>
-                    <button @click="backToEmail" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline mt-2">Change Email</button>
+                    <button v-if="!isLockedEmail" @click="backToEmail" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline mt-2">Change Email</button>
                 </div>
 
                 <div>

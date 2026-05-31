@@ -26,6 +26,31 @@ class Guard extends Authenticatable implements CanResetPasswordContract
     ];
 
     protected $casts = [
-        'password' => 'hashed',
+        'password'  => 'hashed',
+        'ic_number' => 'encrypted',
     ];
+
+    public function getShiftAttribute($value)
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        // If it starts with [ it is JSON
+        if (str_starts_with($value, '[')) {
+            return json_decode($value, true) ?: [$value];
+        }
+
+        // Otherwise it could be comma-separated or a single string
+        return array_map('trim', explode(',', $value));
+    }
+
+    public function setShiftAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['shift'] = json_encode(array_values(array_filter($value)));
+        } else {
+            $this->attributes['shift'] = $value;
+        }
+    }
 }

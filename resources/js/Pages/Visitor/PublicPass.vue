@@ -95,6 +95,10 @@ const captureAndSubmit = async () => {
                         <span class="text-sm font-black text-gray-800">{{ visitor.name }}</span>
                     </div>
                     <div class="flex justify-between border-b border-gray-200 pb-2">
+                        <span class="text-xs font-bold text-gray-400 uppercase">Guest Email</span>
+                        <span class="text-sm font-black text-gray-800">{{ visitor.email }}</span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-200 pb-2">
                         <span class="text-xs font-bold text-gray-400 uppercase">Vehicle Number</span>
                         <span class="text-sm font-black text-gray-800 uppercase">{{ visitor.vehicle_number }}</span>
                     </div>
@@ -111,7 +115,7 @@ const captureAndSubmit = async () => {
                 <!-- Visitor Login Link inside the card -->
                 <div class="py-2.5 border-y border-dashed border-gray-200/80 flex justify-between items-center text-xs px-2 my-4">
                     <span class="font-bold text-gray-500">Looking for your dashboard?</span>
-                    <Link :href="route('visitor.login')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-black uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all">
+                    <Link :href="route('welcome', { email: visitor.email })" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-black uppercase tracking-wider px-3.5 py-2 rounded-xl transition-all">
                         Log In
                     </Link>
                 </div>

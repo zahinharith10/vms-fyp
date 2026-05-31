@@ -23,21 +23,44 @@ class DeliveryDashboardController extends Controller
         $logs = DeliveryLog::where('delivery_personnel_id', $delivery->id)
             ->with('run')
             ->orderBy('created_at', 'desc')
-            ->limit(10)
+            ->limit(100)
             ->get();
 
-        $activeRun = DeliveryRun::query()
+        $latestRun = DeliveryRun::query()
             ->where('delivery_personnel_id', $delivery->id)
-            ->whereHas('logs', fn ($query) => $query->whereNull('exit_time'))
-            ->with('logs')
             ->latest()
             ->first();
 
-        $latestActiveLog = $activeRun?->logs->first(fn (DeliveryLog $log) => $log->exit_time === null)
-            ?? DeliveryLog::where('delivery_personnel_id', $delivery->id)
-                ->whereNull('exit_time')
-                ->orderBy('created_at', 'desc')
-                ->first();
+        $latestStandaloneLog = DeliveryLog::query()
+            ->where('delivery_personnel_id', $delivery->id)
+            ->whereNull('delivery_run_id')
+            ->latest()
+            ->first();
+
+        $latestItem = null;
+        if ($latestRun && $latestStandaloneLog) {
+            $latestItem = $latestRun->created_at->gt($latestStandaloneLog->created_at) ? $latestRun : $latestStandaloneLog;
+        } else {
+            $latestItem = $latestRun ?: $latestStandaloneLog;
+        }
+
+        $activeRun = null;
+        $latestActiveLog = null;
+
+        if ($latestItem instanceof DeliveryRun) {
+            if (in_array($latestItem->status, ['Pending', 'Approved', 'Checked In'])) {
+                $latestItem->load('logs');
+                $hasActiveLogs = $latestItem->logs->contains(fn ($log) => $log->exit_time === null && !in_array($log->status, ['Cancelled', 'Rejected']));
+                if ($hasActiveLogs) {
+                    $activeRun = $latestItem;
+                    $latestActiveLog = $activeRun->logs->first(fn ($log) => $log->exit_time === null && !in_array($log->status, ['Cancelled', 'Rejected']));
+                }
+            }
+        } elseif ($latestItem instanceof DeliveryLog) {
+            if (in_array($latestItem->status, ['Pending', 'Approved', 'Checked In']) && is_null($latestItem->exit_time)) {
+                $latestActiveLog = $latestItem;
+            }
+        }
 
         $qrCodeSvg = null;
         if ($activeRun) {
@@ -74,10 +97,17 @@ class DeliveryDashboardController extends Controller
 
         $hasOpenRun = DeliveryRun::query()
             ->where('delivery_personnel_id', $delivery->id)
-            ->whereHas('logs', fn ($query) => $query->whereNull('exit_time'))
+            ->whereIn('status', ['Pending', 'Approved', 'Checked In'])
             ->exists();
 
-        if ($hasOpenRun) {
+        $hasOpenStandaloneLog = DeliveryLog::query()
+            ->where('delivery_personnel_id', $delivery->id)
+            ->whereNull('delivery_run_id')
+            ->whereIn('status', ['Pending', 'Approved', 'Checked In'])
+            ->whereNull('exit_time')
+            ->exists();
+
+        if ($hasOpenRun || $hasOpenStandaloneLog) {
             return redirect()->back()->with('error', 'You already have an active delivery trip. Please complete or check out before starting a new one.');
         }
 
@@ -88,7 +118,8 @@ class DeliveryDashboardController extends Controller
         $run = $deliveryTripService->createRun(
             $delivery,
             $request->input('delivery_type'),
-            $destinations
+            $destinations,
+            $request->string('host_name')->toString()
         );
 
         $approvedCount = $run->logs->where('status', 'Approved')->count();
@@ -111,29 +142,42 @@ class DeliveryDashboardController extends Controller
         return redirect()->back()->with('success', $msg);
     }
 
-    public function cancelTrip($run)
+    public function cancelTrip($id)
     {
         $delivery = Auth::guard('delivery')->user();
         if (! $delivery) {
             return redirect('/');
         }
 
-        $run = DeliveryRun::where('id', $run)
+        // Try to find a run first
+        $run = DeliveryRun::where('id', $id)
             ->where('delivery_personnel_id', $delivery->id)
             ->first();
 
-        if (! $run) {
-            return redirect()->back()->with('error', 'Trip not found.');
+        if ($run) {
+            if (! in_array($run->status, ['Pending', 'Approved'])) {
+                return redirect()->back()->with('error', 'Only pending or approved trips can be cancelled.');
+            }
+            $run->logs()->update(['status' => 'Cancelled']);
+            $run->update(['status' => 'Cancelled']);
+            return redirect()->back()->with('success', 'Trip cancelled successfully.');
         }
 
-        if (! in_array($run->status, ['Pending', 'Approved'])) {
-            return redirect()->back()->with('error', 'Only pending or approved trips can be cancelled.');
+        // If no run is found, try to find a standalone log
+        $log = DeliveryLog::where('id', $id)
+            ->where('delivery_personnel_id', $delivery->id)
+            ->whereNull('delivery_run_id')
+            ->first();
+
+        if ($log) {
+            if (! in_array($log->status, ['Pending', 'Approved'])) {
+                return redirect()->back()->with('error', 'Only pending or approved deliveries can be cancelled.');
+            }
+            $log->update(['status' => 'Cancelled']);
+            return redirect()->back()->with('success', 'Delivery request cancelled successfully.');
         }
 
-        $run->logs()->delete();
-        $run->delete();
-
-        return redirect()->back()->with('success', 'Trip cancelled successfully.');
+        return redirect()->back()->with('error', 'Trip not found.');
     }
 
     public function register(Request $request)

@@ -28,6 +28,7 @@ const tripForm = useForm({
     delivery_type: 'single',
     unit_number: '',
     unit_numbers: [],
+    host_name: '',
 });
 
 const blockOptions = computed(() => Object.keys(props.houseUnits || {}).sort((a, b) => Number(a) - Number(b)));
@@ -97,21 +98,26 @@ const submitTrip = () => {
         onSuccess: () => {
             resetSelectors();
             stopList.value = [];
+            tripForm.host_name = '';
         },
     });
 };
 
 const cancelTrip = () => {
     if (confirm('Are you sure you want to cancel this delivery trip?')) {
-        const routeName = props.activeRun ? 'delivery.trips.cancel' : 'delivery.trips.cancel';
-        const routeParams = props.activeRun ? { run: props.activeRun.id } : { log: props.activeLog?.id };
-
-        useForm({}).delete(route(routeName, routeParams), {
-            preserveScroll: true,
-            onSuccess: () => {
-                window.location.reload();
-            },
-        });
+        if (props.activeRun) {
+            // Multi or single-run cancel
+            useForm({}).delete(route('delivery.trips.cancel', { run: props.activeRun.id }), {
+                preserveScroll: true,
+                onSuccess: () => { window.location.reload(); },
+            });
+        } else if (props.activeLog) {
+            // Standalone single log cancel (no run wrapper)
+            useForm({}).delete(route('delivery.trips.cancel', { run: props.activeLog.delivery_run_id ?? props.activeLog.id }), {
+                preserveScroll: true,
+                onSuccess: () => { window.location.reload(); },
+            });
+        }
     }
 };
 
@@ -132,6 +138,8 @@ const allStopsApproved = computed(() => {
     }
     return false;
 });
+
+const CANCELLED_STATUSES = ['Cancelled', 'Rejected'];
 
 const groupedLogs = computed(() => {
     const groups = [];
@@ -159,12 +167,28 @@ const groupedLogs = computed(() => {
     return groups;
 });
 
+// Active tab: only show entries that are NOT yet finished and NOT cancelled/rejected
+const activeGroupedLogs = computed(() => {
+    return groupedLogs.value.filter(group => {
+        if (group.type === 'multi') {
+            return !CANCELLED_STATUSES.includes(group.run.status)
+                && !group.logs.every(l => l.exit_time !== null);
+        }
+        return !CANCELLED_STATUSES.includes(group.log.status)
+            && group.log.exit_time === null
+            && group.log.status !== 'Checked Out';
+    });
+});
+
 const historyLogs = computed(() => {
     return groupedLogs.value.filter(group => {
         if (group.type === 'multi') {
-            return group.run.status === 'Completed' || group.logs.every(log => log.exit_time !== null);
+            return CANCELLED_STATUSES.includes(group.run.status)
+                || group.logs.every(log => log.exit_time !== null);
         } else {
-            return group.log.exit_time !== null || group.log.status === 'Checked Out';
+            return CANCELLED_STATUSES.includes(group.log.status)
+                || group.log.exit_time !== null
+                || group.log.status === 'Checked Out';
         }
     });
 });
@@ -235,12 +259,12 @@ const historyLogs = computed(() => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Floor</label>
+                                    <label class="block text-gray-500 dark:text-gray-400 text-xs font-bold mb-1 uppercase tracking-wider">Floor</label>
                                     <select
                                         v-model="floor"
                                         @change="onFloorChange"
                                         class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                        :class="!block ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'"
+                                        :class="!block ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 dark:text-gray-200'"
                                         :disabled="!block"
                                     >
                                         <option value="" disabled>{{ block ? 'Select Floor' : 'Select Block first' }}</option>
@@ -248,11 +272,11 @@ const historyLogs = computed(() => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Unit No.</label>
+                                    <label class="block text-gray-500 dark:text-gray-400 text-xs font-bold mb-1 uppercase tracking-wider">Unit No.</label>
                                     <select
                                         v-model="unit"
                                         class="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                        :class="!floor ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700'"
+                                        :class="!floor ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 dark:text-gray-200'"
                                         :disabled="!floor"
                                     >
                                         <option value="" disabled>{{ floor ? 'Select Unit' : 'Select Floor first' }}</option>
@@ -261,7 +285,7 @@ const historyLogs = computed(() => {
                                 </div>
                             </div>
 
-                            <div v-if="currentUnitLabel" class="px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-black text-indigo-700 tracking-widest text-center">
+                            <div v-if="currentUnitLabel" class="px-3 py-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-lg text-xs font-black text-indigo-700 dark:text-indigo-300 tracking-widest text-center">
                                 📍 Selected: {{ currentUnitLabel }}
                             </div>
 
@@ -272,21 +296,21 @@ const historyLogs = computed(() => {
                                 :disabled="!canAddStop"
                                 class="w-full py-2 px-4 rounded-lg font-bold text-sm border-2 border-dashed transition"
                                 :class="canAddStop
-                                    ? 'border-orange-400 text-orange-700 hover:bg-orange-50'
-                                    : 'border-gray-200 text-gray-400 cursor-not-allowed'"
+                                    ? 'border-orange-400 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20'
+                                    : 'border-gray-200 dark:border-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'"
                             >
                                 + Add unit to list
                             </button>
 
                             <div v-if="deliveryMode === 'multi'" class="space-y-2">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                                     Stops added ({{ stopList.length }}) — minimum 2 required
                                 </p>
                                 <ul v-if="stopList.length" class="space-y-2">
                                     <li
                                         v-for="(stop, index) in stopList"
                                         :key="stop"
-                                        class="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 text-sm font-bold text-gray-800"
+                                        class="flex items-center justify-between bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/40 rounded-lg px-3 py-2 text-sm font-bold text-gray-800 dark:text-gray-200"
                                     >
                                         <span>{{ index + 1 }}. {{ stop }}</span>
                                         <button type="button" class="text-red-500 text-xs font-black uppercase" @click="removeStop(index)">Remove</button>
@@ -298,6 +322,18 @@ const historyLogs = computed(() => {
                             <div v-if="tripForm.errors.unit_number" class="text-red-500 text-xs">{{ tripForm.errors.unit_number }}</div>
                             <div v-if="tripForm.errors.unit_numbers" class="text-red-500 text-xs">{{ tripForm.errors.unit_numbers }}</div>
                             <div v-if="tripForm.errors['unit_numbers.0']" class="text-red-500 text-xs">Please check all destination units.</div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-700 dark:text-white text-sm font-bold mb-1">Person to Visit <span class="text-red-500">*</span></label>
+                            <input
+                                v-model="tripForm.host_name"
+                                type="text"
+                                placeholder="Enter the full name of the resident you are delivering to"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-gray-800 dark:border-gray-700"
+                                :class="tripForm.errors.host_name ? 'border-red-500' : ''"
+                            />
+                            <div v-if="tripForm.errors.host_name" class="text-red-500 text-xs mt-1">{{ tripForm.errors.host_name }}</div>
                         </div>
 
                         <button
@@ -314,11 +350,10 @@ const historyLogs = computed(() => {
             <div class="space-y-6">
                 <div v-if="activeRun || activeLog" class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 flex flex-col items-center">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white border-b pb-2 w-full mb-4">Active Entry Pass</h3>
-
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white border-b pb-2 w-full mb-4">Active Entry</h3>
                         <span
                             v-if="activeRun"
-                            class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 bg-orange-100 text-orange-700"
+                            class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-300"
                         >
                             {{ runStatusLabel(activeRun) }}
                         </span>
@@ -326,20 +361,20 @@ const historyLogs = computed(() => {
                         <span
                             class="px-3 py-1 rounded-full text-xs font-bold mb-4"
                             :class="{
-                                'bg-yellow-100 text-yellow-800': (activeRun?.status || activeLog?.status) === 'Pending',
-                                'bg-green-100 text-green-800': (activeRun?.status || activeLog?.status) === 'Approved',
-                                'bg-blue-100 text-blue-800': (activeRun?.status || activeLog?.status) === 'Checked In',
+                                'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400': (activeRun?.status || activeLog?.status) === 'Pending',
+                                'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400': (activeRun?.status || activeLog?.status) === 'Approved',
+                                'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400': (activeRun?.status || activeLog?.status) === 'Checked In',
                             }"
                         >
                             {{ activeRun?.status || activeLog?.status }}
                         </span>
 
-                        <div v-if="allStopsApproved" class="bg-white dark:bg-gray-900 p-4 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm mb-4">
-                            <div v-html="qrCodeSvg" class="h-48 w-48 flex justify-center items-center"></div>
+                        <div v-if="allStopsApproved" class="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm mb-4">
+                            <div v-html="qrCodeSvg" class="h-48 w-48 flex justify-center items-center bg-white p-2 rounded shadow-inner"></div>
                         </div>
-                        <div v-else class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-center">
-                            <p class="text-yellow-800 font-bold text-sm">⏳ Waiting for resident approval</p>
-                            <p class="text-yellow-600 text-xs mt-1">QR code will appear once all residents approve this request</p>
+                        <div v-else class="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/40 rounded-lg p-4 mb-4 text-center">
+                            <p class="text-yellow-800 dark:text-yellow-300 font-bold text-sm">⏳ Waiting for resident approval</p>
+                            <p class="text-yellow-600 dark:text-yellow-400 text-xs mt-1">QR code will appear once all residents approve this request</p>
                         </div>
 
                         <div class="text-center text-sm space-y-2 w-full">
@@ -353,28 +388,28 @@ const historyLogs = computed(() => {
                                 Cancel Request
                             </button>
 
-                            <div v-if="activeRun?.type === 'multi' && activeRun.logs?.length" class="text-left bg-orange-50 border border-orange-100 rounded-xl p-3">
-                                <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2">Stops</p>
+                            <div v-if="activeRun?.type === 'multi' && activeRun.logs?.length" class="text-left bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/40 rounded-xl p-3">
+                                <p class="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-2">Stops</p>
                                 <ul class="space-y-1">
                                     <li
                                         v-for="log in activeRun.logs"
                                         :key="log.id"
-                                        class="flex justify-between text-xs font-bold"
+                                        class="flex justify-between text-xs font-bold text-gray-700 dark:text-gray-300"
                                     >
                                         <span>{{ log.destination }}</span>
                                         <span
                                             :class="{
-                                                'text-yellow-600': log.status === 'Pending',
-                                                'text-green-600': log.status === 'Approved',
-                                                'text-blue-600': log.status === 'Checked In',
-                                                'text-gray-500': log.status === 'Checked Out',
-                                                'text-red-500': log.status === 'Rejected',
+                                                'text-yellow-600 dark:text-yellow-400': log.status === 'Pending',
+                                                'text-green-600 dark:text-green-400': log.status === 'Approved',
+                                                'text-blue-600 dark:text-blue-400': log.status === 'Checked In',
+                                                'text-gray-500 dark:text-gray-400': log.status === 'Checked Out',
+                                                'text-red-500 dark:text-red-400': log.status === 'Rejected',
                                             }"
                                         >{{ log.status }}</span>
                                     </li>
                                 </ul>
                             </div>
-                            <p v-else class="text-gray-500">Destination: Unit {{ activeLog?.destination }}</p>
+                            <p v-else class="text-gray-500 dark:text-gray-400">Destination: Unit {{ activeLog?.destination }}</p>
 
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-3 max-w-sm mx-auto">
                                 Show this QR code at the guard post. Each unit’s resident must approve their stop before entry.
@@ -387,22 +422,23 @@ const historyLogs = computed(() => {
                     <div class="p-6 flex flex-col h-full">
                         <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white border-b pb-2">Recent Entry Logs</h3>
 
-                        <div v-if="groupedLogs && groupedLogs.length > 0" class="space-y-3">
-                            <div v-for="group in groupedLogs" :key="group.type === 'multi' ? group.run.id : group.log.id" class="p-3 rounded border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800">
+                        <div v-if="activeGroupedLogs && activeGroupedLogs.length > 0" class="space-y-3">
+                            <div v-for="group in activeGroupedLogs" :key="group.type === 'multi' ? group.run.id : group.log.id" class="p-3 rounded border border-gray-200 dark:border-gray-700 text-sm bg-gray-50 dark:bg-gray-800">
                                 <div v-if="group.type === 'multi'" class="space-y-2">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <span class="text-[10px] text-orange-600 font-bold uppercase">Multi-stop trip ({{ group.logs.length }} units)</span>
+                                            <span class="text-[10px] text-orange-600 dark:text-orange-400 font-bold uppercase">Multi-stop trip ({{ group.logs.length }} units)</span>
                                             <div class="mt-1 space-y-1">
                                                 <div v-for="log in group.logs" :key="log.id" class="flex justify-between items-center">
                                                     <span class="font-bold dark:text-white text-xs">{{ log.destination }}</span>
                                                     <span
                                                         class="font-bold text-xs"
                                                         :class="{
-                                                            'text-yellow-600': log.status === 'Pending',
-                                                            'text-blue-600': log.status === 'Approved',
-                                                            'text-green-600': log.status === 'Checked In',
-                                                            'text-gray-500': log.status === 'Checked Out',
+                                                            'text-yellow-600 dark:text-yellow-400': log.status === 'Pending',
+                                                            'text-blue-600 dark:text-blue-400': log.status === 'Approved',
+                                                            'text-green-600 dark:text-green-400': log.status === 'Checked In',
+                                                            'text-gray-500 dark:text-gray-400': log.status === 'Checked Out',
+                                                            'text-red-500 dark:text-red-400': log.status === 'Rejected' || log.status === 'Cancelled',
                                                         }"
                                                     >{{ log.status }}</span>
                                                 </div>
@@ -411,17 +447,21 @@ const historyLogs = computed(() => {
                                     </div>
                                     <div class="text-gray-400 dark:text-gray-500 text-[10px]">Date: {{ formatMalaysiaDate(group.created_at) }}</div>
                                 </div>
-                                <div v-else class="flex justify-between">
-                                    <span class="font-bold dark:text-white">Unit {{ group.log.destination }}</span>
-                                    <span
-                                        class="font-bold"
-                                        :class="{
-                                            'text-yellow-600': group.log.status === 'Pending',
-                                            'text-blue-600': group.log.status === 'Approved',
-                                            'text-green-600': group.log.status === 'Checked In',
-                                            'text-gray-500': group.log.status === 'Checked Out',
-                                        }"
-                                    >{{ group.log.status }}</span>
+                                <div v-else class="space-y-1">
+                                    <div class="flex justify-between">
+                                        <span class="font-bold dark:text-white">Unit {{ group.log.destination }}</span>
+                                        <span
+                                            class="font-bold"
+                                            :class="{
+                                                'text-yellow-600 dark:text-yellow-400': group.log.status === 'Pending',
+                                                'text-blue-600 dark:text-blue-400': group.log.status === 'Approved',
+                                                'text-green-600 dark:text-green-400': group.log.status === 'Checked In',
+                                                'text-gray-500 dark:text-gray-400': group.log.status === 'Checked Out',
+                                                'text-red-500 dark:text-red-400': group.log.status === 'Rejected' || group.log.status === 'Cancelled',
+                                            }"
+                                        >{{ group.log.status }}</span>
+                                    </div>
+                                    <div v-if="group.log.host_name" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">👤 For: {{ group.log.host_name }}</div>
                                 </div>
                                 <div v-if="group.type === 'single'" class="text-gray-400 dark:text-gray-500 text-[10px] mt-1">Date: {{ formatMalaysiaDate(group.created_at) }}</div>
                             </div>
@@ -439,41 +479,57 @@ const historyLogs = computed(() => {
                 <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white border-b pb-2">Delivery History</h3>
 
                 <div v-if="historyLogs.length > 0" class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                         <thead>
                             <tr>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Destination(s)</th>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destination(s)</th>
+                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Person to Visit</th>
+                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                             <tr v-for="group in historyLogs" :key="group.type === 'multi' ? group.run.id : group.log.id">
                                 <td class="px-6 py-4 whitespace-no-wrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                                         :class="{
-                                            'bg-orange-100 text-orange-800': group.type === 'multi',
-                                            'bg-indigo-100 text-indigo-800': group.type === 'single',
+                                            'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-400': group.type === 'multi',
+                                            'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400': group.type === 'single',
                                         }"
                                     >
                                         {{ group.type === 'multi' ? 'Multi-stop' : 'Single' }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700">
+                                <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700 dark:text-gray-300">
                                     <div v-if="group.type === 'multi'" class="space-y-1">
                                         <div v-for="log in group.logs" :key="log.id" class="text-xs">{{ log.destination }}</div>
                                     </div>
                                     <div v-else>{{ group.log.destination }}</div>
                                 </td>
+                                <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700 dark:text-gray-300">
+                                    <span v-if="group.type === 'multi' && group.logs[0]?.host_name" class="font-semibold">{{ group.logs[0].host_name }}</span>
+                                    <span v-else-if="group.type === 'single' && group.log.host_name" class="font-semibold">{{ group.log.host_name }}</span>
+                                    <span v-else class="text-gray-400 italic text-xs">—</span>
+                                </td>
                                 <td class="px-6 py-4 whitespace-no-wrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                                         :class="{
-                                            'bg-green-100 text-green-800': group.type === 'multi' ? group.run.status === 'Completed' : group.log.status === 'Checked Out',
-                                            'bg-gray-100 text-gray-800': group.type === 'single' && group.log.exit_time,
+                                            'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400': group.type === 'multi'
+                                                ? group.run.status === 'Completed'
+                                                : group.log.status === 'Checked Out' || (group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status)),
+                                            'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400': group.type === 'multi'
+                                                ? CANCELLED_STATUSES.includes(group.run.status)
+                                                : CANCELLED_STATUSES.includes(group.log.status),
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300': group.type === 'multi'
+                                                ? !['Completed', ...CANCELLED_STATUSES].includes(group.run.status)
+                                                : false,
                                         }"
                                     >
-                                        {{ group.type === 'multi' ? (group.run.status === 'Completed' ? 'Completed' : group.run.status) : (group.log.exit_time ? 'Completed' : group.log.status) }}
+                                        {{ group.type === 'multi'
+                                            ? group.run.status
+                                            : (group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status) ? 'Completed' : group.log.status)
+                                        }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-500">

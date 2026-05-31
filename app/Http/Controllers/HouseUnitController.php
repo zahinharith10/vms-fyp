@@ -26,7 +26,7 @@ class HouseUnitController extends Controller
         }
 
         return Inertia::render('Admin/HouseUnits/Index', [
-            'units' => $query->paginate(10)->withQueryString(),
+            'units' => $query->with('residents')->paginate(10)->withQueryString(),
             'filters' => $request->only('search')
         ]);
     }

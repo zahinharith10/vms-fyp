@@ -22,7 +22,7 @@ onMounted(() => {
 <template>
     <div class="flex min-h-screen bg-gray-100">
         <!-- Sidebar -->
-        <aside class="w-64 bg-white shadow-md min-h-screen hidden md:block">
+        <aside class="w-64 shrink-0 bg-white shadow-md min-h-screen hidden md:block">
             <div class="p-6 border-b border-gray-200">
                 <Link :href="route('admin.dashboard')" class="flex items-center">
                     <ApplicationLogo class="block h-20 w-auto fill-current text-gray-800" />
@@ -53,7 +53,7 @@ onMounted(() => {
                             Manage Profiles
                         </Link>
                         <Link :href="route('admin.visit-logs.index')" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md" :class="{ 'text-indigo-600 font-bold': route().current('admin.visit-logs.*') }">
-                            Visit Monitoring
+                            Visit History
                         </Link>
                     </div>
                 </div>
@@ -71,7 +71,7 @@ onMounted(() => {
                             Manage Personnel
                         </Link>
                         <Link :href="route('admin.delivery.logs.index')" class="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md" :class="{ 'text-indigo-600 font-bold': route().current('admin.delivery.logs.*') }">
-                            View Logs
+                            Delivery History
                         </Link>
                     </div>
                 </div>
@@ -82,6 +82,18 @@ onMounted(() => {
 
                 <Link :href="route('admin.units.index')" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md" :class="{ 'bg-gray-200 font-bold': route().current('admin.units.*') }">
                      House Units
+                </Link>
+
+                <div class="border-t border-gray-200 my-4"></div>
+
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">System Tools</p>
+
+                <Link :href="route('admin.reports.index')" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md" :class="{ 'bg-gray-200 font-bold': route().current('admin.reports.*') }">
+                     Reports
+                </Link>
+
+                <Link :href="route('manual.index')" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md" :class="{ 'bg-gray-200 font-bold': route().current('manual.index') }">
+                     User Manual
                 </Link>
 
                 <div class="border-t border-gray-200 my-4"></div>
@@ -112,6 +124,8 @@ onMounted(() => {
              <div v-if="showingNavigationDropdown" class="md:hidden bg-white border-b border-gray-200 p-4">
                  <Link :href="route('admin.dashboard')" class="block py-2 text-gray-700">Dashboard</Link>
                  <Link :href="route('admin.visitors.index')" class="block py-2 text-gray-700">Visitors</Link>
+                 <Link :href="route('admin.reports.index')" class="block py-2 text-gray-700">Reports</Link>
+                 <Link :href="route('manual.index')" class="block py-2 text-gray-700">User Manual</Link>
                  <Link :href="route('admin.profile')" class="block py-2 text-gray-700">Profile Settings</Link>
                  <Link :href="route('admin.logout')" method="post" as="button" class="block py-2 text-red-600 w-full text-left">Log Out</Link>
              </div>

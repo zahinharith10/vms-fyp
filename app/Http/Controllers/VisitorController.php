@@ -142,67 +142,167 @@ class VisitorController extends Controller
             'Expires' => '0',
         ];
 
-        $callback = function() use ($logs) {
+        // ── Helpers ───────────────────────────────────────────────────────────────
+        $tz = 'Asia/Kuala_Lumpur';
+
+        // Format a Carbon/datetime value as a readable Malaysia-time string.
+        // Accepts Carbon instances (already cast by model) or raw strings.
+        $fmtDt = function ($dt) use ($tz): string {
+            if (!$dt) return '-';
+            $carbon = ($dt instanceof \Carbon\Carbon) ? $dt : \Carbon\Carbon::parse($dt);
+            return $carbon->timezone($tz)->format('d/m/Y h:i:s A');
+        };
+
+        // Format the difference between two Carbon/datetime values as Xh Xm Xs.
+        $fmtDiff = function ($start, $end): string {
+            if (!$start || !$end) return '-';
+            $s = ($start instanceof \Carbon\Carbon) ? $start : \Carbon\Carbon::parse($start);
+            $e = ($end   instanceof \Carbon\Carbon) ? $end   : \Carbon\Carbon::parse($end);
+            $secs = (int) $s->diffInSeconds($e, false); // signed
+            if ($secs <= 0) return '-';
+            $h = intdiv($secs, 3600);
+            $m = intdiv($secs % 3600, 60);
+            $sc = $secs % 60;
+            return ($h > 0 ? "{$h}h " : '') . "{$m}m {$sc}s";
+        };
+
+        // ── Max sessions across all visits (dynamic column count) ─────────────────
+        $maxSessions = $logs->max(fn($log) => $log->sessions->count()) ?: 1;
+
+        $callback = function() use ($logs, $fmtDt, $fmtDiff, $maxSessions) {
             $file = fopen('php://output', 'w');
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM
-            
-            fputcsv($file, [
-                'ID', 'Visitor Name', 'Phone', 'IC Number', 'Unit Number', 
-                'Purpose', 'Status', 'Sessions Count', 'Total Stay Duration (Hours)'
-            ]);
 
+            // ── Header ────────────────────────────────────────────────────────────
+            $header = [
+                'Visit ID', 'Visitor Name', 'IC Number', 'Phone', 'Email',
+                'Vehicle Number', 'Unit Number', 'Host Name', 'Purpose',
+                'Parking Lot', 'Approved By', 'Status',
+                'Total Sessions', 'Total Stay Duration',
+                'First Check-In', 'Last Check-Out',
+            ];
+
+            for ($i = 1; $i <= $maxSessions; $i++) {
+                $suffix = $maxSessions === 1 ? '' : " $i";
+                $header[] = "Session{$suffix} - Check-In";
+                $header[] = "Session{$suffix} - " . ($i < $maxSessions ? 'Temp Leave' : 'Check-Out');
+                $header[] = "Session{$suffix} - Duration";
+            }
+
+            fputcsv($file, $header);
+
+            // ── Rows ──────────────────────────────────────────────────────────────
             foreach ($logs as $log) {
-                // Calculate Total Stay Duration from visit_sessions (authoritative source)
-                $totalMins = 0;
+                $sessions = $log->sessions; // already ordered by check_in_time (see model)
 
-                if ($log->sessions->count() > 0) {
-                    // Sum all session durations
-                    foreach ($log->sessions as $session) {
-                        $start = $session->check_in_time;
-                        $end = $session->check_out_time 
-                            ?? ($log->status === 'Checked In' ? now() : $session->check_in_time);
-                        $totalMins += $start->diffInMinutes($end);
+                // Total duration (sum all sessions)
+                $totalSecs = 0;
+                if ($sessions->count() > 0) {
+                    foreach ($sessions as $sess) {
+                        $start = $sess->check_in_time;
+                        $end   = $sess->check_out_time
+                            ?? ($log->status === 'Checked In' ? now() : null);
+                        if ($start && $end) {
+                            $s = ($start instanceof \Carbon\Carbon) ? $start : \Carbon\Carbon::parse($start);
+                            $e = ($end   instanceof \Carbon\Carbon) ? $end   : \Carbon\Carbon::parse($end);
+                            $diff = (int) $s->diffInSeconds($e, false);
+                            if ($diff > 0) $totalSecs += $diff;
+                        }
                     }
                 } else {
                     // Fallback: legacy first/second columns
-                    if ($log->first_check_in_time) {
-                        $start1 = new \Carbon\Carbon($log->first_check_in_time);
-                        $end1 = $log->first_check_out_time 
-                            ? new \Carbon\Carbon($log->first_check_out_time) 
-                            : ($log->status === 'Checked In' ? now() : $start1);
-                        $totalMins += $start1->diffInMinutes($end1);
+                    foreach ([
+                        [$log->first_check_in_time,  $log->first_check_out_time],
+                        [$log->second_check_in_time, $log->second_check_out_time],
+                    ] as [$cin, $cout]) {
+                        if ($cin) {
+                            $s = \Carbon\Carbon::parse($cin);
+                            $e = $cout
+                                ? \Carbon\Carbon::parse($cout)
+                                : ($log->status === 'Checked In' ? now() : $s);
+                            $diff = (int) $s->diffInSeconds($e, false);
+                            if ($diff > 0) $totalSecs += $diff;
+                        }
                     }
-                    if ($log->second_check_in_time) {
-                        $start2 = new \Carbon\Carbon($log->second_check_in_time);
-                        $end2 = $log->second_check_out_time 
-                            ? new \Carbon\Carbon($log->second_check_out_time) 
-                            : ($log->status === 'Checked In' ? now() : $start2);
-                        $totalMins += $start2->diffInMinutes($end2);
-                    }
+                    // Plain single-session fallback
                     if (!$log->first_check_in_time && $log->check_in_time) {
-                        $start = new \Carbon\Carbon($log->check_in_time);
-                        $end = $log->check_out_time ? new \Carbon\Carbon($log->check_out_time) : now();
-                        $totalMins = $start->diffInMinutes($end);
+                        $s = \Carbon\Carbon::parse($log->check_in_time);
+                        $e = $log->check_out_time ? \Carbon\Carbon::parse($log->check_out_time) : now();
+                        $diff = (int) $s->diffInSeconds($e, false);
+                        if ($diff > 0) $totalSecs = $diff;
                     }
                 }
 
-                $totalHours = $totalMins > 0 ? round($totalMins / 60, 2) : 0;
+                $th = intdiv($totalSecs, 3600);
+                $tm = intdiv($totalSecs % 3600, 60);
+                $ts = $totalSecs % 60;
+                $totalFmt = $totalSecs > 0
+                    ? (($th > 0 ? "{$th}h " : '') . "{$tm}m {$ts}s")
+                    : '-';
 
-                fputcsv($file, [
+                // Per-session columns (dynamic, padded to $maxSessions)
+                $sessionCols = [];
+                $sessionList = $sessions->values();
+                $count = $sessionList->count();
+
+                for ($i = 0; $i < $maxSessions; $i++) {
+                    $sess = $sessionList->get($i);
+                    if ($sess) {
+                        $isLast    = ($i === $count - 1);
+                        $sessEnd   = $sess->check_out_time
+                            ?? ($log->status === 'Checked In' ? now() : null);
+                        $outLabel  = $sess->check_out_time
+                            ? $fmtDt($sess->check_out_time) . (!$isLast ? ' (Temp Leave)' : '')
+                            : ($log->status === 'Checked In' ? 'On-Site' : '-');
+
+                        $sessionCols[] = $fmtDt($sess->check_in_time);
+                        $sessionCols[] = $outLabel;
+                        $sessionCols[] = $fmtDiff($sess->check_in_time, $sessEnd);
+                    } else {
+                        $sessionCols[] = '-';
+                        $sessionCols[] = '-';
+                        $sessionCols[] = '-';
+                    }
+                }
+
+                // ── First check-in / last check-out ─────────────────────────────────
+                // Prefer session data (authoritative) over the visits table columns.
+                if ($sessions->count() > 0) {
+                    $firstCheckIn  = $fmtDt($sessions->first()->check_in_time);
+                    $lastCheckOut  = $sessions->last()->check_out_time
+                        ? $fmtDt($sessions->last()->check_out_time)
+                        : ($log->status === 'Checked In' ? 'On-Site' : '-');
+                } else {
+                    $firstCheckIn = $fmtDt($log->check_in_time);
+                    $lastCheckOut = $log->check_out_time
+                        ? $fmtDt($log->check_out_time)
+                        : ($log->status === 'Checked In' ? 'On-Site' : '-');
+                }
+
+                fputcsv($file, array_merge([
                     $log->id,
-                    $log->visitor->name ?? 'N/A',
-                    $log->visitor->phone ?? 'N/A',
-                    $log->visitor->ic_number ?? 'N/A',
+                    $log->visitor->name           ?? 'N/A',
+                    $log->visitor->ic_number       ?? 'N/A',
+                    $log->visitor->phone           ?? 'N/A',
+                    $log->visitor->email           ?? 'N/A',
+                    $log->visitor->vehicle_number  ?? '-',
                     $log->unit_number,
+                    $log->host_name                ?? '-',
                     $log->purpose,
+                    $log->parking_lot_number       ?? '-',
+                    $log->approved_by              ?? '-',
                     $log->status,
-                    $log->sessions->count(),
-                    $totalHours,
-                ]);
+                    $count ?: 1,
+                    $totalFmt,
+                    $firstCheckIn,
+                    $lastCheckOut,
+                ], $sessionCols));
             }
+
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
     }
+
 }

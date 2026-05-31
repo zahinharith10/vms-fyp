@@ -10,6 +10,8 @@ class DeliveryPersonnel extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    protected $table = 'delivery_personnels';
+
     protected $fillable = [
         'name',
         'email',
@@ -21,6 +23,11 @@ class DeliveryPersonnel extends Authenticatable
         'ic_number',
         'photo',
         'status',
+    ];
+
+    protected $casts = [
+        'ic_number'       => 'encrypted',
+        'face_descriptor' => 'encrypted',
     ];
 
     public function logs()

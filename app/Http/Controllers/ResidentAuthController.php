@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Validation\Rules\Password;
 
 class ResidentAuthController extends Controller
 {
@@ -19,8 +20,8 @@ class ResidentAuthController extends Controller
         // Eager load the house unit for the view
         $resident->load('houseUnit');
 
-        $unitNumber = $resident->houseUnit->block . '-' . $resident->houseUnit->floor . '-' . $resident->houseUnit->unit_number;
-        $deliveryUnitNumber = $resident->houseUnit->block . ' - ' . $resident->houseUnit->floor . ' - ' . $resident->houseUnit->unit_number;
+        $unitNumber = $resident->houseUnit->formatted_unit;
+        $deliveryUnitNumber = $resident->houseUnit->formatted_unit;
 
         $stats = [
             'total_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->count(),
@@ -83,8 +84,29 @@ class ResidentAuthController extends Controller
 
     public function profile()
     {
+        $resident = Auth::guard('resident')->user()->load('houseUnit');
+
         return Inertia::render('Resident/Profile', [
-            'resident' => Auth::guard('resident')->user()->load('houseUnit')
+            'resident' => $resident,
+        ]);
+    }
+
+    public function family()
+    {
+        $resident = Auth::guard('resident')->user()->load('houseUnit');
+
+        if ($resident->type !== 'owner') {
+            abort(403, 'Unauthorized action. Only unit owners can view household family members.');
+        }
+
+        $familyMembers = \App\Models\Resident::where('house_unit_id', $resident->house_unit_id)
+            ->where('id', '!=', $resident->id)
+            ->where('type', 'family')
+            ->get(['id', 'name', 'phone', 'email', 'ic_number', 'type', 'status']);
+
+        return Inertia::render('Resident/Family', [
+            'resident' => $resident,
+            'familyMembers' => $familyMembers,
         ]);
     }
 
@@ -96,14 +118,19 @@ class ResidentAuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:residents,email,' . $resident->id,
             'phone' => 'required|string|max:20',
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
             'auto_approve_deliveries' => 'nullable|boolean',
         ]);
 
         $resident->name = $request->name;
         $resident->email = $request->email;
         $resident->phone = $request->phone;
-        $resident->auto_approve_deliveries = $request->boolean('auto_approve_deliveries');
+
+        if ($resident->type === 'owner') {
+            $resident->auto_approve_deliveries = $request->boolean('auto_approve_deliveries');
+        } else {
+            $resident->auto_approve_deliveries = false;
+        }
 
         if ($request->filled('password')) {
             $resident->password = \Illuminate\Support\Facades\Hash::make($request->password);

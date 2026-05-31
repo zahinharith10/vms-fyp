@@ -15,6 +15,20 @@ class VisitController extends Controller
 {
     public function store(Request $request)
     {
+        $normalizeUnit = function ($val) {
+            if (empty($val)) return $val;
+            $parts = preg_split('/\s*-\s*/', trim((string) $val));
+            if (count($parts) !== 3) return $val;
+            $normaliseSegment = fn($s) => is_numeric($s) ? (string)(int)$s : trim($s);
+            return $normaliseSegment($parts[0]) . '-' . $normaliseSegment($parts[1]) . '-' . $normaliseSegment($parts[2]);
+        };
+
+        if ($request->has('unit_number')) {
+            $request->merge([
+                'unit_number' => $normalizeUnit($request->unit_number),
+            ]);
+        }
+
         $visitor = Auth::guard('visitor')->user();
         if (empty($visitor->ic_number) || empty($visitor->photo)) {
             return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details and upload a photo before requesting a visit.');
@@ -59,12 +73,14 @@ class VisitController extends Controller
                 },
             ],
             'purpose' => 'required|string',
+            'host_name' => 'required|string|max:255',
         ]);
 
         $visit = Visit::create([
             'visitor_id' => Auth::guard('visitor')->id(),
             'unit_number' => $request->unit_number,
             'purpose' => $request->purpose,
+            'host_name' => $request->host_name,
             'status' => 'Pending',
         ]);
 

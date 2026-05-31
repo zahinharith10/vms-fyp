@@ -10,7 +10,18 @@ defineProps({
 
 const isDeleteModalOpen = ref(false);
 const isViewModalOpen = ref(false);
+const isPhotoZoomOpen = ref(false);
 const selectedPersonnel = ref(null);
+
+const openPhotoZoom = () => {
+    if (selectedPersonnel.value?.photo) {
+        isPhotoZoomOpen.value = true;
+    }
+};
+
+const closePhotoZoom = () => {
+    isPhotoZoomOpen.value = false;
+};
 
 const deleteForm = useForm({});
 
@@ -27,6 +38,7 @@ const openViewModal = (person) => {
 const closeModals = () => {
     isDeleteModalOpen.value = false;
     isViewModalOpen.value = false;
+    isPhotoZoomOpen.value = false;
     setTimeout(() => {
         selectedPersonnel.value = null;
     }, 300);
@@ -84,7 +96,8 @@ const confirmDelete = () => {
                                         <!-- Clickable Name -->
                                         <button @click="openViewModal(p)" class="text-left group">
                                             <div class="text-sm font-semibold text-indigo-600 group-hover:text-indigo-800 group-hover:underline transition-colors duration-150">{{ p.name }}</div>
-                                            <div class="text-sm text-gray-500">{{ p.phone }}</div>
+                                            <div class="text-xs text-gray-500">{{ p.phone }}</div>
+                                            <div class="text-xs text-gray-400 mt-0.5">{{ p.email }}</div>
                                         </button>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -157,7 +170,13 @@ const confirmDelete = () => {
                             <!-- Photo (overlapping the header) -->
                             <div class="flex justify-center -mt-14">
                                 <div class="relative">
-                                    <img v-if="selectedPersonnel.photo" :src="'/storage/' + selectedPersonnel.photo" class="h-28 w-28 rounded-full object-cover border-4 border-white shadow-lg" />
+                                    <img
+                                        v-if="selectedPersonnel.photo"
+                                        :src="'/storage/' + selectedPersonnel.photo"
+                                        class="h-28 w-28 rounded-full object-cover border-4 border-white shadow-lg cursor-zoom-in hover:scale-105 transition-transform duration-200"
+                                        @click="openPhotoZoom"
+                                        title="Click to zoom"
+                                    />
                                     <div v-else class="h-28 w-28 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center">
                                         <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -189,6 +208,19 @@ const confirmDelete = () => {
                                     <div>
                                         <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Phone</p>
                                         <p class="text-sm font-semibold text-gray-800">{{ selectedPersonnel.phone }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <div class="flex-shrink-0 h-9 w-9 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <svg class="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Email</p>
+                                        <p class="text-sm font-semibold text-gray-800 break-all">{{ selectedPersonnel.email || 'N/A' }}</p>
                                     </div>
                                 </div>
 
@@ -264,5 +296,49 @@ const confirmDelete = () => {
             @close="closeModals"
             @confirm="confirmDelete"
         />
+        <!-- Photo Zoom Lightbox -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="isPhotoZoomOpen && selectedPersonnel?.photo"
+                    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
+                    @click="closePhotoZoom"
+                >
+                    <Transition
+                        enter-active-class="transition ease-out duration-200"
+                        enter-from-class="opacity-0 scale-75"
+                        enter-to-class="opacity-100 scale-100"
+                        leave-active-class="transition ease-in duration-150"
+                        leave-from-class="opacity-100 scale-100"
+                        leave-to-class="opacity-0 scale-75"
+                    >
+                        <div v-if="isPhotoZoomOpen" class="relative" @click.stop>
+                            <img
+                                :src="'/storage/' + selectedPersonnel.photo"
+                                class="max-h-[85vh] max-w-[85vw] rounded-2xl shadow-2xl object-contain"
+                                :alt="selectedPersonnel.name"
+                            />
+                            <button
+                                @click="closePhotoZoom"
+                                class="absolute -top-3 -right-3 bg-white rounded-full h-8 w-8 flex items-center justify-center shadow-lg hover:bg-gray-100 transition"
+                            >
+                                <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                            <p class="text-center text-white/70 text-sm mt-3">{{ selectedPersonnel.name }}</p>
+                        </div>
+                    </Transition>
+                </div>
+            </Transition>
+        </Teleport>
+
     </AuthenticatedLayout>
 </template>

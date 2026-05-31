@@ -12,7 +12,7 @@ class DeliveryTripService
     /**
      * @param  list<string>  $destinations
      */
-    public function createRun(DeliveryPersonnel $personnel, string $type, array $destinations): DeliveryRun
+    public function createRun(DeliveryPersonnel $personnel, string $type, array $destinations, ?string $hostName = null): DeliveryRun
     {
         $run = DeliveryRun::create([
             'delivery_personnel_id' => $personnel->id,
@@ -28,6 +28,7 @@ class DeliveryTripService
                 'delivery_run_id' => $run->id,
                 'destination' => $destination,
                 'status' => $status,
+                'host_name' => $hostName,
             ]);
         }
 
@@ -38,13 +39,18 @@ class DeliveryTripService
 
     protected function resolveInitialStatus(string $destination): string
     {
-        $parts = array_map('trim', explode(' - ', $destination));
+        $parts = preg_split('/\s*-\s*/', trim($destination));
 
         if (count($parts) !== 3) {
             return 'Pending';
         }
 
         [$block, $floor, $unit] = $parts;
+
+        $normalize = fn($val) => is_numeric($val) ? (string)(int)$val : trim($val);
+        $block = $normalize($block);
+        $floor = $normalize($floor);
+        $unit = $normalize($unit);
 
         $houseUnit = HouseUnit::query()
             ->where('block', $block)

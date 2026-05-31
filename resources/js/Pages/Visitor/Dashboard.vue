@@ -13,6 +13,7 @@ const props = defineProps({
 const form = useForm({
     unit_number: '',
     purpose: 'Visit Friend/Family',
+    host_name: '',
 });
 
 const block = ref('');
@@ -158,6 +159,19 @@ onUnmounted(() => {
                                 📍 Unit: {{ block }}-{{ floor }}-{{ house_number }}
                             </div>
                         </div>
+
+                        <!-- Person to Visit (Host Name) -->
+                        <div class="mb-4">
+                            <label class="block text-gray-800 dark:text-gray-250 text-sm font-black uppercase tracking-wider mb-2">Person to Visit</label>
+                            <input 
+                                v-model="form.host_name" 
+                                type="text" 
+                                class="shadow border border-gray-200 dark:border-gray-800 rounded-xl w-full py-3 px-4 text-gray-800 dark:text-gray-200 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-950 transition-all font-bold" 
+                                placeholder="Enter name of the resident..." 
+                                required
+                            />
+                            <div v-if="form.errors.host_name" class="text-red-500 text-xs mt-1">{{ form.errors.host_name }}</div>
+                        </div>
                         <div class="mb-6">
                             <label class="block text-gray-850 dark:text-gray-250 text-sm font-black uppercase tracking-wider mb-2">Purpose</label>
                             <select v-model="form.purpose" class="shadow border border-gray-200 dark:border-gray-800 rounded-xl w-full py-3 px-4 text-gray-800 dark:text-gray-200 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-950 transition-all font-bold mb-3">
@@ -200,7 +214,7 @@ onUnmounted(() => {
                                     'text-red-650 dark:text-red-400': visit.status === 'Rejected'
                                 }" class="font-black text-xs uppercase tracking-wider">{{ visit.status }}</span>
                             </div>
-                            <div class="text-gray-500 dark:text-gray-400 text-xs mt-1 font-medium">{{ visit.purpose }} • {{ formatMalaysiaDate(visit.created_at) }}</div>
+                            <div class="text-gray-500 dark:text-gray-400 text-xs mt-1 font-medium">{{ visit.purpose }} • Host: <span class="font-bold text-gray-700 dark:text-gray-300">{{ visit.host_name || 'N/A' }}</span> • {{ formatMalaysiaDate(visit.created_at) }}</div>
                             <div v-if="visit.parking_lot_number" class="mt-2">
                                 <div class="text-indigo-650 dark:text-indigo-400 font-bold text-xs flex items-center gap-1 mb-1.5">
                                     <span>🅿️</span> Assigned: <span class="bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30 uppercase tracking-widest text-[10px] font-black text-indigo-700 dark:text-indigo-400">Lot {{ visit.parking_lot_number }}</span>

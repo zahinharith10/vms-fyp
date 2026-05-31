@@ -13,9 +13,22 @@ class HouseUnit extends Model
 
     protected $appends = ['formatted_unit'];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        $normalize = fn($val) => is_numeric($val) ? (string)(int)$val : trim($val);
+
+        static::saving(function ($unit) use ($normalize) {
+            $unit->block = $normalize($unit->block);
+            $unit->floor = $normalize($unit->floor);
+            $unit->unit_number = $normalize($unit->unit_number);
+        });
+    }
+
     public function getFormattedUnitAttribute()
     {
-        return "{$this->block} - {$this->floor} - {$this->unit_number}";
+        return "{$this->block}-{$this->floor}-{$this->unit_number}";
     }
 
     public function residents()
@@ -23,3 +36,4 @@ class HouseUnit extends Model
         return $this->hasMany(Resident::class);
     }
 }
+

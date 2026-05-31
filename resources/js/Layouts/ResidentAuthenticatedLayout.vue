@@ -6,13 +6,13 @@ import NotificationDropdown from '@/Components/NotificationDropdown.vue';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 const showingNavigationDropdown = ref(false);
-const resident = usePage().props.auth.user; // Get authenticated resident
+const resident = usePage().props.auth.user;
 </script>
 
 <template>
     <div class="flex min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         <!-- Sidebar -->
-        <aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm min-h-screen hidden md:block transition-colors duration-200">
+        <aside class="w-64 shrink-0 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-sm min-h-screen hidden md:block transition-colors duration-200">
             <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                 <Link :href="route('resident.dashboard')" class="flex items-center">
                     <ApplicationLogo class="block h-12 w-auto fill-current text-indigo-600" />
@@ -22,17 +22,21 @@ const resident = usePage().props.auth.user; // Get authenticated resident
             </div>
             
             <nav class="mt-6 px-4 space-y-2">
-                <div class="px-4 mb-4">
+                <div class="px-4 mb-2">
                      <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Welcome,</p>
                      <p class="text-sm font-bold text-gray-800 dark:text-gray-200 truncate">{{ $page.props.auth.user.name }}</p>
                 </div>
 
-                <Link :href="route('resident.dashboard')" class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-md" :class="{ 'bg-gray-200 dark:bg-gray-800 font-bold': route().current('resident.dashboard') }">
-                    <span class="mr-2">🏠</span> Dashboard
+                <Link :href="route('resident.dashboard')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('resident.dashboard') }">
+                    <span class="mr-3 text-xl">🏠</span> Dashboard
                 </Link>
 
                 <Link :href="route('resident.visitors.index')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('resident.visitors.*') }">
                     <span class="mr-3 text-xl">👥</span> My Visitors
+                </Link>
+
+                <Link v-if="resident.type === 'owner'" :href="route('resident.family')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('resident.family') }">
+                    <span class="mr-3 text-xl">👨‍👩‍👧</span> My Family
                 </Link>
 
                 <Link :href="route('resident.profile')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('resident.profile') }">
@@ -41,8 +45,14 @@ const resident = usePage().props.auth.user; // Get authenticated resident
 
                 <div class="border-t border-gray-200 dark:border-gray-800 my-4"></div>
 
-                <Link :href="route('resident.logout')" method="post" as="button" class="w-full text-left flex items-center px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md">
-                    <span class="mr-2">🚪</span> Log Out
+                <Link :href="route('manual.index')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('manual.index') }">
+                    <span class="mr-3 text-xl">📖</span> User Manual
+                </Link>
+
+                <div class="border-t border-gray-200 dark:border-gray-800 my-4"></div>
+
+                <Link :href="route('resident.logout')" method="post" as="button" class="w-full text-left flex items-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all duration-200">
+                    <span class="mr-3 text-xl">🚪</span> Log Out
                 </Link>
             </nav>
         </aside>
@@ -67,12 +77,15 @@ const resident = usePage().props.auth.user; // Get authenticated resident
                 </div>
             </header>
             
-            <!-- Mobile Menu Dropdown -->
-             <div v-if="showingNavigationDropdown" class="md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 space-y-2">
-                 <Link :href="route('resident.dashboard')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Dashboard</Link>
-                 <Link :href="route('resident.visitors.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">My Visitors</Link>
-                 <Link :href="route('resident.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>
-             </div>
+             <!-- Mobile Menu Dropdown -->
+              <div v-if="showingNavigationDropdown" class="md:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 space-y-2">
+                  <Link :href="route('resident.dashboard')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Dashboard</Link>
+                  <Link :href="route('resident.visitors.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">My Visitors</Link>
+                  <Link v-if="resident.type === 'owner'" :href="route('resident.family')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">My Family</Link>
+                  <Link :href="route('resident.profile')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">My Profile</Link>
+                  <Link :href="route('manual.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">User Manual</Link>
+                  <Link :href="route('resident.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>
+              </div>
 
             <!-- Page Heading -->
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm" v-if="$slots.header">

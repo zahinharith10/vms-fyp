@@ -85,7 +85,7 @@ class Visit extends Model
             }
         }
         
-        return $totalMins;
+        return (int) round($totalMins);
     }
 
     public function getSessionsCountAttribute()

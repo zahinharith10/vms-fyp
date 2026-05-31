@@ -14,15 +14,20 @@ class ValidHouseUnitDestination implements ValidationRule
             return;
         }
 
-        $parts = array_map('trim', explode(' - ', (string) $value));
+        $parts = preg_split('/\s*-\s*/', trim((string) $value));
 
         if (count($parts) !== 3) {
-            $fail('The unit must be in the format: Block - Floor - House Number.');
+            $fail('The unit must be in the format: Block-Floor-House Number.');
 
             return;
         }
 
         [$block, $floor, $unit] = $parts;
+
+        $normalize = fn($val) => is_numeric($val) ? (string)(int)$val : trim($val);
+        $block = $normalize($block);
+        $floor = $normalize($floor);
+        $unit = $normalize($unit);
 
         $exists = HouseUnit::query()
             ->where('block', $block)

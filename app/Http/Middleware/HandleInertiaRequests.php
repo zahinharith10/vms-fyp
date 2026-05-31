@@ -58,10 +58,24 @@ class HandleInertiaRequests extends Middleware
             $user->loadMissing('houseUnit');
         }
 
+        $role = 'guest';
+        if ($user instanceof \App\Models\Admin) {
+            $role = 'admin';
+        } elseif ($user instanceof \App\Models\Resident) {
+            $role = 'resident';
+        } elseif ($user instanceof \App\Models\Guard) {
+            $role = 'guard';
+        } elseif ($user instanceof \App\Models\Visitor) {
+            $role = 'visitor';
+        } elseif ($user instanceof \App\Models\DeliveryPersonnel) {
+            $role = 'delivery';
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
+                'role' => $role,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

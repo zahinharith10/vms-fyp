@@ -29,9 +29,7 @@ const openDeleteModal = (resident) => {
 
 const closeModals = () => {
     isDeleteModalOpen.value = false;
-    setTimeout(() => {
-        selectedResident.value = null;
-    }, 200);
+    setTimeout(() => { selectedResident.value = null; }, 200);
 };
 
 const confirmDelete = () => {
@@ -40,8 +38,7 @@ const confirmDelete = () => {
             onSuccess: () => closeModals(),
         });
     }
-};
-</script>
+};</script>
 
 <template>
     <Head title="Manage Residents" />
@@ -78,7 +75,8 @@ const confirmDelete = () => {
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
                                 <tr>
-                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider w-16">No.</th>
+                                    <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Name <span class="text-[10px] text-gray-400 font-normal normal-case ml-1">(Click to view details)</span></th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Unit</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                                     <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -87,9 +85,14 @@ const confirmDelete = () => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="resident in residents?.data || []" :key="resident.id">
+                                <tr v-for="(resident, index) in residents?.data || []" :key="resident.id" class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500 font-semibold">
+                                        {{ (residents.from || 1) + index }}.
+                                    </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 font-medium text-gray-900">
-                                        {{ resident.name }}
+                                        <Link :href="route('admin.residents.show', resident.id)" class="text-indigo-600 hover:text-indigo-900 font-bold hover:underline transition duration-150 text-left">
+                                            {{ resident.name }}
+                                        </Link>
                                         <div class="text-xs text-gray-400">{{ resident.ic_number }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-700">
@@ -127,7 +130,7 @@ const confirmDelete = () => {
                                     </td>
                                 </tr>
                                 <tr v-if="(residents?.data || []).length === 0">
-                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">No residents found.</td>
+                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">No residents found.</td>
                                 </tr>
                             </tbody>
                         </table>

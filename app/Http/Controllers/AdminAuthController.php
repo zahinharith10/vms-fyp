@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
     use Illuminate\Support\Facades\Auth;
     use Inertia\Inertia;
     use Illuminate\Http\RedirectResponse;
+    use Illuminate\Validation\Rules\Password;
 
     class AdminAuthController extends Controller
     {
@@ -58,7 +59,7 @@ namespace App\Http\Controllers;
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:admins,email,' . $admin->id,
-                'password' => 'nullable|string|min:8|confirmed',
+                'password' => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
             ]);
 
             $admin->name = $request->name;

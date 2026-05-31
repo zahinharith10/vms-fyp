@@ -16,6 +16,8 @@ class DeliveryLog extends Model
         'entry_time',
         'exit_time',
         'destination',
+        'host_name',
+        'approved_by',
     ];
 
     protected $casts = [

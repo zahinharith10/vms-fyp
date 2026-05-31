@@ -34,7 +34,7 @@ require __DIR__.'/auth.php';
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest:admin')->group(function () {
         Route::get('login', [AdminAuthController::class, 'create'])->name('login');
-        Route::post('login', [AdminAuthController::class, 'store']);
+        Route::post('login', [AdminAuthController::class, 'store'])->middleware('throttle:5,1');
     });
 
     Route::middleware('auth:admin')->group(function () {
@@ -60,6 +60,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('delivery')->name('delivery.')->group(function () {
             Route::resource('personnel', DeliveryPersonnelController::class);
             Route::get('logs', [DeliveryLogController::class, 'index'])->name('logs.index');
+            Route::get('logs/export', [DeliveryLogController::class, 'exportLogs'])->name('logs.export');
         });
 
         // House Units
@@ -68,6 +69,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Residents
         Route::resource('residents', App\Http\Controllers\ResidentController::class);
 
+        // Reports
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('index');
+            Route::get('/users', [App\Http\Controllers\ReportController::class, 'exportUsers'])->name('export-users');
+            Route::get('/units', [App\Http\Controllers\ReportController::class, 'exportUnits'])->name('export-units');
+            Route::get('/applications', [App\Http\Controllers\ReportController::class, 'exportApplications'])->name('export-applications');
+            Route::get('/records', [App\Http\Controllers\ReportController::class, 'exportVisitRecords'])->name('export-records');
+        });
+
         Route::post('logout', [AdminAuthController::class, 'destroy'])->name('logout');
     });
 });
@@ -75,7 +85,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::prefix('guard')->name('guard.')->group(function () {
     Route::middleware('guest:guard')->group(function () {
         Route::get('login', [App\Http\Controllers\GuardAuthController::class, 'create'])->name('login');
-        Route::post('login', [App\Http\Controllers\GuardAuthController::class, 'store']);
+        Route::post('login', [App\Http\Controllers\GuardAuthController::class, 'store'])->middleware('throttle:5,1');
 
         // Password Reset Routes
         Route::get('forgot-password', [App\Http\Controllers\GuardPasswordResetController::class, 'create'])->name('password.request');
@@ -117,7 +127,7 @@ Route::prefix('guard')->name('guard.')->group(function () {
 Route::prefix('resident')->name('resident.')->group(function () {
     Route::middleware('guest:resident')->group(function () {
         Route::get('login', [App\Http\Controllers\ResidentAuthController::class, 'create'])->name('login');
-        Route::post('login', [App\Http\Controllers\ResidentAuthController::class, 'store']);
+        Route::post('login', [App\Http\Controllers\ResidentAuthController::class, 'store'])->middleware('throttle:5,1');
         Route::get('verify/{token}', [App\Http\Controllers\ResidentAuthController::class, 'verify'])->name('verify');
 
         // Password Reset Routes
@@ -134,7 +144,6 @@ Route::prefix('resident')->name('resident.')->group(function () {
         Route::get('visitors', [App\Http\Controllers\ResidentVisitorController::class, 'index'])->name('visitors.index');
         Route::get('visitors/create', [App\Http\Controllers\ResidentVisitorController::class, 'create'])->name('visitors.create');
         Route::post('visitors', [App\Http\Controllers\ResidentVisitorController::class, 'store'])->name('visitors.store');
-        Route::get('visitors/{visit}/qr', [App\Http\Controllers\ResidentVisitorController::class, 'showQr'])->name('visitors.qr');
         Route::post('visitors/{visit}/approve', [App\Http\Controllers\ResidentVisitorController::class, 'approve'])->name('visitors.approve');
         Route::post('visitors/{visit}/reject', [App\Http\Controllers\ResidentVisitorController::class, 'reject'])->name('visitors.reject');
         
@@ -144,6 +153,7 @@ Route::prefix('resident')->name('resident.')->group(function () {
         
         Route::get('profile', [App\Http\Controllers\ResidentAuthController::class, 'profile'])->name('profile');
         Route::patch('profile', [App\Http\Controllers\ResidentAuthController::class, 'updateProfile'])->name('profile.update');
+        Route::get('family', [App\Http\Controllers\ResidentAuthController::class, 'family'])->name('family');
         Route::post('logout', [App\Http\Controllers\ResidentAuthController::class, 'destroy'])->name('logout');
     });
 });
@@ -167,12 +177,12 @@ Route::name('visitor.')->group(function () {
     // Convenience route for users typing /visitor/login manually
     Route::redirect('/visitor/login', '/')->name('login');
     
-    Route::post('/otp/send', [App\Http\Controllers\VisitorAuthController::class, 'sendOtp'])->name('otp.send');
-    Route::post('/otp/verify', [App\Http\Controllers\VisitorAuthController::class, 'verifyOtp'])->name('otp.verify');
+    Route::post('/otp/send', [App\Http\Controllers\VisitorAuthController::class, 'sendOtp'])->name('otp.send')->middleware('throttle:5,1');
+    Route::post('/otp/verify', [App\Http\Controllers\VisitorAuthController::class, 'verifyOtp'])->name('otp.verify')->middleware('throttle:5,1');
     
     Route::middleware('guest:visitor')->group(function () {
         Route::get('/register', [App\Http\Controllers\VisitorAuthController::class, 'create'])->name('register');
-        Route::post('/register', [App\Http\Controllers\VisitorAuthController::class, 'store'])->name('store');
+        Route::post('/register', [App\Http\Controllers\VisitorAuthController::class, 'store'])->name('store')->middleware('throttle:10,1');
     });
 
     Route::middleware('auth:visitor')->group(function () {
@@ -191,7 +201,7 @@ Route::name('visitor.')->group(function () {
 Route::prefix('delivery')->name('delivery.')->group(function () {
     Route::middleware('guest:delivery')->group(function () {
         Route::get('/register', [App\Http\Controllers\DeliveryDashboardController::class, 'register'])->name('register');
-        Route::post('/register', [App\Http\Controllers\DeliveryDashboardController::class, 'store'])->name('store');
+        Route::post('/register', [App\Http\Controllers\DeliveryDashboardController::class, 'store'])->name('store')->middleware('throttle:10,1');
     });
 
     Route::middleware('auth:delivery')->group(function () {
@@ -261,6 +271,8 @@ Route::get('/run-migrations', function () {
     }
 });
 
-
-
+// User Manual — accessible to any authenticated portal user
+Route::get('/manual', function () {
+    return Inertia::render('Manual/Index');
+})->name('manual.index');
 

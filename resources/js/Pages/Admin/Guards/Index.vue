@@ -72,7 +72,34 @@ const confirmDelete = () => {
         </template>
 
         <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                <!-- Shift Hours Reference Card -->
+                <div class="bg-indigo-50/60 border border-indigo-100/80 rounded-2xl p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 transition duration-200">
+                    <div>
+                        <h3 class="text-sm font-black text-indigo-900 flex items-center gap-1.5 uppercase tracking-wide">
+                            ⏰ Shift Hours Reference
+                        </h3>
+                        <p class="text-xs text-indigo-700 font-medium mt-0.5">Quick reference guide for guard scheduling shifts.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 text-[11px] font-bold text-gray-700">
+                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                            <span>Morning:</span>
+                            <span class="text-gray-500 font-extrabold">07:00 – 15:00 (7 AM - 3 PM)</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+                            <span>Afternoon:</span>
+                            <span class="text-gray-500 font-extrabold">15:00 – 23:00 (3 PM - 11 PM)</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-100 shadow-sm">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                            <span>Night:</span>
+                            <span class="text-gray-500 font-extrabold">23:00 – 07:00 (11 PM - 7 AM)</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         <div class="overflow-x-auto">
@@ -107,7 +134,11 @@ const confirmDelete = () => {
                                             <div class="text-xs text-gray-500">{{ guard.phone }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ guard.shift }}
+                                            <div class="flex flex-wrap gap-1">
+                                                <span v-for="s in (Array.isArray(guard.shift) ? guard.shift : [guard.shift])" :key="s" class="px-2 py-0.5 inline-flex text-[10px] leading-4 font-black uppercase tracking-wider rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                    {{ s }}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
