@@ -117,7 +117,7 @@ const formatMinutes = (totalMins) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Visit Monitoring</h2>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Visit History</h2>
         </template>
 
         <template #actions>
@@ -167,6 +167,7 @@ const formatMinutes = (totalMins) => {
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Status</th>
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Arrival/Entry</th>
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Exit</th>
+                                        <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Sessions</th>
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Duration</th>
                                     </tr>
                                 </thead>
@@ -213,6 +214,11 @@ const formatMinutes = (totalMins) => {
                                             </div>
                                             <div v-else-if="log.status === 'Checked In'" class="text-indigo-600 font-black animate-pulse">On-Site</div>
                                             <div v-else class="italic">-</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold">
+                                            <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-md">
+                                                {{ log.sessions && log.sessions.length > 0 ? log.sessions.length : 1 }} {{ (log.sessions && log.sessions.length > 0 ? log.sessions.length : 1) === 1 ? 'session' : 'sessions' }}
+                                            </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold text-indigo-600">
                                             {{ formatDuration(log) }}

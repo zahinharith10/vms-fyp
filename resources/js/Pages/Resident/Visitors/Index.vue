@@ -258,6 +258,7 @@ onUnmounted(() => {
                                     <tr>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Visitor</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Person to Visit</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Checked in → Checked out</th>
                                         <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -294,6 +295,10 @@ onUnmounted(() => {
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700">
                                         {{ visit.purpose }}
                                     </td>
+                                    <td class="px-6 py-4 whitespace-no-wrap text-sm">
+                                        <span v-if="visit.host_name" class="font-semibold text-indigo-700">👤 {{ visit.host_name }}</span>
+                                        <span v-else class="text-gray-400 italic">—</span>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-no-wrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
                                             :class="{
@@ -305,6 +310,9 @@ onUnmounted(() => {
                                             }">
                                             {{ visit.status }}
                                         </span>
+                                        <div v-if="visit.approved_by" class="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-1">
+                                            by {{ visit.approved_by }}
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
                                         <div v-if="visit.check_in_time" class="flex items-center gap-1">
@@ -373,6 +381,7 @@ onUnmounted(() => {
                                     <tr>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Personnel</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                                        <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Person to Visit</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th class="px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Checked in → Checked out</th>
                                         <th class="px-6 py-3 bg-gray-50 text-right text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -392,14 +401,18 @@ onUnmounted(() => {
                                                     {{ log.personnel?.name?.charAt(0).toUpperCase() }}
                                                 </div>
                                             </div>
-                                            <div>
-                                                <div class="text-sm font-bold text-gray-900">{{ log.personnel?.name }}</div>
-                                                <div class="text-xs text-gray-400">{{ log.personnel?.vehicle_number }}</div>
+                                            <div @click="openDetailsModal(log)" class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1 rounded-lg transition-colors group">
+                                                <div class="text-sm font-bold text-gray-900 dark:text-gray-150 group-hover:text-indigo-600">{{ log.personnel?.name }}</div>
+                                                <div class="text-xs text-gray-400 dark:text-gray-500 font-medium">{{ log.personnel?.vehicle_number }}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700">
                                         {{ log.personnel?.company }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-no-wrap text-sm">
+                                        <span v-if="log.host_name" class="font-semibold text-indigo-700">👤 {{ log.host_name }}</span>
+                                        <span v-else class="text-gray-400 italic">—</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
@@ -412,6 +425,9 @@ onUnmounted(() => {
                                             }">
                                             {{ log.exit_time ? 'Completed' : (log.entry_time ? 'In Progress' : log.status) }}
                                         </span>
+                                        <div v-if="log.approved_by" class="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-1">
+                                            by {{ log.approved_by }}
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 text-xs text-gray-500 space-y-1">
                                         <div v-if="log.entry_time" class="flex items-center gap-1">
@@ -486,32 +502,32 @@ onUnmounted(() => {
                         <div class="flex flex-col items-center mb-8">
                             <div class="relative">
                                 <img 
-                                    v-if="selectedVisit?.visitor?.photo" 
-                                    :src="`/storage/${selectedVisit.visitor.photo}`" 
+                                    v-if="selectedVisit?.visitor?.photo || selectedVisit?.personnel?.photo" 
+                                    :src="`/storage/${selectedVisit.visitor?.photo || selectedVisit.personnel?.photo}`" 
                                     class="h-32 w-32 rounded-3xl object-cover shadow-xl border-4 border-white"
                                 />
                                 <div v-else class="h-32 w-32 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-300 text-4xl font-black">
-                                    {{ selectedVisit?.visitor?.name ? selectedVisit.visitor.name.charAt(0).toUpperCase() : '?' }}
+                                    {{ (selectedVisit?.visitor?.name || selectedVisit?.personnel?.name || '?').charAt(0).toUpperCase() }}
                                 </div>
-                                <div v-if="selectedVisit?.visitor?.photo" class="absolute -bottom-2 -right-2 bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
+                                <div v-if="selectedVisit?.visitor?.photo || selectedVisit?.personnel?.photo" class="absolute -bottom-2 -right-2 bg-indigo-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
                                     Verified
                                 </div>
                                 <div v-else class="absolute -bottom-2 -right-2 bg-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
                                     Pending Info
                                 </div>
                             </div>
-                            <h4 class="mt-4 text-xl font-black text-gray-900 tracking-tight">{{ selectedVisit?.visitor?.name || 'Incomplete Profile' }}</h4>
+                            <h4 class="mt-4 text-xl font-black text-gray-900 tracking-tight">{{ selectedVisit?.visitor?.name || selectedVisit?.personnel?.name || 'Incomplete Profile' }}</h4>
                             <p class="text-indigo-500 font-bold text-sm tracking-widest uppercase">{{ selectedVisit?.status }}</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-6 bg-gray-50 p-6 rounded-3xl border border-gray-100">
                             <div>
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Phone Number</p>
-                                <p class="text-sm font-bold text-gray-800">{{ selectedVisit?.visitor?.phone }}</p>
+                                <p class="text-sm font-bold text-gray-800">{{ selectedVisit?.visitor?.phone || selectedVisit?.personnel?.phone }}</p>
                             </div>
                             <div>
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Vehicle Plate</p>
-                                <p class="text-sm font-bold text-gray-800 uppercase">{{ selectedVisit?.visitor?.vehicle_number || 'None' }}</p>
+                                <p class="text-sm font-bold text-gray-800 uppercase">{{ selectedVisit?.visitor?.vehicle_number || selectedVisit?.personnel?.vehicle_number || 'None' }}</p>
                             </div>
                             <div>
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Registration Date</p>
@@ -524,13 +540,13 @@ onUnmounted(() => {
 
                             <div v-if="selectedVisit?.check_in_time || selectedVisit?.entry_time" class="col-span-2 border-t border-gray-200/50 pt-4 mt-2 grid grid-cols-2 gap-4">
                                 <div>
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Checked in</p>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">First Checked in</p>
                                     <p class="text-xs font-bold text-gray-800">
                                         {{ formatMalaysiaDateTime(selectedVisit.check_in_time || selectedVisit.entry_time, { year: 'numeric' }) }}
                                     </p>
                                 </div>
                                 <div v-if="selectedVisit?.check_out_time || selectedVisit?.exit_time">
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Checked out</p>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Checked out</p>
                                     <p class="text-xs font-bold text-gray-800">
                                         {{ formatMalaysiaDateTime(selectedVisit.check_out_time || selectedVisit.exit_time, { year: 'numeric' }) }}
                                     </p>
@@ -540,18 +556,40 @@ onUnmounted(() => {
                                         Active On-Site
                                     </span>
                                 </div>
-                                <div v-if="selectedVisit?.check_out_time || selectedVisit?.exit_time" class="col-span-2">
-                                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Duration</p>
-                                    <p class="text-sm font-black text-indigo-650">
-                                        ⏱️ {{ formatDuration(selectedVisit) }}
-                                    </p>
+                                <div class="col-span-2 border-t border-gray-100/50 pt-4 mt-2 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Sessions</p>
+                                        <p class="text-sm font-black text-gray-800">
+                                            🔄 {{ selectedVisit?.sessions && selectedVisit.sessions.length > 0 ? selectedVisit.sessions.length : 1 }} {{ (selectedVisit?.sessions && selectedVisit.sessions.length > 0 ? selectedVisit.sessions.length : 1) === 1 ? 'session' : 'sessions' }}
+                                        </p>
+                                    </div>
+                                    <div v-if="formatDuration(selectedVisit)">
+                                        <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Duration</p>
+                                        <p class="text-sm font-black text-indigo-650">
+                                            ⏱️ {{ formatDuration(selectedVisit) }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-6 p-4 border-l-4 border-indigo-500 bg-indigo-50 rounded-r-2xl">
-                            <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Purpose of Visit</p>
-                            <p class="text-sm font-medium text-gray-700 italic">"{{ selectedVisit?.purpose }}"</p>
+                            <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Purpose of Visit / Company</p>
+                            <p class="text-sm font-medium text-gray-700 italic">
+                                "{{ selectedVisit?.purpose || ('Delivery Personnel (' + (selectedVisit?.personnel?.company || 'Unknown') + ')') }}"
+                            </p>
+                        </div>
+
+                        <div v-if="selectedVisit?.host_name" class="mt-4 p-4 border-l-4 border-emerald-500 bg-emerald-50 rounded-r-2xl">
+                            <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Person to Visit</p>
+                            <p class="text-sm font-bold text-emerald-800">👤 {{ selectedVisit.host_name }}</p>
+                        </div>
+
+                        <div v-if="selectedVisit?.approved_by" class="mt-4 p-4 border-l-4 border-indigo-500 bg-indigo-50/50 rounded-r-2xl">
+                            <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1">
+                                {{ selectedVisit.status === 'Rejected' ? 'Rejected By' : 'Accepted/Approved By' }}
+                            </p>
+                            <p class="text-sm font-bold text-indigo-900">👤 {{ selectedVisit.approved_by }}</p>
                         </div>
                     </div>
 
