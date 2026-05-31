@@ -78,6 +78,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/records', [App\Http\Controllers\ReportController::class, 'exportVisitRecords'])->name('export-records');
         });
 
+        // User Manual
+        Route::get('manual', function () {
+            return Inertia::render('Manual/Index');
+        })->name('manual.index');
+
         Route::post('logout', [AdminAuthController::class, 'destroy'])->name('logout');
     });
 });
@@ -119,6 +124,12 @@ Route::prefix('guard')->name('guard.')->group(function () {
         
         Route::get('profile', [App\Http\Controllers\GuardAuthController::class, 'profile'])->name('profile');
         Route::patch('profile', [App\Http\Controllers\GuardAuthController::class, 'updateProfile'])->name('profile.update');
+
+        // User Manual
+        Route::get('manual', function () {
+            return Inertia::render('Manual/Index');
+        })->name('manual.index');
+
         Route::post('logout', [App\Http\Controllers\GuardAuthController::class, 'destroy'])->name('logout');
     });
 });
@@ -154,6 +165,12 @@ Route::prefix('resident')->name('resident.')->group(function () {
         Route::get('profile', [App\Http\Controllers\ResidentAuthController::class, 'profile'])->name('profile');
         Route::patch('profile', [App\Http\Controllers\ResidentAuthController::class, 'updateProfile'])->name('profile.update');
         Route::get('family', [App\Http\Controllers\ResidentAuthController::class, 'family'])->name('family');
+
+        // User Manual
+        Route::get('manual', function () {
+            return Inertia::render('Manual/Index');
+        })->name('manual.index');
+
         Route::post('logout', [App\Http\Controllers\ResidentAuthController::class, 'destroy'])->name('logout');
     });
 });
@@ -193,6 +210,12 @@ Route::name('visitor.')->group(function () {
         Route::get('/visitor/visits/{visit}/qr', [App\Http\Controllers\VisitorAuthController::class, 'showQr'])->name('visits.qr');
         Route::get('/visitor/profile', [App\Http\Controllers\VisitorAuthController::class, 'profile'])->name('profile');
         Route::patch('/visitor/profile', [App\Http\Controllers\VisitorAuthController::class, 'updateProfile'])->name('profile.update');
+
+        // User Manual
+        Route::get('/visitor/manual', function () {
+            return Inertia::render('Manual/Index');
+        })->name('manual.index');
+
         Route::post('/visitor/logout', [App\Http\Controllers\VisitorAuthController::class, 'destroy'])->name('logout');
     });
 });
@@ -210,6 +233,12 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
         Route::delete('/trips/{run}', [App\Http\Controllers\DeliveryDashboardController::class, 'cancelTrip'])->name('trips.cancel');
         Route::get('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'profile'])->name('profile');
         Route::patch('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'updateProfile'])->name('profile.update');
+
+        // User Manual
+        Route::get('/manual', function () {
+            return Inertia::render('Manual/Index');
+        })->name('manual.index');
+
         Route::post('/logout', [App\Http\Controllers\DeliveryDashboardController::class, 'destroy'])->name('logout');
     });
 });
@@ -271,8 +300,14 @@ Route::get('/run-migrations', function () {
     }
 });
 
-// User Manual — accessible to any authenticated portal user
+// User Manual Fallback — redirects authenticated users to their specific portal's manual
 Route::get('/manual', function () {
-    return Inertia::render('Manual/Index');
+    $guards = ['admin', 'guard', 'resident', 'visitor', 'delivery'];
+    foreach ($guards as $guard) {
+        if (auth($guard)->check()) {
+            return redirect()->route($guard . '.manual.index');
+        }
+    }
+    return redirect()->route('login');
 })->name('manual.index');
 

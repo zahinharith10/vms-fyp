@@ -92,7 +92,7 @@ onMounted(() => {
                      Reports
                 </Link>
 
-                <Link :href="route('manual.index')" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md" :class="{ 'bg-gray-200 font-bold': route().current('manual.index') }">
+                <Link :href="route('admin.manual.index')" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md" :class="{ 'bg-gray-200 font-bold': route().current('admin.manual.index') }">
                      User Manual
                 </Link>
 
@@ -125,7 +125,7 @@ onMounted(() => {
                  <Link :href="route('admin.dashboard')" class="block py-2 text-gray-700">Dashboard</Link>
                  <Link :href="route('admin.visitors.index')" class="block py-2 text-gray-700">Visitors</Link>
                  <Link :href="route('admin.reports.index')" class="block py-2 text-gray-700">Reports</Link>
-                 <Link :href="route('manual.index')" class="block py-2 text-gray-700">User Manual</Link>
+                 <Link :href="route('admin.manual.index')" class="block py-2 text-gray-700" :class="{ 'text-indigo-600 font-bold': route().current('admin.manual.index') }">User Manual</Link>
                  <Link :href="route('admin.profile')" class="block py-2 text-gray-700">Profile Settings</Link>
                  <Link :href="route('admin.logout')" method="post" as="button" class="block py-2 text-red-600 w-full text-left">Log Out</Link>
              </div>
