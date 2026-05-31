@@ -148,7 +148,7 @@ class VisitorController extends Controller
             
             fputcsv($file, [
                 'ID', 'Visitor Name', 'Phone', 'IC Number', 'Unit Number', 
-                'Purpose', 'Status', 'Sessions Count', 'Total Stay Duration (Mins)'
+                'Purpose', 'Status', 'Sessions Count', 'Total Stay Duration (Hours)'
             ]);
 
             foreach ($logs as $log) {
@@ -186,6 +186,8 @@ class VisitorController extends Controller
                     }
                 }
 
+                $totalHours = $totalMins > 0 ? round($totalMins / 60, 2) : 0;
+
                 fputcsv($file, [
                     $log->id,
                     $log->visitor->name ?? 'N/A',
@@ -195,7 +197,7 @@ class VisitorController extends Controller
                     $log->purpose,
                     $log->status,
                     $log->sessions->count(),
-                    $totalMins > 0 ? $totalMins : 0,
+                    $totalHours,
                 ]);
             }
             fclose($file);
