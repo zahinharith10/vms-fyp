@@ -13,8 +13,7 @@ class Visitor extends Authenticatable
     protected $fillable = ['name', 'email', 'phone', 'vehicle_number', 'ic_number', 'photo', 'face_descriptor'];
 
     protected $casts = [
-        'ic_number'       => 'encrypted',
-        'face_descriptor' => 'encrypted',
+        'face_descriptor' => 'array',
     ];
 
     public function visits()

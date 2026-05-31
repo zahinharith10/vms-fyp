@@ -26,8 +26,7 @@ class DeliveryPersonnel extends Authenticatable
     ];
 
     protected $casts = [
-        'ic_number'       => 'encrypted',
-        'face_descriptor' => 'encrypted',
+        'face_descriptor' => 'array',
     ];
 
     public function logs()

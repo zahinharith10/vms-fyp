@@ -31,7 +31,6 @@ class Resident extends Authenticatable implements CanResetPasswordContract
 
     protected $casts = [
         'auto_approve_deliveries' => 'boolean',
-        'ic_number'               => 'encrypted',
     ];
 
     public function houseUnit()
