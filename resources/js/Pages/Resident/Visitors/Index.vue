@@ -80,64 +80,12 @@ const formatDuration = (visit) => {
         return formatMinutes(Math.floor(diffMs / 60000));
     }
 
-    // For visitors: use sessions[] as authoritative source (supports unlimited temp leaves)
-    if (visit.sessions && visit.sessions.length > 0) {
-        let totalMins = 0;
-        for (const session of visit.sessions) {
-            const start = new Date(session.check_in_time);
-            const end = session.check_out_time
-                ? new Date(session.check_out_time)
-                : (visit.status === 'Checked In' ? new Date() : start);
-            const diffMs = end - start;
-            if (diffMs > 0) totalMins += Math.floor(diffMs / 60000);
-        }
-        return totalMins > 0 ? formatMinutes(totalMins) : null;
+    // For visitors: use the robust backend-computed total_duration_minutes
+    if (visit.total_duration_minutes !== undefined && visit.total_duration_minutes !== null) {
+        return visit.total_duration_minutes > 0 ? formatMinutes(visit.total_duration_minutes) : null;
     }
 
-    let totalMins = 0;
-    let hasData = false;
-
-    // Session 1: First check-in to First check-out
-    if (visit.first_check_in_time) {
-        hasData = true;
-        const start1 = new Date(visit.first_check_in_time);
-        const end1 = visit.first_check_out_time 
-            ? new Date(visit.first_check_out_time) 
-            : (visit.status === 'Checked In' ? new Date() : start1);
-        
-        const diffMs1 = end1 - start1;
-        if (diffMs1 > 0) {
-            totalMins += Math.floor(diffMs1 / 60000);
-        }
-    }
-
-    // Session 2: Second check-in to Second check-out
-    if (visit.second_check_in_time) {
-        hasData = true;
-        const start2 = new Date(visit.second_check_in_time);
-        const end2 = visit.second_check_out_time 
-            ? new Date(visit.second_check_out_time) 
-            : (visit.status === 'Checked In' ? new Date() : start2);
-        
-        const diffMs2 = end2 - start2;
-        if (diffMs2 > 0) {
-            totalMins += Math.floor(diffMs2 / 60000);
-        }
-    }
-
-    // Fallback to legacy fields if no multi-entry fields exist
-    if (!hasData && visit.check_in_time) {
-        const start = new Date(visit.check_in_time);
-        const end = visit.check_out_time ? new Date(visit.check_out_time) : new Date();
-        const diffMs = end - start;
-        if (diffMs > 0) {
-            totalMins = Math.floor(diffMs / 60000);
-            hasData = true;
-        }
-    }
-
-    if (!hasData) return null;
-    return formatMinutes(totalMins);
+    return null;
 };
 
 const formatMinutes = (totalMins) => {
@@ -560,7 +508,7 @@ onUnmounted(() => {
                                     <div>
                                         <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Sessions</p>
                                         <p class="text-sm font-black text-gray-800">
-                                            🔄 {{ selectedVisit?.sessions && selectedVisit.sessions.length > 0 ? selectedVisit.sessions.length : 1 }} {{ (selectedVisit?.sessions && selectedVisit.sessions.length > 0 ? selectedVisit.sessions.length : 1) === 1 ? 'session' : 'sessions' }}
+                                            🔄 {{ selectedVisit?.sessions_count }} {{ selectedVisit?.sessions_count === 1 ? 'session' : 'sessions' }}
                                         </p>
                                     </div>
                                     <div v-if="formatDuration(selectedVisit)">

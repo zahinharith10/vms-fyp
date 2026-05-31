@@ -41,65 +41,12 @@ const formatDuration = (log) => {
         return formatMinutes(Math.floor(diffMs / 60000));
     }
 
-    // For visitors: use sessions[] as authoritative source (supports unlimited temp leaves)
-    if (log.sessions && log.sessions.length > 0) {
-        let totalMins = 0;
-        for (const session of log.sessions) {
-            const start = new Date(session.check_in_time);
-            const end = session.check_out_time
-                ? new Date(session.check_out_time)
-                : (log.status === 'Checked In' ? new Date() : start);
-            const diffMs = end - start;
-            if (diffMs > 0) totalMins += Math.floor(diffMs / 60000);
-        }
-        return totalMins > 0 ? formatMinutes(totalMins) : '-';
+    // For visitors: use the robust backend-computed total_duration_minutes
+    if (log.total_duration_minutes !== undefined && log.total_duration_minutes !== null) {
+        return log.total_duration_minutes > 0 ? formatMinutes(log.total_duration_minutes) : '-';
     }
 
-    // Fallback: legacy first/second columns for old records without sessions
-    let totalMins = 0;
-    let hasData = false;
-
-    // Session 1: First check-in to First check-out
-    if (log.first_check_in_time) {
-        hasData = true;
-        const start1 = new Date(log.first_check_in_time);
-        const end1 = log.first_check_out_time 
-            ? new Date(log.first_check_out_time) 
-            : (log.status === 'Checked In' ? new Date() : start1);
-        
-        const diffMs1 = end1 - start1;
-        if (diffMs1 > 0) {
-            totalMins += Math.floor(diffMs1 / 60000);
-        }
-    }
-
-    // Session 2: Second check-in to Second check-out
-    if (log.second_check_in_time) {
-        hasData = true;
-        const start2 = new Date(log.second_check_in_time);
-        const end2 = log.second_check_out_time 
-            ? new Date(log.second_check_out_time) 
-            : (log.status === 'Checked In' ? new Date() : start2);
-        
-        const diffMs2 = end2 - start2;
-        if (diffMs2 > 0) {
-            totalMins += Math.floor(diffMs2 / 60000);
-        }
-    }
-
-    // Fallback to legacy fields if no multi-entry fields exist
-    if (!hasData && log.check_in_time) {
-        const start = new Date(log.check_in_time);
-        const end = log.check_out_time ? new Date(log.check_out_time) : new Date();
-        const diffMs = end - start;
-        if (diffMs > 0) {
-            totalMins = Math.floor(diffMs / 60000);
-            hasData = true;
-        }
-    }
-
-    if (!hasData) return '-';
-    return formatMinutes(totalMins);
+    return '-';
 };
 
 const formatMinutes = (totalMins) => {
@@ -217,7 +164,7 @@ const formatMinutes = (totalMins) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold">
                                             <span class="px-2 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-md">
-                                                {{ log.sessions && log.sessions.length > 0 ? log.sessions.length : 1 }} {{ (log.sessions && log.sessions.length > 0 ? log.sessions.length : 1) === 1 ? 'session' : 'sessions' }}
+                                                {{ log.sessions_count }} {{ log.sessions_count === 1 ? 'session' : 'sessions' }}
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold text-indigo-600">
