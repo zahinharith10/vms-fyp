@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Validation\Rules\Password;
+use App\Services\RecaptchaService;
 
 class ResidentAuthController extends Controller
 {
@@ -41,6 +42,16 @@ class ResidentAuthController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'recaptcha_token' => ['required'],
+        ]);
+
+        if (!RecaptchaService::verify($request->recaptcha_token)) {
+            return back()->withErrors([
+                'recaptcha' => 'reCAPTCHA verification failed. Please try again.',
+            ])->onlyInput('email');
+        }
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],

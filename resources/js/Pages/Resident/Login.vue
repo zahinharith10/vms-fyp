@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
 
 defineProps({
     status: {
@@ -10,10 +11,25 @@ defineProps({
 const form = useForm({
     email: '',
     password: '',
+    recaptcha_token: '',
+});
+
+onMounted(() => {
+    window.grecaptcha.ready(() => {
+        window.grecaptcha.render('recaptcha-container', {
+            sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+            theme: 'light',
+        });
+    });
 });
 
 const submit = () => {
-    // form.post(route('resident.login'));
+    form.recaptcha_token = window.grecaptcha.getResponse();
+    console.log('reCAPTCHA token:', form.recaptcha_token);
+    if (!form.recaptcha_token) {
+        alert('Please check the reCAPTCHA checkbox');
+        return;
+    }
     form.post('/resident/login');
 };
 </script>
@@ -60,6 +76,12 @@ const submit = () => {
                     <input v-model="form.password" type="password" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full mt-1" required />
                     <div v-if="form.errors.password" class="text-red-600 text-sm mt-1">{{ form.errors.password }}</div>
                 </div>
+
+                <div class="mt-4 flex justify-center">
+                    <div id="recaptcha-container"></div>
+                </div>
+
+                <div v-if="form.errors.recaptcha" class="text-red-600 text-sm mt-2">{{ form.errors.recaptcha }}</div>
 
                 <div class="flex items-center justify-end mt-4">
                     <Link href="/resident/forgot-password" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">

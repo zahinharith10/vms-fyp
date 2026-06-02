@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 
 defineProps({
@@ -10,9 +11,25 @@ const form = useForm({
     employee_id: '',
     password: '',
     remember: false,
+    recaptcha_token: '',
+});
+
+onMounted(() => {
+    window.grecaptcha.ready(() => {
+        window.grecaptcha.render('recaptcha-container', {
+            sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+            theme: 'light',
+        });
+    });
 });
 
 const submit = () => {
+    form.recaptcha_token = window.grecaptcha.getResponse();
+    console.log('reCAPTCHA token:', form.recaptcha_token);
+    if (!form.recaptcha_token) {
+        alert('Please check the reCAPTCHA checkbox');
+        return;
+    }
     form.post(route('guard.login'));
 };
 </script>
@@ -52,6 +69,12 @@ const submit = () => {
                         <span class="ml-2 text-sm text-gray-600">Remember me</span>
                     </label>
                 </div>
+
+                <div class="mt-4 flex justify-center">
+                    <div id="recaptcha-container"></div>
+                </div>
+
+                <div v-if="form.errors.recaptcha" class="text-red-600 text-sm mt-2">{{ form.errors.recaptcha }}</div>
 
                 <div class="flex items-center justify-end mt-4">
                     <Link href="/guard/forgot-password" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">

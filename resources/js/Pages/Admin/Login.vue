@@ -6,6 +6,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
 
 defineProps({
     canResetPassword: {
@@ -20,9 +21,25 @@ const form = useForm({
     email: '',
     password: '',
     remember: false,
+    recaptcha_token: '',
+});
+
+onMounted(() => {
+    window.grecaptcha.ready(() => {
+        window.grecaptcha.render('recaptcha-container', {
+            sitekey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+            theme: 'light',
+        });
+    });
 });
 
 const submit = () => {
+    form.recaptcha_token = window.grecaptcha.getResponse();
+    console.log('reCAPTCHA token:', form.recaptcha_token);
+    if (!form.recaptcha_token) {
+        alert('Please check the reCAPTCHA checkbox');
+        return;
+    }
     form.post(route('admin.login'), {
         onFinish: () => form.reset('password'),
     });
@@ -75,6 +92,12 @@ const submit = () => {
                     <span class="ms-2 text-sm text-gray-600">Remember me</span>
                 </label>
             </div>
+
+            <div class="mt-4 flex justify-center">
+                <div id="recaptcha-container"></div>
+            </div>
+
+            <InputError class="mt-2" :message="form.errors.recaptcha" />
 
             <div class="flex items-center justify-end mt-4">
                 <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">

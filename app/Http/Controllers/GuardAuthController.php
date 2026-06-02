@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Validation\Rules\Password;
+use App\Services\RecaptchaService;
 
 class GuardAuthController extends Controller
 {
@@ -16,6 +17,16 @@ class GuardAuthController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'recaptcha_token' => ['required'],
+        ]);
+
+        if (!RecaptchaService::verify($request->recaptcha_token)) {
+            return back()->withErrors([
+                'recaptcha' => 'reCAPTCHA verification failed. Please try again.',
+            ])->onlyInput('employee_id');
+        }
+
         $credentials = $request->validate([
             'employee_id' => ['required', 'string'],
             'password' => ['required', 'string'],

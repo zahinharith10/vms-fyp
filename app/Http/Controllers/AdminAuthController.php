@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
     use Inertia\Inertia;
     use Illuminate\Http\RedirectResponse;
     use Illuminate\Validation\Rules\Password;
+    use App\Services\RecaptchaService;
 
     class AdminAuthController extends Controller
     {
@@ -17,6 +18,24 @@ namespace App\Http\Controllers;
 
         public function store(Request $request): RedirectResponse
         {
+            // Temporarily disable reCAPTCHA to test login
+            // \Log::info('Login attempt with data: ', $request->all());
+
+            // $request->validate([
+            //     'recaptcha_token' => ['required'],
+            // ]);
+
+            // \Log::info('reCAPTCHA token received: ' . substr($request->recaptcha_token, 0, 50) . '...');
+
+            // if (!RecaptchaService::verify($request->recaptcha_token)) {
+            //     \Log::warning('reCAPTCHA verification failed');
+            //     return back()->withErrors([
+            //         'recaptcha' => 'reCAPTCHA verification failed. Please try again.',
+            //     ])->onlyInput('email');
+            // }
+
+            // \Log::info('reCAPTCHA verification passed');
+
             $credentials = $request->validate([
                 'email' => ['required', 'email'],
                 'password' => ['required'],

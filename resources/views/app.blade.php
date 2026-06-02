@@ -20,6 +20,9 @@
             <meta name="reverb-scheme" content="{{ env('REVERB_SCHEME', 'http') }}">
         @endif
 
+        <!-- Google reCAPTCHA v3 -->
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
         <!-- Scripts -->
         <script>
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
