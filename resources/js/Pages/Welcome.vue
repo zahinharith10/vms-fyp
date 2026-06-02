@@ -187,7 +187,14 @@ const backToEmail = () => {
                     </button>
                 </div>
             </div>
-            
+
+            <!-- Resident Portal Link -->
+            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 text-center">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Are you a resident of Sri Ayu?</p>
+                <Link :href="route('resident.login')" class="inline-block mt-2 text-sm font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors uppercase tracking-wider">
+                    Resident Sign In →
+                </Link>
+            </div>
 
         </div>
     </div>
