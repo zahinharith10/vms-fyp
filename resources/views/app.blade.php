@@ -25,9 +25,23 @@
 
         <!-- Scripts -->
         <script>
-            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
+            // Define URL paths that should ALWAYS be light (login, register, reset, etc.)
+            var authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify'];
+            var currentPath = window.location.pathname;
+            var isAuthPage = authPaths.some(function(p) { return currentPath.includes(p); });
+
+            // Also treat the root welcome/landing page as always light
+            var isWelcomePage = (currentPath === '/' || currentPath === '');
+
+            if (!isAuthPage && !isWelcomePage) {
+                // Only apply dark mode inside authenticated/dashboard pages
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
             } else {
+                // Always force light on login/auth/welcome pages
                 document.documentElement.classList.remove('dark');
             }
         </script>
