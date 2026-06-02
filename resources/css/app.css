@@ -1,3 +1,118 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Dark Mode Overrides for Admin and General Components */
+.dark body {
+    background-color: #030712 !important; /* bg-gray-950 */
+    color: #f3f4f6 !important; /* text-gray-100 */
+}
+
+/* Backgrounds */
+.dark .bg-white {
+    background-color: #111827 !important; /* bg-gray-900 */
+}
+.dark .bg-slate-50, 
+.dark .bg-gray-50, 
+.dark .bg-gray-100, 
+.dark .bg-slate-100 {
+    background-color: #030712 !important; /* bg-gray-950 */
+}
+.dark .bg-indigo-50 {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+.dark .bg-emerald-50 {
+    background-color: rgba(16, 185, 129, 0.15) !important;
+}
+.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+}
+.dark .bg-purple-50 {
+    background-color: rgba(147, 51, 234, 0.15) !important;
+}
+.dark .bg-amber-50 {
+    background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Text Colors */
+.dark .text-slate-800,
+.dark .text-gray-800,
+.dark .text-slate-900,
+.dark .text-gray-900 {
+    color: #f3f4f6 !important; /* gray-100 */
+}
+.dark .text-slate-700,
+.dark .text-gray-700 {
+    color: #d1d5db !important; /* gray-300 */
+}
+.dark .text-slate-600,
+.dark .text-gray-600 {
+    color: #9ca3af !important; /* gray-400 */
+}
+.dark .text-slate-500,
+.dark .text-gray-500 {
+    color: #6b7280 !important; /* gray-500 */
+}
+.dark .text-slate-400,
+.dark .text-gray-400 {
+    color: #4b5563 !important; /* gray-600 */
+}
+
+/* Borders */
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+    border-color: #1f2937 !important; /* gray-800 */
+}
+
+/* Inputs, Selects, Textareas */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="time"],
+.dark select,
+.dark textarea {
+    background-color: #030712 !important; /* gray-950 */
+    border-color: #374151 !important; /* gray-700 */
+    color: #f3f4f6 !important; /* gray-100 */
+}
+.dark input::placeholder {
+    color: #6b7280 !important; /* gray-500 */
+}
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+    border-color: #6366f1 !important; /* indigo-500 */
+    box-shadow: 0 0 0 1px #6366f1 !important;
+}
+
+/* Tables */
+.dark table {
+    border-color: #1f2937 !important;
+}
+.dark th {
+    background-color: #1f2937 !important; /* gray-800 */
+    color: #f3f4f6 !important;
+}
+.dark td {
+    border-bottom-color: #1f2937 !important;
+    color: #d1d5db !important;
+}
+.dark tr:hover {
+    background-color: rgba(31, 41, 55, 0.4) !important;
+}
+
+/* Buttons */
+.dark .bg-gray-800 {
+    background-color: #f3f4f6 !important; /* gray-100 */
+    color: #111827 !important; /* gray-900 */
+}
+.dark .bg-gray-800:hover {
+    background-color: #e5e7eb !important; /* gray-200 */
+}
+

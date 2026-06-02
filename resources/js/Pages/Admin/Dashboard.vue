@@ -58,7 +58,7 @@ const trendOptions = {
         tooltip: { padding: 12, backgroundColor: '#1e293b', titleFont: { weight: 'bold' } }
     },
     scales: {
-        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.15)' } },
         x: { grid: { display: false } }
     }
 };
@@ -108,7 +108,7 @@ const purposeOptions = {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-        x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        x: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.15)' } },
         y: { grid: { display: false } }
     }
 };
@@ -128,7 +128,7 @@ const shiftOptions = {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0 } },
+        y: { beginAtZero: true, grid: { color: 'rgba(156, 163, 175, 0.15)' }, ticks: { precision: 0 } },
         x: { grid: { display: false } }
     }
 };
