@@ -117,6 +117,9 @@ Route::prefix('guard')->name('guard.')->group(function () {
         // Active Logs route
         Route::get('logs/active', [App\Http\Controllers\GuardScanController::class, 'activeLogs'])->name('logs.active');
         
+        // Visit Records route
+        Route::get('visit-records', [App\Http\Controllers\GuardScanController::class, 'visitRecords'])->name('visit-records');
+        
         // Registration routes
         Route::get('register', [App\Http\Controllers\GuardScanController::class, 'showRegistration'])->name('register');
         Route::post('register/visitor', [App\Http\Controllers\GuardScanController::class, 'registerVisitor'])->name('register.visitor');

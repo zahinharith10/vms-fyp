@@ -30,8 +30,13 @@ class VisitController extends Controller
         }
 
         $visitor = Auth::guard('visitor')->user();
+        
+        if (!$visitor) {
+            return back()->withErrors(['auth' => 'Unauthorized. Please log in.']);
+        }
+        
         if (empty($visitor->ic_number) || empty($visitor->photo)) {
-            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details and upload a photo before requesting a visit.');
+            return back()->withErrors(['profile' => 'Please complete your profile details and upload a photo before requesting a visit.']);
         }
 
         $activeVisit = Visit::where('visitor_id', $visitor->id)
@@ -39,7 +44,7 @@ class VisitController extends Controller
             ->first();
 
         if ($activeVisit) {
-            return redirect()->back()->with('error', 'You already have an active or pending visit request. Please complete it before requesting a new one.');
+            return back()->withErrors(['active_visit' => 'You already have an active or pending visit request. Please complete it before requesting a new one.']);
         }
 
         $request->validate([
@@ -98,7 +103,12 @@ class VisitController extends Controller
         }
 
         if ($resident) {
-            $resident->notify(new VisitRequestNotification($visit->load('visitor')));
+            try {
+                $resident->notify(new VisitRequestNotification($visit->load('visitor')));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Notification failed: ' . $e->getMessage());
+            }
+
             // Broadcast real-time notification to resident's unit channel
             try {
                 broadcast(new NewVisitRequested(
@@ -112,7 +122,7 @@ class VisitController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Visit request submitted successfully!');
+        return back()->with('success', 'Visit request submitted successfully!');
     }
 
     public function destroy(Visit $visit)

@@ -660,6 +660,59 @@ class GuardScanController extends Controller
         ]);
     }
 
+    /**
+     * Display a list of all visit records (visitors and deliveries).
+     */
+    public function visitRecords()
+    {
+        $this->autoFinalizeOldVisits();
+        $allVisitors = Visit::with('visitor')
+            ->get()
+            ->map(function ($visit) {
+                return [
+                    'id' => $visit->id,
+                    'type' => 'Visitor',
+                    'name' => $visit->visitor->name,
+                    'phone' => $visit->visitor->phone,
+                    'photo' => $visit->visitor->photo,
+                    'vehicle_number' => $visit->visitor->vehicle_number,
+                    'unit_number' => $visit->unit_number,
+                    'purpose' => $visit->purpose,
+                    'entry_time' => $visit->check_in_time,
+                    'exit_time' => $visit->check_out_time,
+                    'status' => $visit->status,
+                    'parking_lot_number' => $visit->parking_lot_number,
+                    'created_at' => $visit->created_at,
+                ];
+            });
+
+        $allDeliveries = DeliveryLog::with('personnel')
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'type' => 'Delivery',
+                    'name' => $log->personnel->name,
+                    'phone' => $log->personnel->phone,
+                    'photo' => $log->personnel->photo,
+                    'vehicle_number' => $log->personnel->vehicle_number,
+                    'unit_number' => $log->destination,
+                    'purpose' => 'Delivery ('.$log->personnel->company.')',
+                    'entry_time' => $log->entry_time,
+                    'exit_time' => $log->exit_time,
+                    'is_delivery' => true,
+                    'status' => $log->status,
+                    'created_at' => $log->created_at,
+                ];
+            });
+
+        $visitRecords = $allVisitors->concat($allDeliveries)->sortByDesc('created_at')->values();
+
+        return Inertia::render('Guard/VisitRecords', [
+            'visitRecords' => $visitRecords,
+        ]);
+    }
+
     public function showRegistration()
     {
         $units = \App\Models\HouseUnit::orderBy('block')
