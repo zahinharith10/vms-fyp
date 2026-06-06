@@ -187,7 +187,7 @@ const formatMinutes = (totalMins) => {
                                 <tbody class="bg-white divide-y divide-gray-100">
                                     <template v-for="log in filteredLogs" :key="log.id">
                                         <!-- Main Row -->
-                                        <tr class="hover:bg-gray-50 transition-colors">
+                                        <tr @click="$inertia.visit(route('admin.visit-logs.show', log.id))" class="hover:bg-indigo-50/50 cursor-pointer transition-colors">
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
                                                     <div class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 mr-3">

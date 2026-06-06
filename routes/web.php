@@ -52,6 +52,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('visitors', VisitorController::class);
         Route::get('visit-logs', [App\Http\Controllers\VisitorController::class, 'logs'])->name('visit-logs.index');
         Route::get('visit-logs/export', [App\Http\Controllers\VisitorController::class, 'exportLogs'])->name('visit-logs.export');
+        Route::get('visit-logs/{visit}', [App\Http\Controllers\VisitorController::class, 'showLog'])->name('visit-logs.show');
 
         // Guard Routes
         Route::resource('guards', GuardController::class);
@@ -232,6 +233,7 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
 
     Route::middleware('auth:delivery')->group(function () {
         Route::get('/dashboard', [App\Http\Controllers\DeliveryDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/history', [App\Http\Controllers\DeliveryDashboardController::class, 'history'])->name('history');
         Route::post('/trips', [App\Http\Controllers\DeliveryDashboardController::class, 'createTrip'])->name('trips.store');
         Route::delete('/trips/{run}', [App\Http\Controllers\DeliveryDashboardController::class, 'cancelTrip'])->name('trips.cancel');
         Route::get('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'profile'])->name('profile');

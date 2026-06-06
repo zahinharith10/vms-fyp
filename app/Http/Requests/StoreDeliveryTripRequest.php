@@ -23,16 +23,21 @@ class StoreDeliveryTripRequest extends FormRequest
             'unit_number' => ['nullable', 'string', new ValidHouseUnitDestination],
             'unit_numbers' => ['nullable', 'array'],
             'unit_numbers.*' => ['nullable', 'string', 'distinct', new ValidHouseUnitDestination],
-            'host_name' => ['required', 'string', 'max:255'],
+            'host_name' => ['nullable', 'string', 'max:255'],
+            'host_names' => ['nullable', 'array'],
+            'host_names.*' => ['nullable', 'string', 'max:255'],
         ];
 
         // Add conditional rules based on delivery_type
         if ($this->input('delivery_type') === 'single') {
             $rules['unit_number'][] = 'required';
+            $rules['host_name'][] = 'required';
         } elseif ($this->input('delivery_type') === 'multi') {
             $rules['unit_numbers'][] = 'required';
             $rules['unit_numbers'][] = 'min:2';
             $rules['unit_numbers'][] = 'max:15';
+            $rules['host_names'][] = 'required';
+            $rules['host_names'][] = 'min:2';
         }
 
         return $rules;
@@ -54,6 +59,7 @@ class StoreDeliveryTripRequest extends FormRequest
         // If this is a single-stop request, remove any unit_numbers sent by the frontend
         if ($this->input('delivery_type') === 'single') {
             $this->request->remove('unit_numbers');
+            $this->request->remove('host_names');
             if ($this->has('unit_number')) {
                 $unit = $this->input('unit_number');
                 if (is_array($unit)) {
@@ -76,6 +82,7 @@ class StoreDeliveryTripRequest extends FormRequest
         // If this is a multi-stop request, remove any unit_number sent by the frontend
         if ($this->input('delivery_type') === 'multi') {
             $this->request->remove('unit_number');
+            $this->request->remove('host_name');
         }
     }
 

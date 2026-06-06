@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import DeliveryAuthenticatedLayout from '@/Layouts/DeliveryAuthenticatedLayout.vue';
 import { formatMalaysiaDate } from '@/utils/datetime';
 
@@ -18,17 +18,16 @@ const block = ref('');
 const floor = ref('');
 const unit = ref('');
 const stopList = ref([]);
+const tempHostName = ref('');
 
-// Set active tab from URL query parameter
-const urlParams = new URLSearchParams(window.location.search);
-const tabParam = urlParams.get('tab');
-const activeTab = ref(tabParam === 'history' ? 'history' : 'active'); // active | history
+
 
 const tripForm = useForm({
     delivery_type: 'single',
     unit_number: '',
     unit_numbers: [],
     host_name: '',
+    host_names: [],
 });
 
 const blockOptions = computed(() => Object.keys(props.houseUnits || {}).sort((a, b) => Number(a) - Number(b)));
@@ -48,7 +47,7 @@ const currentUnitLabel = computed(() => {
     return `${block.value} - ${floor.value} - ${unit.value}`;
 });
 
-const canAddStop = computed(() => Boolean(currentUnitLabel.value));
+const canAddStop = computed(() => Boolean(currentUnitLabel.value) && Boolean(tempHostName.value.trim()));
 
 const onBlockChange = () => {
     floor.value = '';
@@ -65,17 +64,32 @@ const resetSelectors = () => {
     unit.value = '';
 };
 
+const handleModeChange = (mode) => {
+    deliveryMode.value = mode;
+    resetSelectors();
+    stopList.value = [];
+    tempHostName.value = '';
+    tripForm.host_name = '';
+    tripForm.host_names = [];
+};
+
 const addStop = () => {
     if (!canAddStop.value) return;
 
     const label = currentUnitLabel.value;
 
-    if (stopList.value.includes(label)) {
+    if (stopList.value.some(stop => stop.unit_number === label)) {
+        alert('This unit is already added.');
         return;
     }
 
-    stopList.value.push(label);
+    stopList.value.push({
+        unit_number: label,
+        host_name: tempHostName.value.trim(),
+    });
+    
     resetSelectors();
+    tempHostName.value = '';
 };
 
 const removeStop = (index) => {
@@ -90,7 +104,9 @@ const submitTrip = () => {
         tripForm.unit_numbers = [];
     } else {
         tripForm.unit_number = '';
-        tripForm.unit_numbers = [...stopList.value];
+        tripForm.unit_numbers = stopList.value.map(stop => stop.unit_number);
+        tripForm.host_names = stopList.value.map(stop => stop.host_name);
+        tripForm.host_name = 'Multi-stop'; // dummy value to pass validation
     }
 
     tripForm.post(route('delivery.trips.store'), {
@@ -98,7 +114,9 @@ const submitTrip = () => {
         onSuccess: () => {
             resetSelectors();
             stopList.value = [];
+            tempHostName.value = '';
             tripForm.host_name = '';
+            tripForm.host_names = [];
         },
     });
 };
@@ -138,6 +156,14 @@ const allStopsApproved = computed(() => {
     }
     return false;
 });
+
+// True when a trip is in-progress — blocks new submissions
+const hasActiveTrip = computed(() => !!(props.activeRun || props.activeLog));
+
+// Flash messages from server
+const page = usePage();
+const flashError = computed(() => page.props.flash?.error ?? null);
+const flashSuccess = computed(() => page.props.flash?.success ?? null);
 
 const CANCELLED_STATUSES = ['Cancelled', 'Rejected'];
 
@@ -180,18 +206,7 @@ const activeGroupedLogs = computed(() => {
     });
 });
 
-const historyLogs = computed(() => {
-    return groupedLogs.value.filter(group => {
-        if (group.type === 'multi') {
-            return CANCELLED_STATUSES.includes(group.run.status)
-                || group.logs.every(log => log.exit_time !== null);
-        } else {
-            return CANCELLED_STATUSES.includes(group.log.status)
-                || group.log.exit_time !== null
-                || group.log.status === 'Checked Out';
-        }
-    });
-});
+
 </script>
 
 <template>
@@ -202,11 +217,32 @@ const historyLogs = computed(() => {
             <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">Delivery Dashboard</h2>
         </template>
 
-        <div v-if="activeTab === 'active'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <h3 class="text-lg font-semibold mb-2 text-gray-800 dark:text-white border-b pb-2">Request Entry Pass</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose single or multi-stop delivery, then add your destination unit(s).</p>
+
+                    <!-- Active trip warning banner -->
+                    <div v-if="hasActiveTrip" class="mb-5 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl">
+                        <span class="text-xl flex-shrink-0">⚠️</span>
+                        <div>
+                            <p class="text-sm font-bold text-amber-800 dark:text-amber-300">You already have an active delivery trip.</p>
+                            <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Please complete or cancel your current trip before starting a new one.</p>
+                        </div>
+                    </div>
+
+                    <!-- Server flash error -->
+                    <div v-if="flashError" class="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl">
+                        <span class="text-xl flex-shrink-0">🚫</span>
+                        <p class="text-sm font-bold text-red-700 dark:text-red-400">{{ flashError }}</p>
+                    </div>
+
+                    <!-- Server flash success -->
+                    <div v-if="flashSuccess" class="mb-5 flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl">
+                        <span class="text-xl flex-shrink-0">✅</span>
+                        <p class="text-sm font-bold text-green-700 dark:text-green-400">{{ flashSuccess }}</p>
+                    </div>
 
                     <form @submit.prevent="submitTrip" class="space-y-5">
                         <div>
@@ -216,7 +252,7 @@ const historyLogs = computed(() => {
                             <div class="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
-                                    @click="deliveryMode = 'single'"
+                                    @click="handleModeChange('single')"
                                     class="flex flex-col items-center rounded-2xl border-2 p-4 transition-all"
                                     :class="deliveryMode === 'single'
                                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950 dark:border-indigo-600 shadow-md ring-2 ring-indigo-200 dark:ring-indigo-800'
@@ -228,7 +264,7 @@ const historyLogs = computed(() => {
                                 </button>
                                 <button
                                     type="button"
-                                    @click="deliveryMode = 'multi'"
+                                    @click="handleModeChange('multi')"
                                     class="flex flex-col items-center rounded-2xl border-2 p-4 transition-all"
                                     :class="deliveryMode === 'multi'
                                         ? 'border-orange-500 bg-orange-50 dark:bg-orange-950 dark:border-orange-600 shadow-md ring-2 ring-orange-200 dark:ring-orange-800'
@@ -289,6 +325,16 @@ const historyLogs = computed(() => {
                                 📍 Selected: {{ currentUnitLabel }}
                             </div>
 
+                            <div v-if="deliveryMode === 'multi' && currentUnitLabel" class="mt-3">
+                                <label class="block text-gray-700 dark:text-white text-sm font-bold mb-1">Person to Visit for unit {{ currentUnitLabel }} <span class="text-red-500">*</span></label>
+                                <input
+                                    v-model="tempHostName"
+                                    type="text"
+                                    placeholder="Enter resident's full name for this unit"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white dark:bg-gray-800 dark:border-gray-700"
+                                />
+                            </div>
+
                             <button
                                 v-if="deliveryMode === 'multi'"
                                 type="button"
@@ -309,10 +355,13 @@ const historyLogs = computed(() => {
                                 <ul v-if="stopList.length" class="space-y-2">
                                     <li
                                         v-for="(stop, index) in stopList"
-                                        :key="stop"
+                                        :key="stop.unit_number"
                                         class="flex items-center justify-between bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/40 rounded-lg px-3 py-2 text-sm font-bold text-gray-800 dark:text-gray-200"
                                     >
-                                        <span>{{ index + 1 }}. {{ stop }}</span>
+                                        <div class="flex flex-col">
+                                            <span class="text-xs text-orange-600 dark:text-orange-400">Unit: {{ stop.unit_number }}</span>
+                                            <span class="text-sm">👤 Resident: {{ stop.host_name }}</span>
+                                        </div>
                                         <button type="button" class="text-red-500 text-xs font-black uppercase" @click="removeStop(index)">Remove</button>
                                     </li>
                                 </ul>
@@ -324,7 +373,7 @@ const historyLogs = computed(() => {
                             <div v-if="tripForm.errors['unit_numbers.0']" class="text-red-500 text-xs">Please check all destination units.</div>
                         </div>
 
-                        <div>
+                        <div v-if="deliveryMode === 'single'">
                             <label class="block text-gray-700 dark:text-white text-sm font-bold mb-1">Person to Visit <span class="text-red-500">*</span></label>
                             <input
                                 v-model="tripForm.host_name"
@@ -338,10 +387,14 @@ const historyLogs = computed(() => {
 
                         <button
                             type="submit"
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-                            :disabled="tripForm.processing || (deliveryMode === 'multi' && stopList.length < 2) || (deliveryMode === 'single' && !currentUnitLabel)"
+                            class="w-full font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline text-sm transition-all"
+                            :class="hasActiveTrip
+                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50'"
+                            :disabled="tripForm.processing || hasActiveTrip || (deliveryMode === 'multi' && stopList.length < 2) || (deliveryMode === 'single' && !currentUnitLabel)"
                         >
-                            {{ tripForm.processing ? 'Requesting...' : (deliveryMode === 'multi' ? 'Submit multi-stop request' : 'Submit request') }}
+                            <span v-if="hasActiveTrip">⛔ Active Trip In Progress</span>
+                            <span v-else>{{ tripForm.processing ? 'Requesting...' : (deliveryMode === 'multi' ? 'Submit multi-stop request' : 'Submit request') }}</span>
                         </button>
                     </form>
                 </div>
@@ -474,76 +527,7 @@ const historyLogs = computed(() => {
             </div>
         </div>
 
-        <div v-if="activeTab === 'history'" class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white border-b pb-2">Delivery History</h3>
 
-                <div v-if="historyLogs.length > 0" class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-                        <thead>
-                            <tr>
-                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destination(s)</th>
-                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Person to Visit</th>
-                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs leading-4 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                            <tr v-for="group in historyLogs" :key="group.type === 'multi' ? group.run.id : group.log.id">
-                                <td class="px-6 py-4 whitespace-no-wrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                        :class="{
-                                            'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-400': group.type === 'multi',
-                                            'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400': group.type === 'single',
-                                        }"
-                                    >
-                                        {{ group.type === 'multi' ? 'Multi-stop' : 'Single' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700 dark:text-gray-300">
-                                    <div v-if="group.type === 'multi'" class="space-y-1">
-                                        <div v-for="log in group.logs" :key="log.id" class="text-xs">{{ log.destination }}</div>
-                                    </div>
-                                    <div v-else>{{ group.log.destination }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-700 dark:text-gray-300">
-                                    <span v-if="group.type === 'multi' && group.logs[0]?.host_name" class="font-semibold">{{ group.logs[0].host_name }}</span>
-                                    <span v-else-if="group.type === 'single' && group.log.host_name" class="font-semibold">{{ group.log.host_name }}</span>
-                                    <span v-else class="text-gray-400 italic text-xs">—</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-no-wrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                                        :class="{
-                                            'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400': group.type === 'multi'
-                                                ? group.run.status === 'Completed'
-                                                : group.log.status === 'Checked Out' || (group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status)),
-                                            'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400': group.type === 'multi'
-                                                ? CANCELLED_STATUSES.includes(group.run.status)
-                                                : CANCELLED_STATUSES.includes(group.log.status),
-                                            'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300': group.type === 'multi'
-                                                ? !['Completed', ...CANCELLED_STATUSES].includes(group.run.status)
-                                                : false,
-                                        }"
-                                    >
-                                        {{ group.type === 'multi'
-                                            ? group.run.status
-                                            : (group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status) ? 'Completed' : group.log.status)
-                                        }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-no-wrap text-sm text-gray-500">
-                                    {{ formatMalaysiaDate(group.created_at) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div v-else class="text-gray-500 dark:text-gray-400 text-sm italic py-8 text-center">
-                    No delivery history found.
-                </div>
-            </div>
-        </div>
 
         <div class="mt-6 bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 text-center text-sm text-gray-500 dark:text-white">

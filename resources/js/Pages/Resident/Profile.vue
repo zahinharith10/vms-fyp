@@ -4,6 +4,7 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const resident = usePage().props.resident;
+const isEditing = ref(false);
 
 const form = useForm({
     name: resident.name,
@@ -22,9 +23,15 @@ const updateProfile = () => {
         onSuccess: () => {
             form.reset('password', 'password_confirmation');
             status.value = 'Profile updated successfully.';
+            isEditing.value = false;
             setTimeout(() => status.value = null, 3000);
         },
     });
+};
+
+const cancelEdit = () => {
+    isEditing.value = false;
+    form.reset();
 };
 </script>
 
@@ -56,7 +63,9 @@ const updateProfile = () => {
                             <div>
                                 <label for="name" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Full Name</label>
                                 <input id="name" type="text" v-model="form.name"
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-200 dark:placeholder-gray-500 transition-colors duration-200"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50/70 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold transition-colors duration-200"
                                     required />
                                 <div v-if="form.errors.name" class="mt-2 text-sm text-red-500 dark:text-red-400 font-bold">{{ form.errors.name }}</div>
                             </div>
@@ -65,7 +74,9 @@ const updateProfile = () => {
                             <div>
                                 <label for="email" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Email Address</label>
                                 <input id="email" type="email" v-model="form.email"
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-200 dark:placeholder-gray-500 transition-colors duration-200"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50/70 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold transition-colors duration-200"
                                     required />
                                 <div v-if="form.errors.email" class="mt-2 text-sm text-red-500 dark:text-red-400 font-bold">{{ form.errors.email }}</div>
                             </div>
@@ -74,9 +85,27 @@ const updateProfile = () => {
                             <div>
                                 <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Phone Number</label>
                                 <input id="phone" type="text" v-model="form.phone"
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-200 dark:placeholder-gray-500 transition-colors duration-200"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50/70 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold transition-colors duration-200"
                                     required />
                                 <div v-if="form.errors.phone" class="mt-2 text-sm text-red-500 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
+                            </div>
+
+                            <!-- IC Number (Display Only) -->
+                            <div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / Identification Number</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/70 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-gray-100 dark:border-gray-700 transition-colors duration-200">
+                                    {{ resident.ic_number || '—' }}
+                                </div>
+                            </div>
+
+                            <!-- Resident Type (Display Only) -->
+                            <div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Resident Type</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/70 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-gray-100 dark:border-gray-700 transition-colors duration-200 uppercase">
+                                    {{ resident.type || '—' }}
+                                </div>
                             </div>
 
                             <!-- House Unit (Display Only) -->
@@ -108,11 +137,11 @@ const updateProfile = () => {
                                 <div class="flex items-center">
                                     <button
                                         type="button"
-                                        :disabled="resident.type !== 'owner'"
-                                        @click="resident.type === 'owner' ? form.auto_approve_deliveries = !form.auto_approve_deliveries : null"
+                                        :disabled="!isEditing || resident.type !== 'owner'"
+                                        @click="isEditing && resident.type === 'owner' ? form.auto_approve_deliveries = !form.auto_approve_deliveries : null"
                                         :class="[
                                             form.auto_approve_deliveries ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700',
-                                            resident.type !== 'owner' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                                            (!isEditing || resident.type !== 'owner') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                                         ]"
                                         class="relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-sm"
                                     >
@@ -126,7 +155,7 @@ const updateProfile = () => {
                         </div>
 
                         <!-- Security Section -->
-                        <div class="border-t border-gray-100 dark:border-gray-800 pt-6">
+                        <div v-if="isEditing" class="border-t border-gray-100 dark:border-gray-800 pt-6">
                             <h4 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest mb-4">Security</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -146,7 +175,7 @@ const updateProfile = () => {
                             </div>
                         </div>
 
-                        <!-- Save Button Row -->
+                        <!-- Save/Edit Button Row -->
                         <div class="flex items-center justify-end pt-6 border-t border-gray-50 dark:border-gray-800">
                             <Transition
                                 enter-active-class="transition ease-in-out"
@@ -159,13 +188,31 @@ const updateProfile = () => {
                                 </p>
                             </Transition>
 
-                            <button
-                                type="submit"
-                                :disabled="form.processing"
-                                class="inline-flex items-center px-8 py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-900 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 shadow-lg shadow-indigo-200 dark:shadow-indigo-950/30 disabled:opacity-50"
-                            >
-                                Save Changes
-                            </button>
+                            <template v-if="!isEditing">
+                                <button
+                                    type="button"
+                                    @click="isEditing = true"
+                                    class="inline-flex items-center px-8 py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-900 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 shadow-lg shadow-indigo-200 dark:shadow-indigo-950/30"
+                                >
+                                    ✏️ Edit Details
+                                </button>
+                            </template>
+                            <template v-else>
+                                <button
+                                    type="button"
+                                    @click="cancelEdit"
+                                    class="inline-flex items-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border border-transparent rounded-2xl font-black text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 mr-4"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    :disabled="form.processing"
+                                    class="inline-flex items-center px-8 py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-900 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 shadow-lg shadow-indigo-200 dark:shadow-indigo-950/30 disabled:opacity-50"
+                                >
+                                    Save Changes
+                                </button>
+                            </template>
                         </div>
                     </form>
                 </div>

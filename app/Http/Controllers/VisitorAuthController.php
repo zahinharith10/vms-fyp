@@ -190,9 +190,12 @@ class VisitorAuthController extends Controller
 
         return Inertia::render('Visitor/Dashboard', [
             'visitor' => $visitor->load(['visits' => function ($query) {
-                $query->orderBy('created_at', 'desc')->take(3);
+                $query->with('sessions')->orderBy('created_at', 'desc')->take(3);
             }]),
             'houseUnits' => $unitMap,
+            'hasActiveVisit' => \App\Models\Visit::where('visitor_id', $visitor->id)
+                 ->whereIn('status', ['Pending', 'Approved', 'Checked In', 'Temporarily Out'])
+                 ->exists(),
         ]);
     }
 
@@ -206,7 +209,7 @@ class VisitorAuthController extends Controller
 
         return Inertia::render('Visitor/History', [
             'visitor' => $visitor->load(['visits' => function ($query) {
-                $query->orderBy('created_at', 'desc');
+                $query->with('sessions')->orderBy('created_at', 'desc');
             }]),
         ]);
     }

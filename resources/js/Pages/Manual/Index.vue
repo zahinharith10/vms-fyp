@@ -24,7 +24,9 @@ const layout = computed(() => {
     }
 });
 
-const activeTab = ref(role.value === 'guest' || role.value === 'admin' ? 'resident' : role.value);
+const activeTab = ref(
+    role.value === 'guest' || role.value === 'admin' ? 'resident' : role.value
+);
 
 const goBack = () => {
     if (window.history.length > 1) {
@@ -58,8 +60,8 @@ const goBack = () => {
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-3xl border border-gray-100 dark:border-gray-800">
                     
-                    <!-- Tabs - Only show if user is NOT visitor -->
-                    <div v-if="role !== 'resident' && role !== 'visitor'" class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <!-- Tabs - Only show if user is NOT visitor or delivery -->
+                    <div v-if="role !== 'resident' && role !== 'visitor' && role !== 'delivery'" class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                         <button @click="activeTab = 'resident'" :class="['px-6 py-4 text-sm font-black uppercase tracking-widest transition-colors', activeTab === 'resident' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white dark:bg-gray-900 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300']">For Residents</button>
                         <button @click="activeTab = 'guard'" :class="['px-6 py-4 text-sm font-black uppercase tracking-widest transition-colors', activeTab === 'guard' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white dark:bg-gray-900 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300']">For Guards</button>
                         <button @click="activeTab = 'delivery'" :class="['px-6 py-4 text-sm font-black uppercase tracking-widest transition-colors', activeTab === 'delivery' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white dark:bg-gray-900 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300']">For Deliveries</button>

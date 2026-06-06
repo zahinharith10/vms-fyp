@@ -12,7 +12,7 @@ class DeliveryTripService
     /**
      * @param  list<string>  $destinations
      */
-    public function createRun(DeliveryPersonnel $personnel, string $type, array $destinations, ?string $hostName = null): DeliveryRun
+    public function createRun(DeliveryPersonnel $personnel, string $type, array $destinations, $hostNames = null): DeliveryRun
     {
         $run = DeliveryRun::create([
             'delivery_personnel_id' => $personnel->id,
@@ -20,15 +20,17 @@ class DeliveryTripService
             'status' => 'Pending',
         ]);
 
-        foreach ($destinations as $destination) {
+        foreach ($destinations as $index => $destination) {
             $status = $this->resolveInitialStatus($destination);
+            
+            $logHostName = is_array($hostNames) ? ($hostNames[$index] ?? null) : $hostNames;
 
             DeliveryLog::create([
                 'delivery_personnel_id' => $personnel->id,
                 'delivery_run_id' => $run->id,
                 'destination' => $destination,
                 'status' => $status,
-                'host_name' => $hostName,
+                'host_name' => $logHostName,
             ]);
         }
 

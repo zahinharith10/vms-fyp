@@ -118,15 +118,17 @@ const confirmDelete = () => {
                                     <tr v-if="(guards?.data || []).length === 0">
                                         <td colspan="6" class="px-6 py-4 text-center text-gray-500">No guards found.</td>
                                     </tr>
-                                    <tr v-for="guard in guards?.data || []" :key="guard.id">
+                                    <tr v-for="guard in guards?.data || []" :key="guard.id" class="hover:bg-indigo-50/40 transition-colors">
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <img v-if="guard.photo" :src="'/storage/' + guard.photo" class="h-10 w-10 rounded-full object-cover" alt="Photo">
-                                            <div v-else class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                            </div>
+                                            <Link :href="route('admin.guards.show', guard.id)">
+                                                <img v-if="guard.photo" :src="'/storage/' + guard.photo" class="h-10 w-10 rounded-full object-cover ring-2 ring-transparent hover:ring-indigo-400 transition" alt="Photo">
+                                                <div v-else class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 hover:bg-indigo-100 transition">
+                                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                                </div>
+                                            </Link>
                                         </td>
                                         <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ guard.name }}</div>
+                                            <Link :href="route('admin.guards.show', guard.id)" class="text-sm font-medium text-gray-900 hover:text-indigo-600 transition-colors">{{ guard.name }}</Link>
                                             <div class="text-xs text-gray-500">{{ guard.employee_id }}</div>
                                         </td>
                                         <td class="px-6 py-4">
@@ -147,8 +149,11 @@ const confirmDelete = () => {
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <Link :href="route('admin.guards.edit', guard.id)" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</Link>
-                                            <button @click="openDeleteModal(guard)" class="text-red-600 hover:text-red-900">Delete</button>
+                                            <div class="flex items-center gap-3">
+                                                <Link :href="route('admin.guards.show', guard.id)" class="text-gray-600 hover:text-indigo-700 font-semibold">View</Link>
+                                                <Link :href="route('admin.guards.edit', guard.id)" class="text-indigo-600 hover:text-indigo-900 font-semibold">Edit</Link>
+                                                <button @click="openDeleteModal(guard)" class="text-red-600 hover:text-red-900 font-semibold">Delete</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>

@@ -1,15 +1,24 @@
 <script setup>
 import DeliveryAuthenticatedLayout from '@/Layouts/DeliveryAuthenticatedLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import FaceCapture from '@/Components/FaceCapture.vue';
+import { formatMalaysiaDateTime } from '@/utils/datetime';
 
-const delivery = usePage().props.auth.user;
+const props = defineProps({
+    delivery: Object,
+});
+
+const delivery = props.delivery || usePage().props.auth.user;
+const isEditing = ref(false);
 
 const form = useForm({
     _method: 'PATCH',
     name: delivery.name,
     phone: delivery.phone,
+    ic_number: delivery.ic_number || '',
+    company: delivery.company || '',
+    vehicle_type: delivery.vehicle_type || '',
     vehicle_number: delivery.vehicle_number || '',
     face_descriptor: null,
     photo: null,
@@ -61,10 +70,20 @@ const updateProfile = async () => {
             status.value = 'Profile updated successfully.';
             showFaceCapture.value = false;
             capturedPhotoPreview.value = null;
+            isEditing.value = false;
             setTimeout(() => status.value = null, 3000);
         },
     });
 };
+
+const cancelEdit = () => {
+    isEditing.value = false;
+    form.reset();
+    capturedPhotoPreview.value = null;
+    showFaceCapture.value = false;
+};
+
+// Logs display has been moved to the dedicated Delivery History page.
 </script>
 
 <template>
@@ -110,31 +129,78 @@ const updateProfile = async () => {
                             <!-- Name -->
                             <div>
                                 <label for="name" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Driver Full Name</label>
-                                <input id="name" type="text" v-model="form.name" class="block w-full border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 dark:text-white shadow-inner" required />
+                                <input id="name" type="text" v-model="form.name"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner" required />
                                 <div v-if="form.errors.name" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.name }}</div>
                             </div>
 
                             <!-- Phone -->
                             <div>
                                 <label for="phone" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Phone Number</label>
-                                <input id="phone" type="text" v-model="form.phone" class="block w-full border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 dark:text-white shadow-inner" required />
+                                <input id="phone" type="text" v-model="form.phone"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner" required />
                                 <div v-if="form.errors.phone" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.phone }}</div>
+                            </div>
+
+                            <!-- IC Number -->
+                            <div>
+                                <label for="ic_number" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">IC Number</label>
+                                <input id="ic_number" type="text" v-model="form.ic_number"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner" required />
+                                <div v-if="form.errors.ic_number" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.ic_number }}</div>
+                            </div>
+
+                            <!-- Delivery Company -->
+                            <div>
+                                <label for="company" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Delivery Company</label>
+                                <input id="company" type="text" v-model="form.company"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest uppercase' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold uppercase']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner" required />
+                                <div v-if="form.errors.company" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.company }}</div>
+                            </div>
+
+                            <!-- Vehicle Type -->
+                            <div>
+                                <label for="vehicle_type" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Vehicle Type</label>
+                                <select v-if="isEditing" id="vehicle_type" v-model="form.vehicle_type"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold uppercase" required>
+                                    <option value="Motorcycle">Motorcycle</option>
+                                    <option value="Car">Car</option>
+                                    <option value="Van">Van</option>
+                                    <option value="Truck">Truck</option>
+                                    <option value="Bicycle">Bicycle</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <div v-else class="block w-full bg-gray-100 dark:bg-gray-800/50 border-transparent py-4 px-4 rounded-2xl font-black text-gray-400 dark:text-gray-500 italic tracking-widest uppercase cursor-not-allowed">
+                                    {{ form.vehicle_type || '—' }}
+                                </div>
+                                <div v-if="form.errors.vehicle_type" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.vehicle_type }}</div>
                             </div>
 
                             <!-- Vehicle Number -->
                             <div>
                                 <label for="vehicle_number" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Vehicle Plate Number</label>
-                                <input id="vehicle_number" type="text" v-model="form.vehicle_number" class="block w-full border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 rounded-2xl py-4 font-bold text-gray-700 dark:text-white shadow-inner uppercase italic" required />
+                                <input id="vehicle_number" type="text" v-model="form.vehicle_number"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner uppercase italic" required />
                                 <div v-if="form.errors.vehicle_number" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.vehicle_number }}</div>
                             </div>
 
-                            <!-- IC Number (Locked) -->
+                            <!-- Email Address (Display Only) -->
                             <div>
-                                <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">IC Number (Verified)</label>
-                                <div class="block w-full bg-gray-100 dark:bg-gray-800 py-4 px-4 rounded-2xl font-black text-gray-400 dark:text-gray-500 italic tracking-widest border border-gray-200 dark:border-gray-700">
-                                    {{ delivery.ic_number }}
+                                <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Email Address (Cannot be changed)</label>
+                                <div class="block w-full bg-gray-100 dark:bg-gray-800 py-4 px-4 rounded-2xl font-black text-gray-400 dark:text-gray-500 italic tracking-wider border border-gray-200 dark:border-gray-700">
+                                    {{ delivery.email || '—' }}
                                 </div>
-                                <p class="mt-2 text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest italic">Contact Admin to change verified identity.</p>
+                                <p class="mt-2 text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest italic">Contact Admin to change your email address.</p>
                             </div>
                         </div>
 
@@ -146,6 +212,7 @@ const updateProfile = async () => {
                                     <p class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">Manage your visual identity for building access.</p>
                                 </div>
                                 <button 
+                                    v-if="isEditing"
                                     type="button" 
                                     @click="showFaceCapture = !showFaceCapture"
                                     class="text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-800 underline transition-colors"
@@ -154,7 +221,7 @@ const updateProfile = async () => {
                                 </button>
                             </div>
 
-                            <div v-show="showFaceCapture" class="bg-gray-50 dark:bg-gray-800 p-6 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-inner">
+                            <div v-show="showFaceCapture && isEditing" class="bg-gray-50 dark:bg-gray-800 p-6 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-inner">
                                 <!-- Capture Mode -->
                                 <div v-if="!capturedPhotoPreview">
                                     <FaceCapture ref="faceCaptureRef" @face-detected="onFaceDetected" />
@@ -209,13 +276,31 @@ const updateProfile = async () => {
                                 </p>
                             </Transition>
 
-                            <button
-                                type="submit"
-                                :disabled="form.processing || showFaceCapture"
-                                class="inline-flex items-center px-10 py-4 bg-orange-600 border border-transparent rounded-2xl font-black text-xs text-white uppercase tracking-widest hover:bg-orange-700 active:bg-orange-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-xl shadow-orange-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Update Information
-                            </button>
+                            <template v-if="!isEditing">
+                                <button
+                                    type="button"
+                                    @click="isEditing = true"
+                                    class="inline-flex items-center px-10 py-4 bg-orange-600 border border-transparent rounded-2xl font-black text-xs text-white uppercase tracking-widest hover:bg-orange-700 active:bg-orange-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-xl shadow-orange-100"
+                                >
+                                    ✏️ Edit Details
+                                </button>
+                            </template>
+                            <template v-else>
+                                <button
+                                    type="button"
+                                    @click="cancelEdit"
+                                    class="inline-flex items-center px-8 py-3 bg-gray-250 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 border border-transparent rounded-2xl font-black text-[10px] uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 mr-6"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    :disabled="form.processing || showFaceCapture"
+                                    class="inline-flex items-center px-10 py-4 bg-orange-600 border border-transparent rounded-2xl font-black text-xs text-white uppercase tracking-widest hover:bg-orange-700 active:bg-orange-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-xl shadow-orange-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Update Information
+                                </button>
+                            </template>
                         </div>
                     </form>
                 </div>
@@ -230,6 +315,8 @@ const updateProfile = async () => {
                         </div>
                     </div>
                 </div>
+
+
             </div>
         </div>
     </DeliveryAuthenticatedLayout>

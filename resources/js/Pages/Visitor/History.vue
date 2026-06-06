@@ -23,6 +23,14 @@ const cancelVisit = (id) => {
         router.delete(route('visitor.visits.destroy', id));
     }
 };
+
+const formatDuration = (mins) => {
+    if (!mins && mins !== 0) return '—';
+    if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'}`;
+    const hrs = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return `${hrs} hr${hrs === 1 ? '' : 's'} ${remMins} min${remMins === 1 ? '' : 's'}`;
+};
 </script>
 
 <template>
@@ -46,6 +54,7 @@ const cancelVisit = (id) => {
                             <option value="Checked In">Checked In</option>
                             <option value="Checked Out">Checked Out</option>
                             <option value="Rejected">Rejected</option>
+                            <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -62,7 +71,8 @@ const cancelVisit = (id) => {
                                     'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400': visit.status === 'Approved',
                                     'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400': visit.status === 'Checked In',
                                     'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300': visit.status === 'Checked Out',
-                                    'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400': visit.status === 'Rejected'
+                                    'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400': visit.status === 'Rejected',
+                                    'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400': visit.status === 'Cancelled',
                                 }" class="px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider">
                                     {{ visit.status }}
                                 </span>
@@ -75,6 +85,27 @@ const cancelVisit = (id) => {
                             </div>
                             <div v-if="visit.parking_lot_number" class="text-xs text-indigo-600 dark:text-indigo-400 font-bold mt-1.5 flex items-center gap-1">
                                 <span>🅿️</span> Assigned Parking: <span class="bg-indigo-50 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30 uppercase tracking-widest text-[9px] font-black text-indigo-600 dark:text-indigo-400">Lot {{ visit.parking_lot_number }}</span>
+                            </div>
+
+                            <!-- Visit Timing & Duration Details -->
+                            <div v-if="visit.check_in_time || visit.sessions?.length > 0" class="mt-3 space-y-1 bg-gray-100/60 dark:bg-gray-900/40 p-2.5 rounded-lg text-xs max-w-md">
+                                <div class="font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest text-[9px] mb-1">Visit Timing & Duration:</div>
+                                <div v-if="visit.sessions?.length > 0">
+                                    <div v-for="sess in visit.sessions" :key="sess.id" class="flex flex-col sm:flex-row sm:items-center justify-between text-gray-600 dark:text-gray-400 gap-x-4 mb-0.5">
+                                        <span>📥 In: {{ formatMalaysiaDateTime(sess.check_in_time) }}</span>
+                                        <span v-if="sess.check_out_time">📤 Out: {{ formatMalaysiaDateTime(sess.check_out_time) }}</span>
+                                        <span v-else class="text-green-600 font-bold">On-Site</span>
+                                    </div>
+                                </div>
+                                <div v-else class="flex flex-col sm:flex-row sm:items-center justify-between text-gray-600 dark:text-gray-400 gap-x-4">
+                                    <span>📥 In: {{ formatMalaysiaDateTime(visit.check_in_time) }}</span>
+                                    <span v-if="visit.check_out_time">📤 Out: {{ formatMalaysiaDateTime(visit.check_out_time) }}</span>
+                                    <span v-else class="text-green-600 font-bold">On-Site</span>
+                                </div>
+                                <div class="border-t border-gray-200/50 dark:border-gray-800/50 my-1 pt-1 flex justify-between font-bold text-indigo-700 dark:text-indigo-400">
+                                    <span>Total Duration:</span>
+                                    <span>{{ formatDuration(visit.total_duration_minutes) }}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="flex-shrink-0 flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
@@ -90,7 +121,7 @@ const cancelVisit = (id) => {
                                 Cancel
                             </button>
 
-                            <span v-if="visit.status === 'Rejected' || visit.status === 'Checked Out'" class="text-sm text-gray-400 dark:text-gray-500 italic px-2">
+                            <span v-if="['Rejected', 'Checked Out', 'Cancelled'].includes(visit.status)" class="text-sm text-gray-400 dark:text-gray-500 italic px-2">
                                 No Actions
                             </span>
                         </div>

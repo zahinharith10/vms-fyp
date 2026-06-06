@@ -261,7 +261,7 @@ const formatDuration = (v) => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
-                                <tr v-for="visit in filteredVisits" :key="visit.id" class="hover:bg-gray-50 transition-colors">
+                                <tr v-for="visit in filteredVisits" :key="visit.id" @click="$inertia.visit(route('admin.visit-logs.show', visit.id))" class="hover:bg-indigo-50/50 cursor-pointer transition-colors">
                                     <!-- Visitor -->
                                     <td class="px-5 py-3 whitespace-nowrap">
                                         <div class="flex items-center gap-2">

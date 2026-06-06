@@ -1,9 +1,10 @@
 <script setup>
 import GuardAuthenticatedLayout from '@/Layouts/GuardAuthenticatedLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const guard = usePage().props.guard;
+const isEditing = ref(false);
 
 const form = useForm({
     name: guard.name,
@@ -15,15 +16,29 @@ const form = useForm({
 
 const status = ref(null);
 
+const formattedShift = computed(() => {
+    if (!guard.shift) return '—';
+    if (Array.isArray(guard.shift)) {
+        return guard.shift.join(', ');
+    }
+    return guard.shift;
+});
+
 const updateProfile = () => {
     form.patch(route('guard.profile.update'), {
         preserveScroll: true,
         onSuccess: () => {
             form.reset('password', 'password_confirmation');
             status.value = 'Profile updated successfully.';
+            isEditing.value = false;
             setTimeout(() => status.value = null, 3000);
         },
     });
+};
+
+const cancelEdit = () => {
+    isEditing.value = false;
+    form.reset();
 };
 </script>
 
@@ -54,7 +69,9 @@ const updateProfile = () => {
                             <div>
                                 <label for="name" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Full Name</label>
                                 <input id="name" type="text" v-model="form.name"
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-200 transition-colors duration-200"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50/70 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-bold transition-colors duration-200"
                                     required />
                                 <div v-if="form.errors.name" class="mt-2 text-sm text-red-500 dark:text-red-400 font-bold">{{ form.errors.name }}</div>
                             </div>
@@ -63,7 +80,9 @@ const updateProfile = () => {
                             <div>
                                 <label for="email" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Email Address</label>
                                 <input id="email" type="email" v-model="form.email"
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-200 transition-colors duration-200"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50/70 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-bold transition-colors duration-200"
                                     required />
                                 <div v-if="form.errors.email" class="mt-2 text-sm text-red-500 dark:text-red-400 font-bold">{{ form.errors.email }}</div>
                             </div>
@@ -72,7 +91,9 @@ const updateProfile = () => {
                             <div>
                                 <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Phone Number</label>
                                 <input id="phone" type="text" v-model="form.phone"
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-200 transition-colors duration-200"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50/70 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-bold transition-colors duration-200"
                                     required />
                                 <div v-if="form.errors.phone" class="mt-2 text-sm text-red-500 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
                             </div>
@@ -85,9 +106,42 @@ const updateProfile = () => {
                                     <span class="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 px-2 py-0.5 rounded uppercase">Locked</span>
                                 </div>
                             </div>
+
+                            <!-- IC Number (Display Only) -->
+                            <div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / Identification Number</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/70 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-gray-100 dark:border-gray-700 transition-colors duration-200">
+                                    {{ guard.ic_number || '—' }}
+                                </div>
+                            </div>
+
+                            <!-- Assigned Shift (Display Only) -->
+                            <div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Assigned Shift</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/70 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-gray-100 dark:border-gray-700 transition-colors duration-200 uppercase">
+                                    {{ formattedShift }}
+                                </div>
+                            </div>
+
+                            <!-- Home/Duty Address (Display Only) -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Address</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/70 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-gray-100 dark:border-gray-700 transition-colors duration-200">
+                                    {{ guard.address || '—' }}
+                                </div>
+                            </div>
+
+                            <!-- Account Status (Display Only) -->
+                            <div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Account Status</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/70 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-gray-100 dark:border-gray-700 transition-colors duration-200 uppercase">
+                                    {{ guard.status || 'Active' }}
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="border-t border-gray-100 dark:border-gray-800 pt-6">
+                        <!-- Security Section -->
+                        <div v-if="isEditing" class="border-t border-gray-100 dark:border-gray-800 pt-6">
                             <h4 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest mb-4">Security</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -107,6 +161,7 @@ const updateProfile = () => {
                             </div>
                         </div>
 
+                        <!-- Save/Edit Button Row -->
                         <div class="flex items-center justify-end pt-6 border-t border-gray-50 dark:border-gray-800">
                             <Transition
                                 enter-active-class="transition ease-in-out"
@@ -119,13 +174,31 @@ const updateProfile = () => {
                                 </p>
                             </Transition>
 
-                            <button
-                                type="submit"
-                                :disabled="form.processing"
-                                class="inline-flex items-center px-8 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-900 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 shadow-lg shadow-blue-200 dark:shadow-blue-950/30 disabled:opacity-50"
-                            >
-                                Update Profile
-                            </button>
+                            <template v-if="!isEditing">
+                                <button
+                                    type="button"
+                                    @click="isEditing = true"
+                                    class="inline-flex items-center px-8 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-900 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 shadow-lg shadow-blue-200 dark:shadow-blue-950/30"
+                                >
+                                    ✏️ Edit Profile
+                                </button>
+                            </template>
+                            <template v-else>
+                                <button
+                                    type="button"
+                                    @click="cancelEdit"
+                                    class="inline-flex items-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border border-transparent rounded-2xl font-black text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 mr-4"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    :disabled="form.processing"
+                                    class="inline-flex items-center px-8 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-900 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition ease-in-out duration-150 shadow-lg shadow-blue-200 dark:shadow-blue-950/30 disabled:opacity-50"
+                                >
+                                    Update Profile
+                                </button>
+                            </template>
                         </div>
                     </form>
                 </div>

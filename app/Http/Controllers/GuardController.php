@@ -88,6 +88,11 @@ class GuardController extends Controller
         return redirect()->route('admin.guards.index')->with('success', 'Guard created successfully. ID: ' . $employeeId);
     }
 
+    public function show(Guard $guard)
+    {
+        return Inertia::render('Admin/Guards/Show', ['guard' => $guard]);
+    }
+
     public function edit(Guard $guard)
     {
         return Inertia::render('Admin/Guards/Edit', ['guard' => $guard]);

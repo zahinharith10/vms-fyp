@@ -8,6 +8,7 @@ import { formatMalaysiaDate } from '@/utils/datetime';
 const props = defineProps({
     visitor: Object,
     houseUnits: Object, // { block: { floor: [units] } }
+    hasActiveVisit: Boolean, // Authoritative check from backend
 });
 
 const form = useForm({
@@ -15,6 +16,8 @@ const form = useForm({
     purpose: 'Visit Friend/Family',
     host_name: '',
 });
+
+
 
 const block = ref('');
 const floor = ref('');
@@ -102,6 +105,26 @@ onUnmounted(() => {
             <div class="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800/80 overflow-hidden shadow-sm dark:shadow-indigo-950/5 sm:rounded-3xl transition-all duration-300">
                 <div class="p-8">
                     <h3 class="text-lg font-black mb-6 text-gray-800 dark:text-white">Request New Visit</h3>
+
+                    <!-- Active visit warning banner -->
+                    <div v-if="hasActiveVisit" class="mb-5 flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl">
+                        <span class="text-xl flex-shrink-0">⚠️</span>
+                        <div>
+                            <p class="text-sm font-black text-amber-800 dark:text-amber-300">You already have an active visit request.</p>
+                            <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Please wait for your current visit to be completed or cancelled before submitting a new one.</p>
+                        </div>
+                    </div>
+
+                    <!-- Server-side error messages -->
+                    <div v-if="form.errors.active_visit" class="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl">
+                        <span class="text-xl flex-shrink-0">🚫</span>
+                        <p class="text-sm font-black text-red-700 dark:text-red-400">{{ form.errors.active_visit }}</p>
+                    </div>
+                    <div v-if="form.errors.profile" class="mb-5 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-2xl">
+                        <span class="text-xl flex-shrink-0">🚫</span>
+                        <p class="text-sm font-black text-red-700 dark:text-red-400">{{ form.errors.profile }}</p>
+                    </div>
+
                     <form @submit.prevent="submitVisit">
                         <div class="mb-4">
                             <label class="block text-gray-800 dark:text-gray-250 text-sm font-black uppercase tracking-wider mb-2">Destination Unit</label>
@@ -191,8 +214,16 @@ onUnmounted(() => {
                                 />
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-650 dark:hover:bg-indigo-700 text-white font-black py-4 rounded-xl focus:outline-none transition-all shadow-md dark:shadow-none shadow-indigo-100 uppercase tracking-widest text-xs" :disabled="form.processing">
-                            Submit Request
+                        <button
+                            type="submit"
+                            class="w-full font-black py-4 rounded-xl focus:outline-none transition-all uppercase tracking-widest text-xs"
+                            :class="hasActiveVisit
+                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed shadow-none'
+                                : 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-650 dark:hover:bg-indigo-700 text-white shadow-md dark:shadow-none shadow-indigo-100'"
+                            :disabled="form.processing || hasActiveVisit"
+                        >
+                            <span v-if="hasActiveVisit">⛔ Active Request Exists</span>
+                            <span v-else>{{ form.processing ? 'Submitting...' : 'Submit Request' }}</span>
                         </button>
                     </form>
                 </div>
@@ -211,7 +242,8 @@ onUnmounted(() => {
                                     'text-blue-600 dark:text-blue-400': visit.status === 'Approved',
                                     'text-green-600 dark:text-green-400': visit.status === 'Checked In',
                                     'text-gray-550 dark:text-gray-400': visit.status === 'Checked Out',
-                                    'text-red-650 dark:text-red-400': visit.status === 'Rejected'
+                                    'text-red-650 dark:text-red-400': visit.status === 'Rejected',
+                                    'text-orange-600 dark:text-orange-400': visit.status === 'Cancelled',
                                 }" class="font-black text-xs uppercase tracking-wider">{{ visit.status }}</span>
                             </div>
                             <div class="text-gray-500 dark:text-gray-400 text-xs mt-1 font-medium">{{ visit.purpose }} • Host: <span class="font-bold text-gray-700 dark:text-gray-300">{{ visit.host_name || 'N/A' }}</span> • {{ formatMalaysiaDate(visit.created_at) }}</div>

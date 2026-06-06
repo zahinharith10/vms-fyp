@@ -6,6 +6,7 @@ import FaceCapture from '@/Components/FaceCapture.vue';
 
 const page = usePage();
 const visitor = page.props.visitor || page.props.auth.user;
+const isEditing = ref(false);
 
 const form = useForm({
     _method: 'PATCH',
@@ -50,23 +51,10 @@ const retakePhoto = () => {
     capturedPhotoPreview.value = null;
     form.photo = null;
     form.face_descriptor = null;
-    // face capture component is still mounted, just re-shown via v-if logic in template
 };
 
 const confirmPhotoAndUpdate = () => {
-    // Photo is already in form.photo from capture step
-    // Just closing the capture UI validation? 
-    // Actually, user might want to just "Confirm" the local change then "Save Profile" later?
-    // User request: "choose to continue update or retake".
-    // So "Confirm" just sets the state as "Ready to Save".
-    
-    // We already set form.photo in capturePhoto. 
-    // We can hide the capture UI or just leave it showing the "Success" state?
-    // Let's just scroll or focus on Save button, or auto-save?
-    // "continue update" implies proceeding. Let's assume manual Save Profile click is still needed for final submission.
     showFaceCapture.value = false; 
-    // We update the main avatar preview to show the new candidate?
-    // visitor.photo is prop, can't mutate. We can use a local preview for the main avatar.
 };
 
 const updateProfile = async () => {
@@ -76,9 +64,17 @@ const updateProfile = async () => {
             status.value = 'Profile updated successfully.';
             showFaceCapture.value = false;
             capturedPhotoPreview.value = null;
+            isEditing.value = false;
             setTimeout(() => status.value = null, 3000);
         },
     });
+};
+
+const cancelEdit = () => {
+    isEditing.value = false;
+    form.reset();
+    capturedPhotoPreview.value = null;
+    showFaceCapture.value = false;
 };
 </script>
 
@@ -143,29 +139,49 @@ const updateProfile = async () => {
                             <!-- Name -->
                             <div>
                                 <label for="name" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Full Name</label>
-                                <input id="name" type="text" v-model="form.name" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" required />
+                                <input id="name" type="text" v-model="form.name"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" required />
                                 <div v-if="form.errors.name" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.name }}</div>
                             </div>
 
                             <!-- Phone -->
                             <div>
                                 <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Phone Number</label>
-                                <input id="phone" type="text" v-model="form.phone" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" required />
+                                <input id="phone" type="text" v-model="form.phone"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" required />
                                 <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
                             </div>
 
                             <!-- IC Number -->
                             <div>
                                 <label for="ic_number" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / Identification Number</label>
-                                <input id="ic_number" type="text" v-model="form.ic_number" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" placeholder="Required" required />
+                                <input id="ic_number" type="text" v-model="form.ic_number"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" placeholder="Required" required />
                                 <div v-if="form.errors.ic_number" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.ic_number }}</div>
                             </div>
 
                             <!-- Vehicle Number -->
                             <div>
                                 <label for="vehicle_number" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Vehicle Plate Number</label>
-                                <input id="vehicle_number" type="text" v-model="form.vehicle_number" class="block w-full border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-gray-700 dark:text-gray-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold uppercase" placeholder="e.g. ABC1234" required />
+                                <input id="vehicle_number" type="text" v-model="form.vehicle_number"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold uppercase" placeholder="e.g. ABC1234" required />
                                 <div v-if="form.errors.vehicle_number" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.vehicle_number }}</div>
+                            </div>
+
+                            <!-- Email Address (Display Only) -->
+                            <div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Email Address</label>
+                                <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5 rounded-xl text-gray-500 dark:text-gray-400 font-bold border border-transparent transition-colors duration-200">
+                                    {{ visitor.email || '—' }}
+                                </div>
                             </div>
                         </div>
 
@@ -177,6 +193,7 @@ const updateProfile = async () => {
                                     <p class="text-xs text-gray-500 dark:text-gray-400 font-bold">Manage your registered face for guard house access.</p>
                                 </div>
                                 <button 
+                                    v-if="isEditing"
                                     type="button" 
                                     @click="showFaceCapture = !showFaceCapture"
                                     class="text-xs font-black uppercase tracking-widest text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline"
@@ -185,7 +202,7 @@ const updateProfile = async () => {
                                 </button>
                             </div>
 
-                            <div v-show="showFaceCapture" class="bg-gray-50 dark:bg-gray-850/40 p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
+                            <div v-show="showFaceCapture && isEditing" class="bg-gray-50 dark:bg-gray-850/40 p-4 rounded-2xl border border-gray-200 dark:border-gray-800">
                                 <!-- Capture Mode -->
                                 <div v-if="!capturedPhotoPreview">
                                     <FaceCapture ref="faceCaptureRef" @face-detected="onFaceDetected" />
@@ -240,13 +257,31 @@ const updateProfile = async () => {
                                 </p>
                             </Transition>
 
-                            <button
-                                type="submit"
-                                :disabled="form.processing || showFaceCapture"
-                                class="inline-flex items-center px-8 py-3 bg-purple-600 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-lg shadow-purple-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Save Profile
-                            </button>
+                            <template v-if="!isEditing">
+                                <button
+                                    type="button"
+                                    @click="isEditing = true"
+                                    class="inline-flex items-center px-8 py-3 bg-purple-600 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-lg shadow-purple-200"
+                                >
+                                    ✏️ Edit Profile
+                                </button>
+                            </template>
+                            <template v-else>
+                                <button
+                                    type="button"
+                                    @click="cancelEdit"
+                                    class="inline-flex items-center px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border border-transparent rounded-2xl font-black text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150 mr-4"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    :disabled="form.processing || showFaceCapture"
+                                    class="inline-flex items-center px-8 py-3 bg-purple-600 border border-transparent rounded-2xl font-black text-sm text-white uppercase tracking-widest hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-lg shadow-purple-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Save Profile
+                                </button>
+                            </template>
                         </div>
                     </form>
                 </div>

@@ -129,6 +129,16 @@ class VisitorController extends Controller
             'logs' => \App\Models\Visit::with(['visitor', 'sessions'])->latest('updated_at')->get()
         ]);
     }
+    /**
+     * Display the details of a specific visit log.
+     */
+    public function showLog(\App\Models\Visit $visit)
+    {
+        $visit->load(['visitor', 'sessions']);
+        return Inertia::render('Admin/Visitors/ShowLog', [
+            'visit' => $visit
+        ]);
+    }
     public function exportLogs()
     {
         $logs = \App\Models\Visit::with(['visitor', 'sessions'])->latest()->get();

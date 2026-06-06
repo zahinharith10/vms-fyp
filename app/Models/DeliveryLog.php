@@ -25,6 +25,17 @@ class DeliveryLog extends Model
         'exit_time' => 'datetime',
     ];
 
+    protected $appends = ['total_duration_minutes'];
+
+    public function getTotalDurationMinutesAttribute()
+    {
+        if ($this->entry_time) {
+            $end = $this->exit_time ?? ($this->status === 'Checked In' ? now() : $this->entry_time);
+            return (int) round($this->entry_time->diffInMinutes($end));
+        }
+        return null;
+    }
+
     public function personnel()
     {
         return $this->belongsTo(DeliveryPersonnel::class, 'delivery_personnel_id');

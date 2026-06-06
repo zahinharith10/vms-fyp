@@ -1,10 +1,13 @@
 <script setup>
 import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const props = defineProps({
     admin: Object,
 });
+
+const isEditing = ref(false);
 
 const form = useForm({
     name: props.admin.name,
@@ -18,8 +21,14 @@ const submit = () => {
         preserveScroll: true,
         onSuccess: () => {
             form.reset('password', 'password_confirmation');
+            isEditing.value = false;
         },
     });
+};
+
+const cancelEdit = () => {
+    isEditing.value = false;
+    form.reset();
 };
 </script>
 
@@ -48,7 +57,9 @@ const submit = () => {
                                 <input
                                     id="name"
                                     type="text"
-                                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-55 border-transparent text-gray-500 shadow-none cursor-not-allowed' : 'bg-white border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-gray-800']"
+                                    class="rounded-md shadow-sm mt-1 block w-full"
                                     v-model="form.name"
                                     required
                                     autofocus
@@ -62,7 +73,9 @@ const submit = () => {
                                 <input
                                     id="email"
                                     type="email"
-                                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-55 border-transparent text-gray-500 shadow-none cursor-not-allowed' : 'bg-white border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-gray-800']"
+                                    class="rounded-md shadow-sm mt-1 block w-full"
                                     v-model="form.email"
                                     required
                                     autocomplete="username"
@@ -70,7 +83,7 @@ const submit = () => {
                                 <div v-if="form.errors.email" class="text-sm text-red-600 mt-2">{{ form.errors.email }}</div>
                             </div>
 
-                            <div class="pt-4 border-t border-gray-200 mt-6">
+                            <div v-if="isEditing" class="pt-4 border-t border-gray-200 mt-6">
                                 <h3 class="text-md font-medium text-gray-900 mb-4">Change Password</h3>
                                 
                                 <div class="space-y-4">
@@ -101,9 +114,19 @@ const submit = () => {
                             </div>
 
                             <div class="flex items-center gap-4">
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" :disabled="form.processing">
-                                    Save Changes
-                                </button>
+                                <template v-if="!isEditing">
+                                    <button type="button" @click="isEditing = true" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                        ✏️ Edit Profile
+                                    </button>
+                                </template>
+                                <template v-else>
+                                    <button type="button" @click="cancelEdit" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-350 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150" :disabled="form.processing">
+                                        Save Changes
+                                    </button>
+                                </template>
 
                                 <Transition
                                     enter-active-class="transition ease-in-out"

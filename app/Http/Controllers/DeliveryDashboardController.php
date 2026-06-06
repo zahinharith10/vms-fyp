@@ -115,11 +115,15 @@ class DeliveryDashboardController extends Controller
             ? array_values(array_unique($request->input('unit_numbers', [])))
             : [$request->string('unit_number')->toString()];
 
+        $hostNameParam = $request->input('delivery_type') === 'multi'
+            ? $request->input('host_names')
+            : $request->string('host_name')->toString();
+
         $run = $deliveryTripService->createRun(
             $delivery,
             $request->input('delivery_type'),
             $destinations,
-            $request->string('host_name')->toString()
+            $hostNameParam
         );
 
         $approvedCount = $run->logs->where('status', 'Approved')->count();
@@ -180,6 +184,21 @@ class DeliveryDashboardController extends Controller
         return redirect()->back()->with('error', 'Trip not found.');
     }
 
+    public function history()
+    {
+        $delivery = Auth::guard('delivery')->user();
+
+        $logs = DeliveryLog::where('delivery_personnel_id', $delivery->id)
+            ->with('run')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('Delivery/History', [
+            'delivery' => $delivery,
+            'logs' => $logs,
+        ]);
+    }
+
     public function register(Request $request)
     {
         return Inertia::render('Delivery/Register', [
@@ -227,8 +246,10 @@ class DeliveryDashboardController extends Controller
 
     public function profile()
     {
+        $delivery = Auth::guard('delivery')->user();
+        
         return Inertia::render('Delivery/Profile', [
-            'delivery' => Auth::guard('delivery')->user(),
+            'delivery' => $delivery,
         ]);
     }
 
@@ -237,15 +258,21 @@ class DeliveryDashboardController extends Controller
         $delivery = Auth::guard('delivery')->user();
 
         $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20|unique:delivery_personnels,phone,'.$delivery->id,
+            'name'           => 'required|string|max:255',
+            'phone'          => 'required|string|max:20|unique:delivery_personnels,phone,'.$delivery->id,
+            'ic_number'      => 'required|string|max:20|unique:delivery_personnels,ic_number,'.$delivery->id,
+            'company'        => 'required|string|max:255',
+            'vehicle_type'   => 'required|string|max:50',
             'vehicle_number' => 'required|string|max:20',
             'face_descriptor' => 'nullable', // Array or JSON string
-            'photo' => 'nullable|image|max:2048',
+            'photo'          => 'nullable|image|max:2048',
         ]);
 
-        $delivery->name = $request->name;
-        $delivery->phone = $request->phone;
+        $delivery->name           = $request->name;
+        $delivery->phone          = $request->phone;
+        $delivery->ic_number      = $request->ic_number;
+        $delivery->company        = $request->company;
+        $delivery->vehicle_type   = $request->vehicle_type;
         $delivery->vehicle_number = $request->vehicle_number;
 
         if ($request->has('face_descriptor') && $request->face_descriptor) {

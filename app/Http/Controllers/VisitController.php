@@ -139,8 +139,9 @@ class VisitController extends Controller
             return redirect()->back()->with('error', 'Only pending or approved visits can be canceled.');
         }
 
-        $visit->delete();
+        // Soft-cancel: update status instead of deleting so history is preserved
+        $visit->update(['status' => 'Cancelled']);
 
-        return redirect()->back()->with('success', 'Visit request canceled successfully.');
+        return redirect()->back()->with('success', 'Visit request cancelled successfully.');
     }
 }
