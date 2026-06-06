@@ -214,8 +214,8 @@ onUnmounted(() => {
             </div>
         </Transition>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="py-6 sm:py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <!-- Tab Switching -->
                 <div class="flex flex-wrap gap-2 mb-6">
                     <button 
@@ -242,11 +242,12 @@ onUnmounted(() => {
                     </button>
                 </div>
 
-                <div class="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800/80 overflow-hidden shadow-sm dark:shadow-indigo-950/5 sm:rounded-3xl">
-                    <div class="p-6 text-gray-900 dark:text-gray-100 overflow-x-auto">
+                <div class="bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800/80 shadow-sm dark:shadow-indigo-950/5 rounded-2xl sm:rounded-3xl">
+                    <div class="p-4 sm:p-6 text-gray-900 dark:text-gray-100">
                         <!-- Visitors Table -->
                         <div v-if="activeTab === 'visitors' || (activeTab === 'pending' && pendingVisits.length > 0)" class="mb-8">
                             <h3 v-if="activeTab === 'pending'" class="font-bold text-gray-700 dark:text-gray-300 mb-4 uppercase text-sm tracking-wider">Pending Visitors</h3>
+                            <div class="overflow-x-auto -mx-4 sm:mx-0 rounded-xl border border-gray-100 dark:border-gray-800">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead>
                                     <tr>
@@ -465,10 +466,12 @@ onUnmounted(() => {
                             </tbody>
                         </table>
                         </div>
+                        </div>
 
                         <!-- Deliveries Table -->
                         <div v-if="activeTab === 'deliveries' || (activeTab === 'pending' && pendingDeliveries.length > 0)">
                             <h3 v-if="activeTab === 'pending'" class="font-bold text-gray-700 dark:text-gray-300 mb-4 uppercase text-sm tracking-wider border-t dark:border-gray-800 pt-6">Pending Deliveries</h3>
+                            <div class="overflow-x-auto -mx-4 sm:mx-0 rounded-xl border border-gray-100 dark:border-gray-800">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead>
                                     <tr>
@@ -561,7 +564,8 @@ onUnmounted(() => {
                                 </tr>
                             </tbody>
                         </table>
-                        </div>
+                        </div><!-- end overflow-x-auto -->
+                        </div><!-- end deliveries table wrapper -->
 
                         <!-- Empty State for Pending Tab when both are empty -->
                         <div v-if="activeTab === 'pending' && totalPending === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
