@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { formatMalaysiaTime } from '@/utils/datetime';
 
 const isOpen = ref(false);
@@ -35,6 +35,21 @@ const toggleDropdown = () => {
     isOpen.value = !isOpen.value;
     if (isOpen.value) {
         markAsRead();
+    }
+};
+
+const handleNotificationClick = (notification) => {
+    isOpen.value = false;
+    const isAdmin = window.location.pathname.startsWith('/admin');
+    
+    if (isAdmin) {
+        if (notification.data && notification.data.visit_id) {
+            router.visit(route('admin.visit-logs.show', notification.data.visit_id));
+        } else {
+            router.visit(route('admin.visit-logs.index'));
+        }
+    } else {
+        router.visit(route('resident.visitors.index'));
     }
 };
 
@@ -72,7 +87,7 @@ onUnmounted(() => {
             
             <div class="max-h-96 overflow-y-auto scrollbar-hide">
                 <div v-if="notifications.length > 0">
-                    <div v-for="notification in notifications" :key="notification.id" class="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-default" :class="{ 'bg-indigo-50/30': !notification.read_at }">
+                    <div v-for="notification in notifications" :key="notification.id" @click="handleNotificationClick(notification)" class="p-4 border-b border-gray-50 hover:bg-indigo-50/20 active:bg-indigo-100/30 transition-colors cursor-pointer" :class="{ 'bg-indigo-50/40': !notification.read_at }">
                         <div class="flex items-start">
                             <div class="flex-shrink-0 mt-1">
                                 <span v-if="notification.data.type === 'visitor_arrival'" class="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs">

@@ -191,11 +191,13 @@ onUnmounted(() => {
 
     <ResidentAuthenticatedLayout>
         <template #header>
-            <div class="flex justify-between items-center w-full">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">My Visitors</h2>
-                <Link :href="route('resident.visitors.create')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-lg transition">
-                    Pre-Register Guest
-                </Link>
+                <div>
+                    <Link :href="route('resident.visitors.create')" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-lg transition w-full sm:w-auto text-center">
+                        Pre-Register Guest
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -215,10 +217,10 @@ onUnmounted(() => {
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <!-- Tab Switching -->
-                <div class="flex space-x-4 mb-6">
+                <div class="flex flex-wrap gap-2 mb-6">
                     <button 
                         @click="activeTab = 'pending'"
-                        class="px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all"
+                        class="px-4 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex-1 sm:flex-initial text-center"
                         :class="activeTab === 'pending' ? 'bg-yellow-500 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'"
 
                     >
@@ -226,14 +228,14 @@ onUnmounted(() => {
                     </button>
                     <button 
                         @click="activeTab = 'visitors'"
-                        class="px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all"
+                        class="px-4 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex-1 sm:flex-initial text-center"
                         :class="activeTab === 'visitors' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'"
                     >
                         Visitors ({{ historyVisits.length }})
                     </button>
                     <button 
                         @click="activeTab = 'deliveries'"
-                        class="px-6 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all"
+                        class="px-4 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex-1 sm:flex-initial text-center"
                         :class="activeTab === 'deliveries' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'"
                     >
                         Deliveries ({{ historyDeliveries.length }})
