@@ -55,5 +55,28 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, $request) {
+            $headers = $e->getHeaders();
+            $seconds = $headers['Retry-After'] ?? 60;
+            
+            $minutes = floor($seconds / 60);
+            $remainingSeconds = $seconds % 60;
+            
+            if ($minutes > 0) {
+                $waitTime = $minutes . ' minute' . ($minutes > 1 ? 's' : '') . ($remainingSeconds > 0 ? ' and ' . $remainingSeconds . ' second' . ($remainingSeconds > 1 ? 's' : '') : '');
+            } else {
+                $waitTime = $remainingSeconds . ' second' . ($remainingSeconds > 1 ? 's' : '');
+            }
+            
+            $message = "Too many attempts. Please wait {$waitTime} before trying again.";
+            
+            if ($request->expectsJson() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 429);
+            }
+            
+            return back()->withErrors(['throttle' => $message]);
+        });
     })->create();

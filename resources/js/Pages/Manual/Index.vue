@@ -58,8 +58,8 @@ const goBack = () => {
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-gray-900 overflow-hidden shadow-sm sm:rounded-3xl border border-gray-100 dark:border-gray-800">
                     
-                    <!-- Tabs -->
-                    <div v-if="role !== 'resident'" class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <!-- Tabs - Only show if user is NOT visitor -->
+                    <div v-if="role !== 'resident' && role !== 'visitor'" class="flex flex-wrap border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                         <button @click="activeTab = 'resident'" :class="['px-6 py-4 text-sm font-black uppercase tracking-widest transition-colors', activeTab === 'resident' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white dark:bg-gray-900 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300']">For Residents</button>
                         <button @click="activeTab = 'guard'" :class="['px-6 py-4 text-sm font-black uppercase tracking-widest transition-colors', activeTab === 'guard' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white dark:bg-gray-900 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300']">For Guards</button>
                         <button @click="activeTab = 'delivery'" :class="['px-6 py-4 text-sm font-black uppercase tracking-widest transition-colors', activeTab === 'delivery' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white dark:bg-gray-900 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300']">For Deliveries</button>
@@ -150,7 +150,7 @@ const goBack = () => {
 
                             <h4 class="text-lg font-bold text-gray-900 dark:text-gray-100 border-l-4 border-indigo-500 pl-3">2. Requesting a Visit</h4>
                             <ul class="list-disc pl-6 space-y-2">
-                                <li>Log in with your phone number and OTP.</li>
+                                <li>Log in with your Email Address and OTP.</li>
                                 <li>Go to your dashboard, select the Unit and purpose, and submit a request.</li>
                                 <li>Once the resident approves, a QR code will be generated for gate access.</li>
                             </ul>

@@ -43,9 +43,18 @@ class VisitorAuthController extends Controller
         $key = 'send-otp:' . $request->email . '|' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
+            $minutes = floor($seconds / 60);
+            $remainingSeconds = $seconds % 60;
+            
+            if ($minutes > 0) {
+                $waitTime = $minutes . ' minute' . ($minutes > 1 ? 's' : '') . ($remainingSeconds > 0 ? ' and ' . $remainingSeconds . ' second' . ($remainingSeconds > 1 ? 's' : '') : '');
+            } else {
+                $waitTime = $remainingSeconds . ' second' . ($remainingSeconds > 1 ? 's' : '');
+            }
+
             return response()->json([
                 'success' => false, 
-                'message' => "Too many attempts. Please wait {$seconds} seconds."
+                'message' => "Too many attempts. Please wait {$waitTime} before requesting a new OTP."
             ], 429);
         }
 
