@@ -136,14 +136,16 @@ onMounted(() => {
 
             <!-- Page Heading -->
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-200" v-if="$slots.header">
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div>
+                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="shrink-0">
                         <slot name="header" />
                     </div>
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
                         <slot name="actions" />
-                        <ThemeToggle />
-                        <NotificationDropdown />
+                        <div class="flex items-center gap-3 shrink-0">
+                            <ThemeToggle />
+                            <NotificationDropdown />
+                        </div>
                     </div>
                 </div>
             </header>

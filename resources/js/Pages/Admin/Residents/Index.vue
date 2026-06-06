@@ -49,19 +49,19 @@ const confirmDelete = () => {
         </template>
 
         <template #actions>
-            <div class="flex gap-4 items-center">
+            <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
                 <input 
                     v-model="search" 
                     type="text" 
                     placeholder="Search residents..." 
-                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm w-64"
+                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm w-full sm:w-64"
                 />
-                <div class="flex gap-2">
-                    <a :href="route('resident.login')" target="_blank" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 text-sm flex items-center transition duration-150">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                    Resident Login Portal
-                </a>
-                    <Link :href="route('admin.residents.create')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm transition duration-150">
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <a :href="route('resident.login')" target="_blank" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 text-sm flex items-center justify-center transition duration-150 flex-1 sm:flex-initial whitespace-nowrap">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        Resident Portal
+                    </a>
+                    <Link :href="route('admin.residents.create')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm transition duration-150 flex-1 sm:flex-initial text-center whitespace-nowrap">
                         Register Resident
                     </Link>
                 </div>
