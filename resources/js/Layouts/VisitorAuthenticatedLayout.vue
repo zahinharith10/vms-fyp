@@ -70,7 +70,7 @@ onErrorCaptured((err) => {
         </aside>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
+        <div class="flex-1 flex flex-col min-w-0">
             <!-- Mobile Header -->
             <header class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm md:hidden flex justify-between items-center p-4">
                 <Link :href="route('visitor.dashboard')" class="flex items-center gap-2">
@@ -106,7 +106,7 @@ onErrorCaptured((err) => {
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 p-6">
+            <main class="flex-1 p-6 min-w-0">
                 <!-- Flash Messages -->
                 <div v-if="$page.props.flash.success" class="mb-6 bg-green-50 dark:bg-green-950/30 border-l-4 border-green-500 p-4 rounded-r-lg shadow-sm">
                     <p class="text-sm font-bold text-green-800 dark:text-green-400">{{ $page.props.flash.success }}</p>
