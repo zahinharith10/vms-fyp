@@ -16,5 +16,5 @@ Once verified, you will be able to log in to the Resident Portal to manage visit
 If you did not request this account, please ignore this email.
 
 Thanks,<br>
-{{ config('app.name') }} Management
+Sri Ayu Residency Management
 </x-mail::message>

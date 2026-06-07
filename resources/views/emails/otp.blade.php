@@ -12,5 +12,5 @@ You are receiving this email because you requested to access the Resident Visito
 This code will expire in 10 minutes. If you did not request this code, please ignore this email.
 
 Thanks,<br>
-{{ config('app.name') }} Management
+Sri Ayu Residency Management
 </x-mail::message>
