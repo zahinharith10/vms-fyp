@@ -666,7 +666,7 @@ class GuardScanController extends Controller
     public function visitRecords()
     {
         $this->autoFinalizeOldVisits();
-        $allVisitors = Visit::with('visitor')
+        $allVisitors = Visit::with(['visitor', 'sessions'])
             ->get()
             ->map(function ($visit) {
                 return [
@@ -683,6 +683,10 @@ class GuardScanController extends Controller
                     'status' => $visit->status,
                     'parking_lot_number' => $visit->parking_lot_number,
                     'created_at' => $visit->created_at,
+                    'sessions' => $visit->sessions->map(fn($s) => [
+                        'check_in_time'  => $s->check_in_time,
+                        'check_out_time' => $s->check_out_time,
+                    ])->values(),
                 ];
             });
 

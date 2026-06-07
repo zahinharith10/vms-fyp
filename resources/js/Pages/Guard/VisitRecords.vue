@@ -79,6 +79,33 @@ const props = defineProps({
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Purpose</p>
                                     <p class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase truncate max-w-[200px]">{{ log.purpose }}</p>
                                 </div>
+
+                                <!-- Sessions Timeline (Visitor only) -->
+                                <div v-if="!log.is_delivery && log.sessions && log.sessions.length > 0" class="col-span-3 mt-2">
+                                    <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1.5">Sessions ({{ log.sessions.length }})</p>
+                                    <div class="space-y-1.5">
+                                        <div
+                                            v-for="(session, index) in log.sessions"
+                                            :key="index"
+                                            class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl px-3 py-2 border border-gray-100 dark:border-gray-800"
+                                        >
+                                            <span class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 w-5 text-center">#{{ index + 1 }}</span>
+                                            <div class="flex items-center gap-3 flex-1 flex-wrap">
+                                                <div>
+                                                    <p class="text-[7px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest leading-none">Check-In</p>
+                                                    <p class="text-[10px] font-bold text-green-600 dark:text-green-400">{{ formatMalaysiaTime(session.check_in_time) }}</p>
+                                                </div>
+                                                <span class="text-gray-300 dark:text-gray-700 text-xs">→</span>
+                                                <div>
+                                                    <p class="text-[7px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest leading-none">Check-Out</p>
+                                                    <p class="text-[10px] font-bold" :class="session.check_out_time ? 'text-red-500 dark:text-red-400' : 'text-yellow-500 dark:text-yellow-400'">
+                                                        {{ session.check_out_time ? formatMalaysiaTime(session.check_out_time) : 'Still Inside' }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
