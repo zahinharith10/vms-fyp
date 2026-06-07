@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Admin;
 use App\Models\Inquiry;
+use App\Notifications\InquiryNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -52,7 +54,7 @@ class InquiryController extends Controller
             'message' => 'required|string',
         ]);
 
-        Inquiry::create([
+        $inquiry = Inquiry::create([
             'user_type' => 'Resident',
             'user_id' => $resident->id,
             'name' => $request->name,
@@ -62,6 +64,9 @@ class InquiryController extends Controller
             'message' => $request->message,
             'status' => 'Pending',
         ]);
+
+        // Notify all admins of the new inquiry
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'created')));
 
         return redirect()->route('resident.inquiries.index')
             ->with('success', 'Your inquiry has been submitted successfully.');
@@ -110,7 +115,7 @@ class InquiryController extends Controller
             'message' => 'required|string',
         ]);
 
-        Inquiry::create([
+        $inquiry = Inquiry::create([
             'user_type' => 'Visitor',
             'user_id' => $visitor->id,
             'name' => $request->name,
@@ -120,6 +125,9 @@ class InquiryController extends Controller
             'message' => $request->message,
             'status' => 'Pending',
         ]);
+
+        // Notify all admins of the new inquiry
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'created')));
 
         return redirect()->route('visitor.inquiries.index')
             ->with('success', 'Your inquiry has been submitted successfully.');
@@ -168,7 +176,7 @@ class InquiryController extends Controller
             'message' => 'required|string',
         ]);
 
-        Inquiry::create([
+        $inquiry = Inquiry::create([
             'user_type' => 'Delivery',
             'user_id' => $delivery->id,
             'name' => $request->name,
@@ -178,6 +186,9 @@ class InquiryController extends Controller
             'message' => $request->message,
             'status' => 'Pending',
         ]);
+
+        // Notify all admins of the new inquiry
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'created')));
 
         return redirect()->route('delivery.inquiries.index')
             ->with('success', 'Your inquiry has been submitted successfully.');
@@ -230,6 +241,9 @@ class InquiryController extends Controller
         // Keep it open/pending so user can see and reply back
         $inquiry->update(['status' => 'Pending']);
 
+        // Notify the portal user that admin replied
+        $this->notifyPortalUser($inquiry, 'admin_reply');
+
         return redirect()->back()->with('success', 'Reply sent successfully.');
     }
 
@@ -257,6 +271,9 @@ class InquiryController extends Controller
             'message' => $request->message,
         ]);
 
+        // Notify all admins of the user reply
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'user_reply')));
+
         return redirect()->back()->with('success', 'Reply sent successfully.');
     }
 
@@ -268,6 +285,9 @@ class InquiryController extends Controller
         }
 
         $inquiry->update(['status' => 'Resolved']);
+
+        // Notify all admins that the inquiry was resolved
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'resolved')));
 
         return redirect()->back()->with('success', 'Inquiry marked as resolved.');
     }
@@ -292,6 +312,9 @@ class InquiryController extends Controller
             'message' => $request->message,
         ]);
 
+        // Notify all admins of the user reply
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'user_reply')));
+
         return redirect()->back()->with('success', 'Reply sent successfully.');
     }
 
@@ -303,6 +326,9 @@ class InquiryController extends Controller
         }
 
         $inquiry->update(['status' => 'Resolved']);
+
+        // Notify all admins that the inquiry was resolved
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'resolved')));
 
         return redirect()->back()->with('success', 'Inquiry marked as resolved.');
     }
@@ -327,6 +353,9 @@ class InquiryController extends Controller
             'message' => $request->message,
         ]);
 
+        // Notify all admins of the user reply
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'user_reply')));
+
         return redirect()->back()->with('success', 'Reply sent successfully.');
     }
 
@@ -339,6 +368,30 @@ class InquiryController extends Controller
 
         $inquiry->update(['status' => 'Resolved']);
 
+        // Notify all admins that the inquiry was resolved
+        Admin::all()->each(fn($admin) => $admin->notify(new InquiryNotification($inquiry, 'resolved')));
+
         return redirect()->back()->with('success', 'Inquiry marked as resolved.');
+    }
+
+    // ==========================================
+    // PRIVATE HELPERS
+    // ==========================================
+
+    /**
+     * Notify the portal user (Resident / Visitor / Delivery) who owns this inquiry.
+     */
+    private function notifyPortalUser(Inquiry $inquiry, string $event): void
+    {
+        $model = match ($inquiry->user_type) {
+            'Resident' => \App\Models\Resident::find($inquiry->user_id),
+            'Visitor'  => \App\Models\Visitor::find($inquiry->user_id),
+            'Delivery' => \App\Models\DeliveryPersonnel::find($inquiry->user_id),
+            default    => null,
+        };
+
+        if ($model) {
+            $model->notify(new InquiryNotification($inquiry, $event));
+        }
     }
 }

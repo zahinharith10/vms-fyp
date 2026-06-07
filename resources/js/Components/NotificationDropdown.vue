@@ -41,7 +41,22 @@ const toggleDropdown = () => {
 const handleNotificationClick = (notification) => {
     isOpen.value = false;
     const isAdmin = window.location.pathname.startsWith('/admin');
-    
+    const type = notification.data?.type ?? '';
+
+    if (type.startsWith('inquiry_')) {
+        // Route to the correct inquiry page
+        if (isAdmin) {
+            router.visit(route('admin.inquiries.index'));
+        } else if (window.location.pathname.startsWith('/resident')) {
+            router.visit(route('resident.inquiries.index'));
+        } else if (window.location.pathname.startsWith('/visitor')) {
+            router.visit(route('visitor.inquiries.index'));
+        } else if (window.location.pathname.startsWith('/delivery')) {
+            router.visit(route('delivery.inquiries.index'));
+        }
+        return;
+    }
+
     if (isAdmin) {
         if (notification.data && notification.data.visit_id) {
             router.visit(route('admin.visit-logs.show', notification.data.visit_id));
@@ -92,6 +107,9 @@ onUnmounted(() => {
                             <div class="flex-shrink-0 mt-1">
                                 <span v-if="notification.data.type === 'visitor_arrival'" class="h-8 w-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs">
                                     ✓
+                                </span>
+                                <span v-else-if="notification.data.type && notification.data.type.startsWith('inquiry_')" class="h-8 w-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs">
+                                    ✉
                                 </span>
                                 <span v-else class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
                                     👤
