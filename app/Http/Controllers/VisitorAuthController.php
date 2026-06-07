@@ -300,18 +300,24 @@ class VisitorAuthController extends Controller
             ->where('qr_code_token', $token)
             ->firstOrFail();
 
-        $resident = null;
-        $parts = explode('-', $visit->unit_number);
-        if (count($parts) === 3) {
-            $houseUnit = \App\Models\HouseUnit::where('block', $parts[0])
-                ->where('floor', $parts[1])
-                ->where('unit_number', $parts[2])
-                ->first();
-            if ($houseUnit) {
-                $resident = $houseUnit->residents()->first();
+        $hostName = 'Resident';
+        if ($visit->approved_by) {
+            $hostName = $visit->approved_by;
+        } else {
+            $parts = explode('-', $visit->unit_number);
+            if (count($parts) === 3) {
+                $houseUnit = \App\Models\HouseUnit::where('block', $parts[0])
+                    ->where('floor', $parts[1])
+                    ->where('unit_number', $parts[2])
+                    ->first();
+                if ($houseUnit) {
+                    $resident = $houseUnit->residents()->first();
+                    if ($resident) {
+                        $hostName = $resident->name;
+                    }
+                }
             }
         }
-        $hostName = $resident ? $resident->name : 'Resident';
 
         return Inertia::render('Visitor/PublicPass', [
             'visit' => $visit,

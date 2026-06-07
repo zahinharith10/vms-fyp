@@ -1,15 +1,19 @@
 <script setup>
 import ResidentAuthenticatedLayout from '@/Layouts/ResidentAuthenticatedLayout.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+const purposeOption = ref('Friends/Family');
+const customPurpose = ref('');
 
 const form = useForm({
     name: '',
     email: '',
-    phone: '',
-    purpose: 'Casual Visit',
+    purpose: '',
 });
 
 const submit = () => {
+    form.purpose = purposeOption.value === 'Others' ? (customPurpose.value || 'Others') : purposeOption.value;
     form.post(route('resident.visitors.store'));
 };
 </script>
@@ -45,9 +49,9 @@ const submit = () => {
 
                     <form @submit.prevent="submit" class="space-y-6">
                         <!-- Visitor Details Section -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 gap-6">
                             <!-- Name -->
-                            <div class="col-span-1 md:col-span-2">
+                            <div>
                                 <label for="name" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Visitor's Full Name</label>
                                 <input 
                                     id="name" 
@@ -58,20 +62,6 @@ const submit = () => {
                                     required 
                                 />
                                 <div v-if="form.errors.name" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.name }}</div>
-                            </div>
-
-                            <!-- Phone Number -->
-                            <div>
-                                <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Visitor's Phone Number</label>
-                                <input 
-                                    id="phone" 
-                                    type="text" 
-                                    placeholder="e.g. 0123456789"
-                                    v-model="form.phone" 
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
-                                    required 
-                                />
-                                <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
                             </div>
 
                             <!-- Email Address -->
@@ -89,19 +79,25 @@ const submit = () => {
                             </div>
 
                             <!-- Purpose of Visit -->
-                            <div class="col-span-1 md:col-span-2">
+                            <div>
                                 <label for="purpose" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Purpose of Visit</label>
                                 <select 
-                                    id="purpose" 
-                                    v-model="form.purpose" 
-                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4"
+                                    id="purpose-select" 
+                                    v-model="purposeOption" 
+                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4 mb-3"
                                 >
-                                    <option value="Casual Visit">Casual Visit (Family/Friend)</option>
-                                    <option value="Contractor / Repair">Contractor / Repair Service</option>
-                                    <option value="Delivery Service">Delivery Service</option>
-                                    <option value="Emergency Visit">Emergency Visit</option>
-                                    <option value="Other">Other</option>
+                                    <option value="Friends/Family">Friends/Family</option>
+                                    <option value="Others">Others</option>
                                 </select>
+                                
+                                <input 
+                                    v-if="purposeOption === 'Others'"
+                                    type="text" 
+                                    placeholder="Please specify other purpose"
+                                    v-model="customPurpose"
+                                    class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4"
+                                    required
+                                />
                                 <div v-if="form.errors.purpose" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.purpose }}</div>
                             </div>
                         </div>

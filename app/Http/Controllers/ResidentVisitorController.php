@@ -74,15 +74,12 @@ class ResidentVisitorController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
             'email' => 'required|email',
             'purpose' => 'required|string|max:255',
         ]);
 
-        // Find or create Visitor by email or phone to prevent clashing / duplication
-        $visitor = \App\Models\Visitor::where('email', $request->email)
-            ->orWhere('phone', $request->phone)
-            ->first();
+        // Find or create Visitor by email to prevent clashing / duplication
+        $visitor = \App\Models\Visitor::where('email', $request->email)->first();
 
         if (! $visitor) {
             // Check cross-role collision with Delivery to prevent errors
@@ -95,7 +92,7 @@ class ResidentVisitorController extends Controller
             // Create a partially completed visitor profile
             $visitor = \App\Models\Visitor::create([
                 'name' => $request->name,
-                'phone' => $request->phone,
+                'phone' => '-', // Default placeholder since phone is not gathered during pre-registration
                 'email' => $request->email,
                 'vehicle_number' => '-', // Default placeholder to bypass database NOT NULL constraint
                 // The remaining fields (ic_number, face_descriptor, photo) are blank
