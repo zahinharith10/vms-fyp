@@ -319,11 +319,25 @@ class VisitorAuthController extends Controller
             }
         }
 
+        $isCurrentUser = false;
+        if (Auth::guard('visitor')->check()) {
+            $loggedInVisitor = Auth::guard('visitor')->user();
+            if ($loggedInVisitor->email === $visit->visitor->email) {
+                $isCurrentUser = true;
+            }
+        }
+
+        $passToken = $visit->qr_code_token;
+        if (!$isCurrentUser) {
+            $visit->qr_code_token = 'HIDDEN';
+        }
+
         return Inertia::render('Visitor/PublicPass', [
             'visit' => $visit,
             'visitor' => $visit->visitor,
             'hostName' => $hostName,
-            'qrCodeSvg' => (string) QrCode::size(300)->generate($visit->qr_code_token),
+            'qrCodeSvg' => $isCurrentUser ? (string) QrCode::size(300)->generate($passToken) : null,
+            'isCurrentUser' => $isCurrentUser,
         ]);
     }
 
@@ -335,6 +349,11 @@ class VisitorAuthController extends Controller
         $visit = Visit::with('visitor')
             ->where('qr_code_token', $token)
             ->firstOrFail();
+
+        // Enforce authentication check
+        if (!Auth::guard('visitor')->check() || Auth::guard('visitor')->user()->email !== $visit->visitor->email) {
+            abort(403, 'Unauthorized action. Please verify your email first.');
+        }
 
         $visitor = $visit->visitor;
 
