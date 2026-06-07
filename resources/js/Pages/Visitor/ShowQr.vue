@@ -70,6 +70,7 @@ const displayToken = computed(() => {
                             <h3 class="text-xl font-bold text-gray-800 dark:text-white">Your QR Code</h3>
                             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Purpose: {{ visit.purpose }}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">Unit: {{ visit.unit_number }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Host: {{ visit.host_name || 'N/A' }}</p>
                         </div>
                         
                         <div v-if="visit.status === 'Checked In'" class="mb-8 w-full max-w-xs">
