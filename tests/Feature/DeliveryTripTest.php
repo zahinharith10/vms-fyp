@@ -53,7 +53,7 @@ it('creates a multi-stop delivery trip with multiple logs', function () {
 
     $response = $this->actingAs($personnel, 'delivery')->post(route('delivery.trips.store'), [
         'delivery_type' => 'multi',
-        'host_name' => 'John Doe',
+        'host_names' => ['John Doe', 'Jane Doe', 'Bob Smith'],
         'unit_numbers' => [
             '44 - 1 - 01',
             '44 - 1 - 02',
@@ -74,7 +74,7 @@ it('rejects multi-stop delivery with fewer than two units', function () {
 
     $response = $this->actingAs($personnel, 'delivery')->post(route('delivery.trips.store'), [
         'delivery_type' => 'multi',
-        'host_name' => 'John Doe',
+        'host_names' => ['John Doe', 'Jane Doe'],
         'unit_numbers' => ['44 - 1 - 01'],
     ]);
 
