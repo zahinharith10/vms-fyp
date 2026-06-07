@@ -81,7 +81,18 @@ class ResidentVisitorController extends Controller
         // Find or create Visitor by email to prevent clashing / duplication
         $visitor = \App\Models\Visitor::where('email', $request->email)->first();
 
-        if (! $visitor) {
+        if ($visitor) {
+            // Check if visitor already has an active visit (Pending, Approved, Checked In, Temporarily Out)
+            $activeVisit = \App\Models\Visit::where('visitor_id', $visitor->id)
+                ->whereIn('status', ['Pending', 'Approved', 'Checked In', 'Temporarily Out'])
+                ->first();
+
+            if ($activeVisit) {
+                return back()->withErrors([
+                    'email' => 'This visitor already has an active or pending visit request.',
+                ]);
+            }
+        } else {
             // Check cross-role collision with Delivery to prevent errors
             if (\App\Models\DeliveryPersonnel::where('email', $request->email)->exists()) {
                 return back()->withErrors([

@@ -40,7 +40,7 @@ class VisitController extends Controller
         }
 
         $activeVisit = Visit::where('visitor_id', $visitor->id)
-            ->whereIn('status', ['Pending', 'Approved', 'Checked In'])
+            ->whereIn('status', ['Pending', 'Approved', 'Checked In', 'Temporarily Out'])
             ->first();
 
         if ($activeVisit) {
