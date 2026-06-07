@@ -80,6 +80,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/records', [App\Http\Controllers\ReportController::class, 'exportVisitRecords'])->name('export-records');
         });
 
+        // Inquiries
+        Route::get('inquiries', [InquiryController::class, 'adminIndex'])->name('inquiries.index');
+        Route::post('inquiries/{inquiry}/resolve', [InquiryController::class, 'adminResolve'])->name('inquiries.resolve');
+        Route::delete('inquiries/{inquiry}', [InquiryController::class, 'adminDestroy'])->name('inquiries.destroy');
+
         // User Manual
         Route::get('manual', function () {
             return Inertia::render('Manual/Index');

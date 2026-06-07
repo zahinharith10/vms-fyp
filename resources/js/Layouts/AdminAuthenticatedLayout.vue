@@ -93,6 +93,10 @@ onMounted(() => {
                      Reports
                 </Link>
 
+                <Link :href="route('admin.inquiries.index')" class="flex items-center justify-between px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-all duration-200" :class="{ 'bg-gray-200 dark:bg-gray-800 font-bold text-gray-900 dark:text-white': route().current('admin.inquiries.*') }">
+                    <span>Inquiries</span>
+                </Link>
+
                 <Link :href="route('admin.manual.index')" class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-all duration-200" :class="{ 'bg-gray-200 dark:bg-gray-800 font-bold text-gray-900 dark:text-white': route().current('admin.manual.index') }">
                      User Manual
                 </Link>
@@ -129,6 +133,7 @@ onMounted(() => {
                  <Link :href="route('admin.dashboard')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Dashboard</Link>
                  <Link :href="route('admin.visitors.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Visitors</Link>
                  <Link :href="route('admin.reports.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Reports</Link>
+                 <Link :href="route('admin.inquiries.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400': route().current('admin.inquiries.*') }">Inquiries</Link>
                  <Link :href="route('admin.manual.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400': route().current('admin.manual.index') }">User Manual</Link>
                  <Link :href="route('admin.profile')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold">Profile Settings</Link>
                  <Link :href="route('admin.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>
