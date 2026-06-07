@@ -39,6 +39,10 @@ const delivery = usePage().props.auth.user;
                     <span class="mr-3 text-xl">👤</span> My Profile
                 </Link>
 
+                <Link :href="route('delivery.inquiries.index')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('delivery.inquiries.*') }">
+                    <span class="mr-3 text-xl">💬</span> Contact Us
+                </Link>
+
                 <div class="border-t border-gray-200 dark:border-gray-800 my-4"></div>
 
                 <Link :href="route('delivery.manual.index')" class="flex items-center px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 hover:text-indigo-700 dark:hover:text-indigo-400 rounded-lg transition-all duration-200" :class="{ 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold shadow-sm': route().current('delivery.manual.index') }">
@@ -78,6 +82,7 @@ const delivery = usePage().props.auth.user;
                   <Link :href="route('delivery.dashboard')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': route().current('delivery.dashboard') }">Dashboard</Link>
                   <Link :href="route('delivery.history')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': route().current('delivery.history') }">History</Link>
                   <Link :href="route('delivery.profile')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': route().current('delivery.profile') }">My Profile</Link>
+                  <Link :href="route('delivery.inquiries.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': route().current('delivery.inquiries.*') }">Contact Us</Link>
                   <Link :href="route('delivery.manual.index')" class="block py-2 text-gray-700 dark:text-gray-300 font-semibold" :class="{ 'text-indigo-600 dark:text-indigo-400 font-bold': route().current('delivery.manual.index') }">User Manual</Link>
                   <div class="border-t border-gray-200 dark:border-gray-800 my-2"></div>
                   <Link :href="route('delivery.logout')" method="post" as="button" class="block py-2 text-red-600 dark:text-red-400 w-full text-left font-semibold">Log Out</Link>

@@ -6,6 +6,7 @@ use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\GuardController;
 use App\Http\Controllers\DeliveryPersonnelController;
 use App\Http\Controllers\DeliveryLogController;
+use App\Http\Controllers\InquiryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -170,6 +171,11 @@ Route::prefix('resident')->name('resident.')->group(function () {
         Route::patch('profile', [App\Http\Controllers\ResidentAuthController::class, 'updateProfile'])->name('profile.update');
         Route::get('family', [App\Http\Controllers\ResidentAuthController::class, 'family'])->name('family');
 
+        // Contact Us / Inquiries
+        Route::get('inquiries', [InquiryController::class, 'residentIndex'])->name('inquiries.index');
+        Route::get('inquiries/create', [InquiryController::class, 'residentCreate'])->name('inquiries.create');
+        Route::post('inquiries', [InquiryController::class, 'residentStore'])->name('inquiries.store');
+
         // User Manual
         Route::get('manual', function () {
             return Inertia::render('Manual/Index');
@@ -215,6 +221,11 @@ Route::name('visitor.')->group(function () {
         Route::get('/visitor/profile', [App\Http\Controllers\VisitorAuthController::class, 'profile'])->name('profile');
         Route::patch('/visitor/profile', [App\Http\Controllers\VisitorAuthController::class, 'updateProfile'])->name('profile.update');
 
+        // Contact Us / Inquiries
+        Route::get('/visitor/inquiries', [InquiryController::class, 'visitorIndex'])->name('inquiries.index');
+        Route::get('/visitor/inquiries/create', [InquiryController::class, 'visitorCreate'])->name('inquiries.create');
+        Route::post('/visitor/inquiries', [InquiryController::class, 'visitorStore'])->name('inquiries.store');
+
         // User Manual
         Route::get('/visitor/manual', function () {
             return Inertia::render('Manual/Index');
@@ -238,6 +249,11 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
         Route::delete('/trips/{run}', [App\Http\Controllers\DeliveryDashboardController::class, 'cancelTrip'])->name('trips.cancel');
         Route::get('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'profile'])->name('profile');
         Route::patch('/profile', [App\Http\Controllers\DeliveryDashboardController::class, 'updateProfile'])->name('profile.update');
+
+        // Contact Us / Inquiries
+        Route::get('/inquiries', [InquiryController::class, 'deliveryIndex'])->name('inquiries.index');
+        Route::get('/inquiries/create', [InquiryController::class, 'deliveryCreate'])->name('inquiries.create');
+        Route::post('/inquiries', [InquiryController::class, 'deliveryStore'])->name('inquiries.store');
 
         // User Manual
         Route::get('/manual', function () {
