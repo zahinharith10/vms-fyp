@@ -91,15 +91,6 @@ const handleFaceDetected = (detection) => {
             faceVerified.value = true;
             verificationError.value = null;
             showSuccessModal.value = true;
-
-            // Automatically trigger check-in if Approved or Temporarily Out
-            if ((visitData.value.status === 'Approved' || visitData.value.status === 'Temporarily Out') && !hasTriggeredAutoCheckIn.value) {
-                hasTriggeredAutoCheckIn.value = true;
-                isLoading.value = true;
-                setTimeout(() => {
-                    checkIn(true); // Bypass verification check because we already verified it!
-                }, 1800); // 1.8s delay so they can see the successful popup
-            }
         } else {
             faceVerified.value = false;
             verificationError.value = "Face does not match visitor records.";
@@ -108,6 +99,10 @@ const handleFaceDetected = (detection) => {
         console.error("Verification error:", err);
         verificationError.value = "Error during face verification.";
     }
+};
+
+const closeSuccessModal = () => {
+    showSuccessModal.value = false;
 };
 
 const checkIn = async (bypassVerification = false) => {
@@ -357,7 +352,7 @@ const checkOut = async (isTemporary = false) => {
         <Modal :show="showSuccessModal" max-width="md" :closeable="false">
             <div class="p-6 text-center dark:bg-gray-900">
                 <!-- Premium Animated Circular Icon -->
-                <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-50 dark:bg-green-950/40 border border-green-200/50 dark:border-green-800/30 mb-6 shadow-md animate-pulse">
+                <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-50 dark:bg-green-950/40 border border-green-200/50 dark:border-green-800/30 mb-6 shadow-md">
                     <span class="text-5xl">✨</span>
                 </div>
                 
@@ -369,14 +364,24 @@ const checkOut = async (isTemporary = false) => {
                     Identity verified for <span class="font-extrabold text-green-600 dark:text-green-400">{{ visitData.visitor.name }}</span>.
                 </p>
 
-                <!-- Status Progress bar/loader -->
-                <div class="bg-gray-50 dark:bg-gray-950 p-5 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-inner">
-                    <div class="flex items-center justify-center gap-3">
-                        <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
-                        <span class="text-xs font-black text-green-700 dark:text-green-455 uppercase tracking-widest">
-                            Authorizing Entry...
-                        </span>
-                    </div>
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                    <button 
+                        @click="checkIn(true)"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-green-650/10 dark:shadow-none uppercase text-sm tracking-wider"
+                        :disabled="isLoading"
+                    >
+                        <span v-if="isLoading" class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                        <span v-else>✅ Check In Visitor</span>
+                    </button>
+                    
+                    <button 
+                        @click="closeSuccessModal"
+                        class="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-2xl transition-all duration-300 text-xs tracking-wide uppercase"
+                        :disabled="isLoading"
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         </Modal>
