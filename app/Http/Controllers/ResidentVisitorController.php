@@ -109,6 +109,7 @@ class ResidentVisitorController extends Controller
             'visitor_id' => $visitor->id,
             'unit_number' => $unitNumber,
             'purpose' => $request->purpose,
+            'host_name' => $resident->name,
             'status' => 'Approved', // Pre-approved by host!
             'approved_by' => $resident->name,
             'qr_code_token' => $token,
