@@ -219,10 +219,18 @@ class InquiryController extends Controller
         return redirect()->back()->with('success', 'Inquiry marked as resolved.');
     }
 
-    public function adminDestroy(Inquiry $inquiry)
+    public function adminReply(Request $request, Inquiry $inquiry)
     {
-        $inquiry->delete();
+        $request->validate([
+            'reply' => 'required|string',
+        ]);
 
-        return redirect()->back()->with('success', 'Inquiry deleted successfully.');
+        $inquiry->update([
+            'reply' => $request->reply,
+            'replied_at' => now(),
+            'status' => 'Resolved',
+        ]);
+
+        return redirect()->back()->with('success', 'Reply submitted and inquiry resolved.');
     }
 }

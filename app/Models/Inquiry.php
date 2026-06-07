@@ -18,6 +18,8 @@ class Inquiry extends Model
         'subject',
         'message',
         'status',
+        'reply',
+        'replied_at',
     ];
 
     /**

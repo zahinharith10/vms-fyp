@@ -43,19 +43,27 @@ const resolveInquiry = (id) => {
     });
 };
 
-// Delete inquiry
-const deleteForm = useForm({});
-const deleteInquiry = (id) => {
-    if (!confirm('Are you sure you want to delete this inquiry?')) return;
-    deleteForm.delete(route('admin.inquiries.destroy', id), {
+// Reply to inquiry
+const replyForm = useForm({
+    reply: '',
+});
+const submitReply = (id) => {
+    replyForm.post(route('admin.inquiries.reply', id), {
         preserveScroll: true,
+        onSuccess: () => {
+            replyForm.reset();
+        }
     });
 };
 
 // Selected inquiry for detail modal
-const selectedInquiry = ref(null);
-const openDetail = (inquiry) => selectedInquiry.value = inquiry;
-const closeDetail = () => selectedInquiry.value = null;
+const selectedInquiryId = ref(null);
+const selectedInquiry = computed(() => {
+    if (!selectedInquiryId.value) return null;
+    return props.inquiries.find(i => i.id === selectedInquiryId.value) || null;
+});
+const openDetail = (inquiry) => selectedInquiryId.value = inquiry.id;
+const closeDetail = () => selectedInquiryId.value = null;
 
 const formatDate = (d) => {
     if (!d) return '—';
@@ -262,18 +270,6 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                             </svg>
                                         </button>
-
-                                        <!-- Delete -->
-                                        <button
-                                            @click="deleteInquiry(inquiry.id)"
-                                            :disabled="deleteForm.processing"
-                                            class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
-                                            title="Delete inquiry"
-                                        >
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -312,7 +308,7 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                         </div>
 
                         <!-- Modal Body -->
-                        <div class="px-6 py-5 space-y-4">
+                        <div class="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
                             <!-- Badges -->
                             <div class="flex items-center gap-2">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest" :class="userTypeColor(selectedInquiry.user_type)">
@@ -348,6 +344,39 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                                 <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Message</p>
                                 <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4">{{ selectedInquiry.message }}</p>
                             </div>
+
+                            <!-- Reply Block -->
+                            <div v-if="selectedInquiry.reply" class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                                <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Reply Sent</p>
+                                <div class="bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200 text-sm leading-relaxed rounded-2xl p-4 border border-indigo-100/30 dark:border-indigo-900/30">
+                                    <p class="font-medium whitespace-pre-wrap">{{ selectedInquiry.reply }}</p>
+                                    <p class="text-[10px] text-indigo-400 dark:text-indigo-500 font-medium mt-2">Sent at {{ formatDate(selectedInquiry.replied_at) }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Reply Composer Form -->
+                            <form v-else @submit.prevent="submitReply(selectedInquiry.id)" class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                                <div>
+                                    <label for="reply-text" class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Compose Reply</label>
+                                    <textarea
+                                        id="reply-text"
+                                        v-model="replyForm.reply"
+                                        rows="3"
+                                        placeholder="Type your response to this inquiry..."
+                                        class="w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-medium text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all p-3"
+                                        required
+                                    ></textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        :disabled="replyForm.processing"
+                                        class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                                    >
+                                        <span>✉️</span> {{ replyForm.processing ? 'Sending...' : 'Send Reply' }}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
 
                         <!-- Modal Footer -->
@@ -358,12 +387,6 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                                 class="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white font-black text-sm rounded-2xl transition-all shadow-sm"
                             >
                                 ✅ Mark Resolved
-                            </button>
-                            <button
-                                @click="deleteInquiry(selectedInquiry.id); closeDetail()"
-                                class="px-5 py-2.5 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 font-black text-sm rounded-2xl border border-red-100 dark:border-red-900 transition-all"
-                            >
-                                🗑️ Delete
                             </button>
                             <button
                                 @click="closeDetail"

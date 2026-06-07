@@ -83,7 +83,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Inquiries
         Route::get('inquiries', [InquiryController::class, 'adminIndex'])->name('inquiries.index');
         Route::post('inquiries/{inquiry}/resolve', [InquiryController::class, 'adminResolve'])->name('inquiries.resolve');
-        Route::delete('inquiries/{inquiry}', [InquiryController::class, 'adminDestroy'])->name('inquiries.destroy');
+        Route::post('inquiries/{inquiry}/reply', [InquiryController::class, 'adminReply'])->name('inquiries.reply');
 
         // User Manual
         Route::get('manual', function () {

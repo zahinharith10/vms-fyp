@@ -72,8 +72,18 @@ const formatDate = (d) => {
                                 </span>
                                 <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{{ formatDate(inquiry.created_at) }}</span>
                             </div>
-                            <h5 class="font-black text-gray-900 dark:text-white truncate">{{ inquiry.subject }}</h5>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ inquiry.message }}</p>
+                            <h5 class="font-black text-gray-900 dark:text-white">{{ inquiry.subject }}</h5>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1.5 whitespace-pre-wrap">{{ inquiry.message }}</p>
+
+                            <!-- Admin Reply -->
+                            <div v-if="inquiry.reply" class="mt-4 pl-4 border-l-2 border-orange-500 space-y-1 bg-orange-50/30 dark:bg-orange-950/10 p-3.5 rounded-r-2xl rounded-bl-2xl">
+                                <div class="flex items-center gap-1.5 text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest">
+                                    <span>✉️</span>
+                                    <span>Reply from Admin</span>
+                                </div>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ inquiry.reply }}</p>
+                                <p class="text-[9px] text-gray-400 dark:text-gray-500 font-medium mt-1">Replied on {{ formatDate(inquiry.replied_at) }}</p>
+                            </div>
                         </div>
                         <div class="shrink-0">
                             <div class="h-10 w-10 rounded-2xl flex items-center justify-center"
