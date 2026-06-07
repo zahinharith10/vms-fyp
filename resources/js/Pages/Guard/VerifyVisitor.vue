@@ -16,6 +16,8 @@ const isLoading = ref(false);
 const faceVerified = ref(false);
 const verificationError = ref(null);
 const showSuccessModal = ref(false);
+const showCheckoutModal = ref(false);
+const checkoutIsTemporary = ref(false);
 const visitData = ref(props.visit);
 const pollingInterval = ref(null);
 const hasTriggeredAutoCheckIn = ref(false);
@@ -57,15 +59,15 @@ onMounted(() => {
     if (visitData.value.status === 'Pending') {
         startPolling();
     } else if (visitData.value.status === 'Checked In') {
-        // Automatically trigger check-out based on intent
+        // Show popup immediately, then auto-checkout after 2s
         const isTemporary = visitData.value.checkout_intent === 'temp';
+        checkoutIsTemporary.value = isTemporary;
+        showCheckoutModal.value = true;
         setTimeout(() => {
             checkOut(isTemporary);
-        }, 1000); // 1s delay for visual feedback
+        }, 2000); // 2s so guard sees the popup before redirect
     } else if (visitData.value.status === 'Temporarily Out') {
-        // Automatically trigger check-in (re-entry)
-        // Note: Face verification might be required depending on policy, 
-        // but for "express" re-entry, we can automate it if face matches in handleFaceDetected
+        // Face verification required for re-entry — handled in handleFaceDetected
     }
 });
 
@@ -159,9 +161,11 @@ const checkOut = async (isTemporary = false) => {
         if (response.data.success) {
             router.visit(route('guard.scan'));
         } else {
+            showCheckoutModal.value = false;
             alert(response.data.message || 'Check-out failed.');
         }
     } catch (err) {
+        showCheckoutModal.value = false;
         alert(err.response?.data?.message || 'An error occurred during check-out.');
     } finally {
         isLoading.value = false;
@@ -352,30 +356,66 @@ const checkOut = async (isTemporary = false) => {
             </div>
         </div>
 
-        <!-- Success Modal for Face Recognition -->
+        <!-- ✅ Face Match → Check-In Success Modal -->
         <Modal :show="showSuccessModal" max-width="md" :closeable="false">
             <div class="p-8 text-center dark:bg-gray-900">
-                <!-- Animated Success Icon -->
                 <div class="mx-auto flex items-center justify-center h-28 w-28 rounded-full bg-green-50 dark:bg-green-950/40 border-2 border-green-200 dark:border-green-800/50 mb-6 shadow-lg animate-bounce">
                     <span class="text-6xl">✅</span>
                 </div>
-
                 <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
                     Face Match Successful!
                 </h3>
-
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
                     Identity verified for
                     <span class="font-extrabold text-green-600 dark:text-green-400">{{ visitData.visitor.name }}</span>.
                     <br>Entry is being authorized automatically.
                 </p>
-
-                <!-- Auto-checkin Loader -->
                 <div class="bg-green-50 dark:bg-green-950/30 border border-green-100 dark:border-green-900/40 p-5 rounded-2xl">
                     <div class="flex items-center justify-center gap-3">
                         <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
-                        <span class="text-sm font-black text-green-700 dark:text-green-400 uppercase tracking-widest">
-                            Checking In...
+                        <span class="text-sm font-black text-green-700 dark:text-green-400 uppercase tracking-widest">Checking In...</span>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- 🚪 Checkout / Temporary Leave Modal -->
+        <Modal :show="showCheckoutModal" max-width="md" :closeable="false">
+            <div class="p-8 text-center dark:bg-gray-900">
+                <div
+                    class="mx-auto flex items-center justify-center h-28 w-28 rounded-full mb-6 shadow-lg animate-bounce border-2"
+                    :class="checkoutIsTemporary
+                        ? 'bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800/50'
+                        : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800/50'"
+                >
+                    <span class="text-6xl">{{ checkoutIsTemporary ? '⏱️' : '🚪' }}</span>
+                </div>
+                <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+                    {{ checkoutIsTemporary ? 'Temporary Leave' : 'Final Check-Out' }}
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+                    <span class="font-extrabold" :class="checkoutIsTemporary ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'">
+                        {{ visitData.visitor.name }}
+                    </span>
+                    {{ checkoutIsTemporary ? ' is stepping out temporarily.' : ' is checking out.' }}
+                    <br>Processing automatically...
+                </p>
+                <div
+                    class="p-5 rounded-2xl border"
+                    :class="checkoutIsTemporary
+                        ? 'bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-900/40'
+                        : 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/40'"
+                >
+                    <div class="flex items-center justify-center gap-3">
+                        <div
+                            class="animate-spin rounded-full h-5 w-5 border-2 border-t-transparent"
+                            :class="checkoutIsTemporary ? 'border-orange-500 dark:border-orange-400' : 'border-red-600 dark:border-red-400'"
+                        ></div>
+                        <span
+                            class="text-sm font-black uppercase tracking-widest"
+                            :class="checkoutIsTemporary ? 'text-orange-700 dark:text-orange-400' : 'text-red-700 dark:text-red-400'"
+                        >
+                            {{ checkoutIsTemporary ? 'Processing Temporary Leave...' : 'Processing Check-Out...' }}
                         </span>
                     </div>
                 </div>
