@@ -92,27 +92,22 @@ const resetFilters = () => {
                         </div>
 
                         <!-- Type Filter -->
-                        <div class="relative">
+                        <div>
                             <select
                                 v-model="filterType"
-                                class="py-2.5 pl-4 pr-10 w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500 rounded-2xl text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors appearance-none cursor-pointer"
+                                class="py-2.5 pl-4 pr-10 w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500 rounded-2xl text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
                             >
                                 <option value="All">All Types</option>
                                 <option value="Visitor">Visitors Only</option>
                                 <option value="Delivery">Deliveries Only</option>
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                                </svg>
-                            </div>
                         </div>
 
                         <!-- Status Filter -->
-                        <div class="relative">
+                        <div>
                             <select
                                 v-model="filterStatus"
-                                class="py-2.5 pl-4 pr-10 w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500 rounded-2xl text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors appearance-none cursor-pointer"
+                                class="py-2.5 pl-4 pr-10 w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 focus:border-indigo-500 focus:ring-indigo-500 rounded-2xl text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
                             >
                                 <option value="All">All Statuses</option>
                                 <option value="Checked In">Checked In</option>
@@ -121,11 +116,6 @@ const resetFilters = () => {
                                 <option value="Pending">Pending</option>
                                 <option value="Approved">Approved</option>
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                                </svg>
-                            </div>
                         </div>
                     </div>
                 </div>
