@@ -29,4 +29,9 @@ class Inquiry extends Model
     {
         return $this->morphTo(null, 'user_type', 'user_id');
     }
+
+    public function messages()
+    {
+        return $this->hasMany(InquiryMessage::class)->oldest();
+    }
 }

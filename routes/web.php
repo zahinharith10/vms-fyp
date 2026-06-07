@@ -82,7 +82,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Inquiries
         Route::get('inquiries', [InquiryController::class, 'adminIndex'])->name('inquiries.index');
-        Route::post('inquiries/{inquiry}/resolve', [InquiryController::class, 'adminResolve'])->name('inquiries.resolve');
         Route::post('inquiries/{inquiry}/reply', [InquiryController::class, 'adminReply'])->name('inquiries.reply');
 
         // User Manual
@@ -180,6 +179,8 @@ Route::prefix('resident')->name('resident.')->group(function () {
         Route::get('inquiries', [InquiryController::class, 'residentIndex'])->name('inquiries.index');
         Route::get('inquiries/create', [InquiryController::class, 'residentCreate'])->name('inquiries.create');
         Route::post('inquiries', [InquiryController::class, 'residentStore'])->name('inquiries.store');
+        Route::post('inquiries/{inquiry}/reply', [InquiryController::class, 'residentReply'])->name('inquiries.reply');
+        Route::post('inquiries/{inquiry}/end', [InquiryController::class, 'residentEnd'])->name('inquiries.end');
 
         // User Manual
         Route::get('manual', function () {
@@ -230,6 +231,8 @@ Route::name('visitor.')->group(function () {
         Route::get('/visitor/inquiries', [InquiryController::class, 'visitorIndex'])->name('inquiries.index');
         Route::get('/visitor/inquiries/create', [InquiryController::class, 'visitorCreate'])->name('inquiries.create');
         Route::post('/visitor/inquiries', [InquiryController::class, 'visitorStore'])->name('inquiries.store');
+        Route::post('/visitor/inquiries/{inquiry}/reply', [InquiryController::class, 'visitorReply'])->name('inquiries.reply');
+        Route::post('/visitor/inquiries/{inquiry}/end', [InquiryController::class, 'visitorEnd'])->name('inquiries.end');
 
         // User Manual
         Route::get('/visitor/manual', function () {
@@ -259,6 +262,8 @@ Route::prefix('delivery')->name('delivery.')->group(function () {
         Route::get('/inquiries', [InquiryController::class, 'deliveryIndex'])->name('inquiries.index');
         Route::get('/inquiries/create', [InquiryController::class, 'deliveryCreate'])->name('inquiries.create');
         Route::post('/inquiries', [InquiryController::class, 'deliveryStore'])->name('inquiries.store');
+        Route::post('/inquiries/{inquiry}/reply', [InquiryController::class, 'deliveryReply'])->name('inquiries.reply');
+        Route::post('/inquiries/{inquiry}/end', [InquiryController::class, 'deliveryEnd'])->name('inquiries.end');
 
         // User Manual
         Route::get('/manual', function () {

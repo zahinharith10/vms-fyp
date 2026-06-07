@@ -18,6 +18,7 @@ class InquiryController extends Controller
         $resident = Auth::guard('resident')->user();
         $inquiries = Inquiry::where('user_type', 'Resident')
             ->where('user_id', $resident->id)
+            ->with('messages')
             ->latest()
             ->get();
 
@@ -75,6 +76,7 @@ class InquiryController extends Controller
         $visitor = Auth::guard('visitor')->user();
         $inquiries = Inquiry::where('user_type', 'Visitor')
             ->where('user_id', $visitor->id)
+            ->with('messages')
             ->latest()
             ->get();
 
@@ -132,6 +134,7 @@ class InquiryController extends Controller
         $delivery = Auth::guard('delivery')->user();
         $inquiries = Inquiry::where('user_type', 'Delivery')
             ->where('user_id', $delivery->id)
+            ->with('messages')
             ->latest()
             ->get();
 
@@ -207,16 +210,9 @@ class InquiryController extends Controller
         }
 
         return Inertia::render('Admin/Inquiries/Index', [
-            'inquiries' => $query->get(),
+            'inquiries' => $query->with('messages')->get(),
             'filters' => $request->only(['search', 'user_type', 'status'])
         ]);
-    }
-
-    public function adminResolve(Inquiry $inquiry)
-    {
-        $inquiry->update(['status' => 'Resolved']);
-
-        return redirect()->back()->with('success', 'Inquiry marked as resolved.');
     }
 
     public function adminReply(Request $request, Inquiry $inquiry)
@@ -225,12 +221,124 @@ class InquiryController extends Controller
             'reply' => 'required|string',
         ]);
 
-        $inquiry->update([
-            'reply' => $request->reply,
-            'replied_at' => now(),
-            'status' => 'Resolved',
+        $inquiry->messages()->create([
+            'sender_type' => 'Admin',
+            'sender_name' => 'Admin Management',
+            'message' => $request->reply,
         ]);
 
-        return redirect()->back()->with('success', 'Reply submitted and inquiry resolved.');
+        // Keep it open/pending so user can see and reply back
+        $inquiry->update(['status' => 'Pending']);
+
+        return redirect()->back()->with('success', 'Reply sent successfully.');
+    }
+
+    // ==========================================
+    // PORTAL REPLY & END METHODS
+    // ==========================================
+
+    public function residentReply(Request $request, Inquiry $inquiry)
+    {
+        $resident = Auth::guard('resident')->user();
+        if ($inquiry->user_type !== 'Resident' || $inquiry->user_id !== $resident->id) {
+            abort(403);
+        }
+        if ($inquiry->status === 'Resolved') {
+            return redirect()->back()->with('error', 'This inquiry has been resolved.');
+        }
+
+        $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        $inquiry->messages()->create([
+            'sender_type' => 'User',
+            'sender_name' => $resident->name,
+            'message' => $request->message,
+        ]);
+
+        return redirect()->back()->with('success', 'Reply sent successfully.');
+    }
+
+    public function residentEnd(Inquiry $inquiry)
+    {
+        $resident = Auth::guard('resident')->user();
+        if ($inquiry->user_type !== 'Resident' || $inquiry->user_id !== $resident->id) {
+            abort(403);
+        }
+
+        $inquiry->update(['status' => 'Resolved']);
+
+        return redirect()->back()->with('success', 'Inquiry marked as resolved.');
+    }
+
+    public function visitorReply(Request $request, Inquiry $inquiry)
+    {
+        $visitor = Auth::guard('visitor')->user();
+        if ($inquiry->user_type !== 'Visitor' || $inquiry->user_id !== $visitor->id) {
+            abort(403);
+        }
+        if ($inquiry->status === 'Resolved') {
+            return redirect()->back()->with('error', 'This inquiry has been resolved.');
+        }
+
+        $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        $inquiry->messages()->create([
+            'sender_type' => 'User',
+            'sender_name' => $visitor->name,
+            'message' => $request->message,
+        ]);
+
+        return redirect()->back()->with('success', 'Reply sent successfully.');
+    }
+
+    public function visitorEnd(Inquiry $inquiry)
+    {
+        $visitor = Auth::guard('visitor')->user();
+        if ($inquiry->user_type !== 'Visitor' || $inquiry->user_id !== $visitor->id) {
+            abort(403);
+        }
+
+        $inquiry->update(['status' => 'Resolved']);
+
+        return redirect()->back()->with('success', 'Inquiry marked as resolved.');
+    }
+
+    public function deliveryReply(Request $request, Inquiry $inquiry)
+    {
+        $delivery = Auth::guard('delivery')->user();
+        if ($inquiry->user_type !== 'Delivery' || $inquiry->user_id !== $delivery->id) {
+            abort(403);
+        }
+        if ($inquiry->status === 'Resolved') {
+            return redirect()->back()->with('error', 'This inquiry has been resolved.');
+        }
+
+        $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        $inquiry->messages()->create([
+            'sender_type' => 'User',
+            'sender_name' => $delivery->name,
+            'message' => $request->message,
+        ]);
+
+        return redirect()->back()->with('success', 'Reply sent successfully.');
+    }
+
+    public function deliveryEnd(Inquiry $inquiry)
+    {
+        $delivery = Auth::guard('delivery')->user();
+        if ($inquiry->user_type !== 'Delivery' || $inquiry->user_id !== $delivery->id) {
+            abort(403);
+        }
+
+        $inquiry->update(['status' => 'Resolved']);
+
+        return redirect()->back()->with('success', 'Inquiry marked as resolved.');
     }
 }

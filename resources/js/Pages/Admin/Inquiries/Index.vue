@@ -35,14 +35,6 @@ const onSearchInput = () => {
     searchTimeout = setTimeout(applyFilters, 400);
 };
 
-// Resolve inquiry
-const resolveForm = useForm({});
-const resolveInquiry = (id) => {
-    resolveForm.post(route('admin.inquiries.resolve', id), {
-        preserveScroll: true,
-    });
-};
-
 // Reply to inquiry
 const replyForm = useForm({
     reply: '',
@@ -257,19 +249,6 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
                                         </button>
-
-                                        <!-- Resolve -->
-                                        <button
-                                            v-if="inquiry.status === 'Pending'"
-                                            @click="resolveInquiry(inquiry.id)"
-                                            :disabled="resolveForm.processing"
-                                            class="p-1.5 rounded-lg text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 transition-all"
-                                            title="Mark as resolved"
-                                        >
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -345,17 +324,31 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                                 <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4">{{ selectedInquiry.message }}</p>
                             </div>
 
-                            <!-- Reply Block -->
-                            <div v-if="selectedInquiry.reply" class="border-t border-gray-100 dark:border-gray-800 pt-4">
-                                <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Reply Sent</p>
-                                <div class="bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200 text-sm leading-relaxed rounded-2xl p-4 border border-indigo-100/30 dark:border-indigo-900/30">
-                                    <p class="font-medium whitespace-pre-wrap">{{ selectedInquiry.reply }}</p>
-                                    <p class="text-[10px] text-indigo-400 dark:text-indigo-500 font-medium mt-2">Sent at {{ formatDate(selectedInquiry.replied_at) }}</p>
+                            <!-- Conversation Thread -->
+                            <div v-if="selectedInquiry.messages && selectedInquiry.messages.length > 0" class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                                <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">Conversation History</p>
+                                <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1 flex flex-col gap-2">
+                                    <div
+                                        v-for="msg in selectedInquiry.messages"
+                                        :key="msg.id"
+                                        class="flex flex-col max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed"
+                                        :class="msg.sender_type === 'Admin'
+                                            ? 'bg-indigo-600 text-white ml-auto rounded-tr-none'
+                                            : 'bg-gray-50 dark:bg-gray-800/80 text-gray-800 dark:text-gray-200 mr-auto rounded-tl-none border border-gray-100 dark:border-gray-700'"
+                                    >
+                                        <div class="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-wider mb-1"
+                                            :class="msg.sender_type === 'Admin' ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'">
+                                            <span>{{ msg.sender_name }}</span>
+                                            <span>•</span>
+                                            <span>{{ formatDate(msg.created_at) }}</span>
+                                        </div>
+                                        <p class="whitespace-pre-wrap">{{ msg.message }}</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Reply Composer Form -->
-                            <form v-else @submit.prevent="submitReply(selectedInquiry.id)" class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+                            <!-- Reply Composer Form (if not resolved) -->
+                            <form v-if="selectedInquiry.status !== 'Resolved'" @submit.prevent="submitReply(selectedInquiry.id)" class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
                                 <div>
                                     <label for="reply-text" class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest block mb-1.5">Compose Reply</label>
                                     <textarea
@@ -377,17 +370,18 @@ const pendingCount = computed(() => props.inquiries.filter(i => i.status === 'Pe
                                     </button>
                                 </div>
                             </form>
+
+                            <!-- Resolved Banner -->
+                            <div v-else class="border-t border-gray-100 dark:border-gray-800 pt-4 text-center">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-xs font-black uppercase tracking-widest rounded-full">
+                                    <span>✅</span> Resolved & Closed
+                                </div>
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">This inquiry has been closed by the user.</p>
+                            </div>
                         </div>
 
                         <!-- Modal Footer -->
                         <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3">
-                            <button
-                                v-if="selectedInquiry.status === 'Pending'"
-                                @click="resolveInquiry(selectedInquiry.id); closeDetail()"
-                                class="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white font-black text-sm rounded-2xl transition-all shadow-sm"
-                            >
-                                ✅ Mark Resolved
-                            </button>
                             <button
                                 @click="closeDetail"
                                 class="px-5 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-black text-sm rounded-2xl transition-all"
