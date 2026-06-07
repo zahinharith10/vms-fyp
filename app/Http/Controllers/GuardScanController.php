@@ -614,10 +614,11 @@ class GuardScanController extends Controller
     public function activeLogs()
     {
         $this->autoFinalizeOldVisits();
-        $activeVisitors = Visit::with('visitor')
+        $activeVisitors = Visit::with(['visitor', 'sessions'])
             ->whereIn('status', ['Checked In', 'Temporarily Out'])
             ->get()
             ->map(function ($visit) {
+                $firstSession = $visit->sessions->first();
                 return [
                     'id' => $visit->id,
                     'type' => 'Visitor',
@@ -627,7 +628,7 @@ class GuardScanController extends Controller
                     'vehicle_number' => $visit->visitor->vehicle_number,
                     'unit_number' => $visit->unit_number,
                     'purpose' => $visit->purpose,
-                    'entry_time' => $visit->check_in_time,
+                    'entry_time' => $firstSession ? $firstSession->check_in_time : $visit->check_in_time,
                     'status' => $visit->status,
                     'parking_lot_number' => $visit->parking_lot_number,
                 ];
@@ -669,6 +670,8 @@ class GuardScanController extends Controller
         $allVisitors = Visit::with(['visitor', 'sessions'])
             ->get()
             ->map(function ($visit) {
+                $firstSession = $visit->sessions->first();
+                $lastSession = $visit->sessions->last();
                 return [
                     'id' => $visit->id,
                     'type' => 'Visitor',
@@ -678,8 +681,8 @@ class GuardScanController extends Controller
                     'vehicle_number' => $visit->visitor->vehicle_number,
                     'unit_number' => $visit->unit_number,
                     'purpose' => $visit->purpose,
-                    'entry_time' => $visit->check_in_time,
-                    'exit_time' => $visit->check_out_time,
+                    'entry_time' => $firstSession ? $firstSession->check_in_time : $visit->check_in_time,
+                    'exit_time' => $lastSession ? $lastSession->check_out_time : $visit->check_out_time,
                     'status' => $visit->status,
                     'parking_lot_number' => $visit->parking_lot_number,
                     'created_at' => $visit->created_at,

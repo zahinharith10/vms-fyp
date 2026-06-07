@@ -42,6 +42,16 @@ class ResidentVisitorController extends Controller
                 }
                 $visit->sessions_count = $visit->sessions->count();
                 $visit->total_duration_minutes = $totalSecs > 0 ? intdiv($totalSecs, 60) : 0;
+
+                $firstSession = $visit->sessions->first();
+                $lastSession = $visit->sessions->last();
+                if ($firstSession) {
+                    $visit->check_in_time = $firstSession->check_in_time;
+                }
+                if ($lastSession) {
+                    $visit->check_out_time = $lastSession->check_out_time;
+                }
+
                 return $visit;
             });
 
