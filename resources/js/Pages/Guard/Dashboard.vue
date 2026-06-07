@@ -150,32 +150,6 @@ const closeLotModal = () => {
             </div>
         </div>
 
-        <!-- Manual Entry Queue (Approved Deliveries) -->
-        <div v-if="approvedDeliveries && approvedDeliveries.length > 0" class="mt-12">
-            <h3 class="text-sm font-black text-gray-400 dark:text-gray-500 mb-6 uppercase tracking-[0.2em]">Ready for Entry (Manual Registrations)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-for="log in approvedDeliveries" :key="log.id" class="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800/80 flex items-center justify-between transition-all duration-300">
-                    <div class="flex items-center">
-                        <div class="h-12 w-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mr-4 overflow-hidden border border-indigo-100 dark:border-indigo-900/30">
-                             <img v-if="log.personnel.photo" :src="'/storage/' + log.personnel.photo" class="h-full w-full object-cover" />
-                             <span v-else class="text-indigo-400 font-black text-xl">{{ log.personnel.name.charAt(0) }}</span>
-                        </div>
-                        <div>
-                            <h4 class="font-black text-gray-900 dark:text-white leading-tight">{{ log.personnel.name }}</h4>
-                            <p class="text-[10px] text-indigo-500 dark:text-indigo-400 font-black uppercase tracking-widest mt-1">{{ log.personnel.company }} • {{ log.personnel.vehicle_number }}</p>
-                            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase mt-0.5">Destination: {{ log.destination }}</p>
-                        </div>
-                    </div>
-                    <button 
-                        @click="checkInDelivery(log.id)"
-                        class="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black px-4 py-2 rounded-xl transition-all shadow-md dark:shadow-none shadow-green-100 uppercase tracking-widest"
-                        :disabled="checkInForm.processing"
-                    >
-                        Check In
-                    </button>
-                </div>
-            </div>
-        </div>
 
         <!-- Visitor Parking Lots Visual Grid -->
         <div class="mt-12">
