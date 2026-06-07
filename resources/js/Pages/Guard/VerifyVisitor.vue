@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import GuardAuthenticatedLayout from '@/Layouts/GuardAuthenticatedLayout.vue';
 import FaceCapture from '@/Components/FaceCapture.vue';
+import Modal from '@/Components/Modal.vue';
 import { euclideanDistance } from 'face-api.js';
 import axios from 'axios';
 
@@ -14,6 +15,7 @@ const props = defineProps({
 const isLoading = ref(false);
 const faceVerified = ref(false);
 const verificationError = ref(null);
+const showSuccessModal = ref(false);
 const visitData = ref(props.visit);
 const pollingInterval = ref(null);
 const hasTriggeredAutoCheckIn = ref(false);
@@ -88,6 +90,7 @@ const handleFaceDetected = (detection) => {
         if (distance < 0.5) {
             faceVerified.value = true;
             verificationError.value = null;
+            showSuccessModal.value = true;
 
             // Automatically trigger check-in if Approved or Temporarily Out
             if ((visitData.value.status === 'Approved' || visitData.value.status === 'Temporarily Out') && !hasTriggeredAutoCheckIn.value) {
@@ -95,7 +98,7 @@ const handleFaceDetected = (detection) => {
                 isLoading.value = true;
                 setTimeout(() => {
                     checkIn(true); // Bypass verification check because we already verified it!
-                }, 500); // 500ms delay for high-speed premium feedback
+                }, 1800); // 1.8s delay so they can see the successful popup
             }
         } else {
             faceVerified.value = false;
@@ -128,10 +131,12 @@ const checkIn = async (bypassVerification = false) => {
         } else {
             alert(response.data.message || 'Check-in failed.');
             hasTriggeredAutoCheckIn.value = false; // Reset on failure so they can try again
+            showSuccessModal.value = false;
         }
     } catch (err) {
         alert(err.response?.data?.message || 'An error occurred during check-in.');
         hasTriggeredAutoCheckIn.value = false; // Reset on failure so they can try again
+        showSuccessModal.value = false;
     } finally {
         isLoading.value = false;
     }
@@ -347,5 +352,33 @@ const checkOut = async (isTemporary = false) => {
                 </div>
             </div>
         </div>
+
+        <!-- Success Modal for Face Recognition -->
+        <Modal :show="showSuccessModal" max-width="md" :closeable="false">
+            <div class="p-6 text-center dark:bg-gray-900">
+                <!-- Premium Animated Circular Icon -->
+                <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-50 dark:bg-green-950/40 border border-green-200/50 dark:border-green-800/30 mb-6 shadow-md animate-pulse">
+                    <span class="text-5xl">✨</span>
+                </div>
+                
+                <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+                    Face Match Successful!
+                </h3>
+                
+                <p class="text-sm text-gray-650 dark:text-gray-400 mb-6">
+                    Identity verified for <span class="font-extrabold text-green-600 dark:text-green-400">{{ visitData.visitor.name }}</span>.
+                </p>
+
+                <!-- Status Progress bar/loader -->
+                <div class="bg-gray-50 dark:bg-gray-950 p-5 rounded-2xl border border-gray-150 dark:border-gray-800/80 shadow-inner">
+                    <div class="flex items-center justify-center gap-3">
+                        <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
+                        <span class="text-xs font-black text-green-700 dark:text-green-455 uppercase tracking-widest">
+                            Authorizing Entry...
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </Modal>
     </GuardAuthenticatedLayout>
 </template>
