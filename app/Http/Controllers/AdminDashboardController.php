@@ -53,9 +53,9 @@ class AdminDashboardController extends Controller
         $totalDeliveryPersonnel  = DeliveryPersonnel::count();
 
         // ── Active Right Now ─────────────────────────────────────────
-        $activeVisits     = Visit::where('status', 'Checked In')->count();
-        $activeDeliveries = DeliveryLog::whereNotNull('entry_time')->whereNull('exit_time')->count();
-        $activeTotal      = $activeVisits + $activeDeliveries;
+        $activeVisitCount     = Visit::where('status', 'Checked In')->count();
+        $activeDeliveryCount  = DeliveryLog::whereNotNull('entry_time')->whereNull('exit_time')->count();
+        $activeTotal          = $activeVisitCount + $activeDeliveryCount;
 
         // ── Today's Activity ─────────────────────────────────────────
         $todayVisits     = Visit::whereDate('created_at', $today)->count();
@@ -152,7 +152,7 @@ class AdminDashboardController extends Controller
         ])->toArray();
 
         // ── Active/On-Premise Activity Feed ───────────────────────────
-        $activeVisits = Visit::with('visitor')
+        $onSiteVisits = Visit::with('visitor')
             ->where('status', 'Checked In')
             ->latest('updated_at')
             ->get()
@@ -166,7 +166,7 @@ class AdminDashboardController extends Controller
                 'unit'   => $v->unit_number,
             ]);
 
-        $activeDeliveries = DeliveryLog::with('personnel')
+        $onSiteDeliveries = DeliveryLog::with('personnel')
             ->whereNotNull('entry_time')
             ->whereNull('exit_time')
             ->latest('updated_at')
@@ -181,8 +181,8 @@ class AdminDashboardController extends Controller
                 'unit'   => $d->destination,
             ]);
 
-        $activeOnSite = $activeVisits
-            ->concat($activeDeliveries)
+        $activeOnSite = $onSiteVisits
+            ->concat($onSiteDeliveries)
             ->sortByDesc('time')
             ->values();
 
@@ -197,8 +197,8 @@ class AdminDashboardController extends Controller
                 'total_house_units'        => $totalHouseUnits,
                 'total_delivery_personnel' => $totalDeliveryPersonnel,
                 'active_now'               => $activeTotal,
-                'active_visits'            => $activeVisits,
-                'active_deliveries'        => $activeDeliveries,
+                'active_visits'            => $activeVisitCount,
+                'active_deliveries'        => $activeDeliveryCount,
                 'today_visits'             => $todayVisits,
                 'today_deliveries'         => $todayDeliveries,
                 'yesterday_visits'         => $yesterdayVisits,
