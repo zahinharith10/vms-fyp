@@ -1,8 +1,8 @@
 <script setup>
 import GuardAuthenticatedLayout from '@/Layouts/GuardAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { formatMalaysiaTime } from '@/utils/datetime';
-import { ref, computed } from 'vue';
+import { formatMalaysiaDateTime } from '@/utils/datetime';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
     visitRecords: Array,
@@ -11,6 +11,9 @@ const props = defineProps({
 const searchQuery = ref('');
 const filterType = ref('All');
 const filterStatus = ref('All');
+
+const currentPage = ref(1);
+const perPage = 10;
 
 const filteredRecords = computed(() => {
     return props.visitRecords.filter(log => {
@@ -39,10 +42,24 @@ const filteredRecords = computed(() => {
     });
 });
 
+const totalPages = computed(() => {
+    return Math.ceil(filteredRecords.value.length / perPage);
+});
+
+const paginatedRecords = computed(() => {
+    const start = (currentPage.value - 1) * perPage;
+    return filteredRecords.value.slice(start, start + perPage);
+});
+
+watch([searchQuery, filterType, filterStatus], () => {
+    currentPage.value = 1;
+});
+
 const resetFilters = () => {
     searchQuery.value = '';
     filterType.value = 'All';
     filterStatus.value = 'All';
+    currentPage.value = 1;
 };
 </script>
 
@@ -136,7 +153,7 @@ const resetFilters = () => {
                 </div>
 
                 <div v-else class="grid grid-cols-1 gap-4">
-                    <div v-for="log in filteredRecords" :key="log.type + log.id" class="bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between group hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-200">
+                    <div v-for="log in paginatedRecords" :key="log.type + log.id" class="bg-white dark:bg-gray-900 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center justify-between group hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-200">
                     <div class="flex items-center">
                         <div class="h-16 w-16 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center mr-5 overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm ring-1 ring-gray-100 dark:ring-gray-700">
                              <img v-if="log.photo" :src="'/storage/' + log.photo" class="h-full w-full object-cover" />
@@ -154,14 +171,14 @@ const resetFilters = () => {
                                     class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest"
                                     :class="{
                                         'bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400': log.status === 'Checked In',
-                                        'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400': log.status === 'Checked Out',
+                                        'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400': log.status === 'Checked Out' || log.status === 'Expired' || log.status === 'Rejected' || log.status === 'Cancelled',
                                         'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-600 dark:text-yellow-400': log.status === 'Temporarily Out',
                                         'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400': log.status === 'Pending' || log.status === 'Approved'
                                     }"
                                 >
                                     {{ log.status }}
                                 </span>
-                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">Created at {{ formatMalaysiaTime(log.created_at) }}</span>
+                                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">Created at {{ formatMalaysiaDateTime(log.created_at) }}</span>
                             </div>
                             <h4 class="font-black text-gray-900 dark:text-white leading-tight">{{ log.name }}</h4>
                             <div class="grid grid-cols-3 gap-x-4 gap-y-1 mt-2">
@@ -173,17 +190,24 @@ const resetFilters = () => {
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Unit</p>
                                     <p class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">{{ log.unit_number }}</p>
                                 </div>
-                                <div v-if="log.parking_lot_number">
+                                <div>
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Parking Lot</p>
-                                    <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">🅿️ Lot {{ log.parking_lot_number }}</p>
+                                    <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">
+                                        {{ log.parking_lot_number 
+                                            ? '🅿️ Lot ' + log.parking_lot_number 
+                                            : (log.vehicle_number && log.vehicle_number !== '-' && log.vehicle_number.toLowerCase() !== 'n/a' && !log.is_delivery 
+                                                ? '🚗 Outside' 
+                                                : 'N/A') 
+                                        }}
+                                    </p>
                                 </div>
                                 <div v-if="log.entry_time">
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Entry Time</p>
-                                    <p class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ formatMalaysiaTime(log.entry_time) }}</p>
+                                    <p class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ formatMalaysiaDateTime(log.entry_time) }}</p>
                                 </div>
                                 <div v-if="log.exit_time">
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Exit Time</p>
-                                    <p class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ formatMalaysiaTime(log.exit_time) }}</p>
+                                    <p class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ formatMalaysiaDateTime(log.exit_time) }}</p>
                                 </div>
                                 <div class="col-span-3">
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Purpose</p>
@@ -203,13 +227,13 @@ const resetFilters = () => {
                                             <div class="flex items-center gap-3 flex-1 flex-wrap">
                                                 <div>
                                                     <p class="text-[7px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest leading-none">Check-In</p>
-                                                    <p class="text-[10px] font-bold text-green-600 dark:text-green-400">{{ formatMalaysiaTime(session.check_in_time) }}</p>
+                                                    <p class="text-[10px] font-bold text-green-600 dark:text-green-400">{{ formatMalaysiaDateTime(session.check_in_time) }}</p>
                                                 </div>
                                                 <span class="text-gray-300 dark:text-gray-700 text-xs">→</span>
                                                 <div>
                                                     <p class="text-[7px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest leading-none">Check-Out</p>
                                                     <p class="text-[10px] font-bold" :class="session.check_out_time ? 'text-red-500 dark:text-red-400' : 'text-yellow-500 dark:text-yellow-400'">
-                                                        {{ session.check_out_time ? formatMalaysiaTime(session.check_out_time) : 'Still Inside' }}
+                                                        {{ session.check_out_time ? formatMalaysiaDateTime(session.check_out_time) : 'Still Inside' }}
                                                     </p>
                                                 </div>
                                             </div>
@@ -220,8 +244,31 @@ const resetFilters = () => {
                         </div>
                     </div>
                 </div>
+
+                    <!-- Pagination Controls -->
+                    <div v-if="totalPages > 1" class="flex items-center justify-between mt-6 bg-white dark:bg-gray-900 px-6 py-4 rounded-3xl border border-gray-100 dark:border-gray-800 transition-colors duration-200 shadow-sm">
+                        <button
+                            @click="currentPage > 1 ? currentPage-- : null"
+                            :disabled="currentPage === 1"
+                            class="px-4 py-2 text-xs font-black rounded-2xl border border-gray-150 dark:border-gray-800 bg-gray-50 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                        >
+                            Previous
+                        </button>
+                        
+                        <span class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                            Page {{ currentPage }} of {{ totalPages }}
+                        </span>
+                        
+                        <button
+                            @click="currentPage < totalPages ? currentPage++ : null"
+                            :disabled="currentPage === totalPages"
+                            class="px-4 py-2 text-xs font-black rounded-2xl border border-gray-150 dark:border-gray-800 bg-gray-50 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed uppercase tracking-wider"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
     </GuardAuthenticatedLayout>
 </template>

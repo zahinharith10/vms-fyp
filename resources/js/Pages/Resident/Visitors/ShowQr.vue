@@ -1,6 +1,14 @@
 <script setup>
 import ResidentAuthenticatedLayout from '@/Layouts/ResidentAuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+
+const goBack = () => {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        router.visit(route('resident.visitors.index'));
+    }
+};
 
 defineProps({
     visit: Object,
@@ -30,9 +38,9 @@ defineProps({
                         
                         <p class="text-sm text-gray-500 mt-4">Show this QR code to the guard at the entrance.</p>
                         
-                        <Link :href="route('resident.visitors.index')" class="mt-6 text-indigo-600 hover:text-indigo-900 underline">
-                            Back to My Visitors
-                        </Link>
+                        <button @click="goBack" class="mt-6 text-indigo-600 hover:text-indigo-900 underline font-bold">
+                            ← Back
+                        </button>
                     </div>
                 </div>
             </div>

@@ -1,6 +1,14 @@
 <script setup>
 import ResidentAuthenticatedLayout from '@/Layouts/ResidentAuthenticatedLayout.vue';
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
+
+const goBack = () => {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        router.visit(route('resident.visitors.index'));
+    }
+};
 import { ref } from 'vue';
 
 const purposeOption = ref('Friends/Family');
@@ -13,7 +21,7 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.purpose = purposeOption.value === 'Others' ? (customPurpose.value || 'Others') : purposeOption.value;
+    form.purpose = purposeOption.value === 'Other' ? (customPurpose.value || 'Other') : purposeOption.value;
     form.post(route('resident.visitors.store'));
 };
 </script>
@@ -30,9 +38,9 @@ const submit = () => {
             <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
                 <!-- Back Button -->
                 <div class="mb-6">
-                    <Link :href="route('resident.visitors.index')" class="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800 transition">
-                        ← Back to Visitors List
-                    </Link>
+                    <button @click="goBack" class="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-800 transition">
+                        ← Back
+                    </button>
                 </div>
 
                 <!-- Registration Card -->
@@ -86,12 +94,13 @@ const submit = () => {
                                     v-model="purposeOption" 
                                     class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4 mb-3"
                                 >
-                                    <option value="Friends/Family">Friends/Family</option>
-                                    <option value="Others">Others</option>
+                                    <option value="Friends/Family">Friends / Family</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Other">Other</option>
                                 </select>
                                 
                                 <input 
-                                    v-if="purposeOption === 'Others'"
+                                    v-if="purposeOption === 'Other'"
                                     type="text" 
                                     placeholder="Please specify other purpose"
                                     v-model="customPurpose"

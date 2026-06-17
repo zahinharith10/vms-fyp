@@ -40,6 +40,7 @@ const replyForm = useForm({
     reply: '',
 });
 const submitReply = (id) => {
+    if (!confirm('Are you sure you want to send this reply?')) return;
     replyForm.post(route('admin.inquiries.reply', id), {
         preserveScroll: true,
         onSuccess: () => {

@@ -9,6 +9,7 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (!confirm('Are you sure you want to save this house unit?')) return;
     form.post(route('admin.units.store'));
 };
 </script>

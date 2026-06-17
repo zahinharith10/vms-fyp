@@ -2,7 +2,15 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import VisitorAuthenticatedLayout from '@/Layouts/VisitorAuthenticatedLayout.vue';
 import ParkingMap from '@/Components/ParkingMap.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+
+const goBack = () => {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        router.visit(route('visitor.dashboard'));
+    }
+};
 
 const props = defineProps({
     visit: Object,
@@ -130,9 +138,9 @@ const displayToken = computed(() => {
                         </div>
 
                         <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 w-full text-center">
-                            <Link :href="route('visitor.dashboard')" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 underline font-bold">
-                                Back to Dashboard
-                            </Link>
+                            <button @click="goBack" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 underline font-bold">
+                                ← Back
+                            </button>
                         </div>
                     </div>
                 </div>

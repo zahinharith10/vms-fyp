@@ -63,6 +63,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('personnel', DeliveryPersonnelController::class);
             Route::get('logs', [DeliveryLogController::class, 'index'])->name('logs.index');
             Route::get('logs/export', [DeliveryLogController::class, 'exportLogs'])->name('logs.export');
+            Route::get('logs/{log}', [DeliveryLogController::class, 'showLog'])->name('logs.show');
         });
 
         // House Units
@@ -166,10 +167,12 @@ Route::prefix('resident')->name('resident.')->group(function () {
         Route::post('visitors', [App\Http\Controllers\ResidentVisitorController::class, 'store'])->name('visitors.store');
         Route::post('visitors/{visit}/approve', [App\Http\Controllers\ResidentVisitorController::class, 'approve'])->name('visitors.approve');
         Route::post('visitors/{visit}/reject', [App\Http\Controllers\ResidentVisitorController::class, 'reject'])->name('visitors.reject');
+        Route::post('visitors/{visit}/cancel', [App\Http\Controllers\ResidentVisitorController::class, 'cancelVisit'])->name('visitors.cancel');
         
         // Delivery Approvals for Residents
         Route::post('delivery-logs/{log}/approve', [App\Http\Controllers\ResidentVisitorController::class, 'approveDelivery'])->name('deliveries.approve');
         Route::post('delivery-logs/{log}/reject', [App\Http\Controllers\ResidentVisitorController::class, 'rejectDelivery'])->name('deliveries.reject');
+        Route::post('delivery-logs/{log}/cancel', [App\Http\Controllers\ResidentVisitorController::class, 'cancelDelivery'])->name('deliveries.cancel');
         
         Route::get('profile', [App\Http\Controllers\ResidentAuthController::class, 'profile'])->name('profile');
         Route::patch('profile', [App\Http\Controllers\ResidentAuthController::class, 'updateProfile'])->name('profile.update');

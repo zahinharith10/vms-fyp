@@ -50,14 +50,14 @@ class DeliveryDashboardController extends Controller
         if ($latestItem instanceof DeliveryRun) {
             if (in_array($latestItem->status, ['Pending', 'Approved', 'Checked In'])) {
                 $latestItem->load('logs');
-                $hasActiveLogs = $latestItem->logs->contains(fn ($log) => $log->exit_time === null && !in_array($log->status, ['Cancelled', 'Rejected']));
+                $hasActiveLogs = $latestItem->logs->contains(fn ($log) => $log->exit_time === null && !in_array($log->status, ['Cancelled', 'Rejected']) && !$log->is_expired);
                 if ($hasActiveLogs) {
                     $activeRun = $latestItem;
-                    $latestActiveLog = $activeRun->logs->first(fn ($log) => $log->exit_time === null && !in_array($log->status, ['Cancelled', 'Rejected']));
+                    $latestActiveLog = $activeRun->logs->first(fn ($log) => $log->exit_time === null && !in_array($log->status, ['Cancelled', 'Rejected']) && !$log->is_expired);
                 }
             }
         } elseif ($latestItem instanceof DeliveryLog) {
-            if (in_array($latestItem->status, ['Pending', 'Approved', 'Checked In']) && is_null($latestItem->exit_time)) {
+            if (in_array($latestItem->status, ['Pending', 'Approved', 'Checked In']) && is_null($latestItem->exit_time) && !$latestItem->is_expired) {
                 $latestActiveLog = $latestItem;
             }
         }
@@ -98,14 +98,16 @@ class DeliveryDashboardController extends Controller
         $hasOpenRun = DeliveryRun::query()
             ->where('delivery_personnel_id', $delivery->id)
             ->whereIn('status', ['Pending', 'Approved', 'Checked In'])
-            ->exists();
+            ->get()
+            ->contains(fn ($run) => $run->status === 'Pending' || $run->status === 'Checked In' || $run->logs->contains(fn ($log) => $log->status === 'Approved' && !$log->is_expired));
 
         $hasOpenStandaloneLog = DeliveryLog::query()
             ->where('delivery_personnel_id', $delivery->id)
             ->whereNull('delivery_run_id')
             ->whereIn('status', ['Pending', 'Approved', 'Checked In'])
             ->whereNull('exit_time')
-            ->exists();
+            ->get()
+            ->contains(fn ($log) => $log->status === 'Pending' || $log->status === 'Checked In' || ($log->status === 'Approved' && !$log->is_expired));
 
         if ($hasOpenRun || $hasOpenStandaloneLog) {
             return redirect()->back()->with('error', 'You already have an active delivery trip. Please complete or check out before starting a new one.');
@@ -211,14 +213,49 @@ class DeliveryDashboardController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:delivery_personnels,email|unique:visitors,email',
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $email = strtolower(trim($value));
+                    if (\App\Models\Visitor::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Visitor.');
+                        return;
+                    }
+                    if (\App\Models\DeliveryPersonnel::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Delivery Personnel.');
+                        return;
+                    }
+                    if (\App\Models\Guard::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Guard.');
+                        return;
+                    }
+                    if (\App\Models\Resident::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Resident.');
+                        return;
+                    }
+                },
+            ],
             'company' => 'required|string',
-            'phone' => 'required|string|unique:delivery_personnels',
+            'phone' => [
+                'required',
+                'string',
+                'unique:delivery_personnels',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
             'vehicle_type' => 'required|string',
             'vehicle_number' => 'required|string',
-            'ic_number' => 'required|string|unique:delivery_personnels',
+            'ic_number' => [
+                'required',
+                'string',
+                'unique:delivery_personnels',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'face_descriptor' => 'required',
             'photo' => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $photoPath = null;
@@ -259,13 +296,27 @@ class DeliveryDashboardController extends Controller
 
         $request->validate([
             'name'           => 'required|string|max:255',
-            'phone'          => 'required|string|max:20|unique:delivery_personnels,phone,'.$delivery->id,
-            'ic_number'      => 'required|string|max:20|unique:delivery_personnels,ic_number,'.$delivery->id,
+            'phone'          => [
+                'required',
+                'string',
+                'max:20',
+                'unique:delivery_personnels,phone,'.$delivery->id,
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number'      => [
+                'required',
+                'string',
+                'unique:delivery_personnels,ic_number,' . $delivery->id,
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'company'        => 'required|string|max:255',
             'vehicle_type'   => 'required|string|max:50',
             'vehicle_number' => 'required|string|max:20',
             'face_descriptor' => 'nullable', // Array or JSON string
             'photo'          => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $delivery->name           = $request->name;

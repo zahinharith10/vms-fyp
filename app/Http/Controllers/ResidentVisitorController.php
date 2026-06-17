@@ -94,7 +94,7 @@ class ResidentVisitorController extends Controller
         if ($visitor) {
             // Check if visitor already has an active visit (Pending, Approved, Checked In, Temporarily Out)
             $activeVisit = \App\Models\Visit::where('visitor_id', $visitor->id)
-                ->whereIn('status', ['Pending', 'Approved', 'Checked In', 'Temporarily Out'])
+                ->active()
                 ->first();
 
             if ($activeVisit) {
@@ -133,6 +133,7 @@ class ResidentVisitorController extends Controller
             'host_name' => $resident->name,
             'status' => 'Approved', // Pre-approved by host!
             'approved_by' => $resident->name,
+            'approved_at' => now(),
             'qr_code_token' => $token,
         ]);
 
@@ -151,6 +152,10 @@ class ResidentVisitorController extends Controller
         $unitNumber = $resident->houseUnit->formatted_unit;
         if ($visit->unit_number !== $unitNumber) {
             abort(403);
+        }
+
+        if ($visit->status === 'Expired') {
+            return redirect()->route('resident.visitors.index')->with('error', 'This guest pass QR code has expired.');
         }
 
         $visit->load('visitor');
@@ -178,6 +183,7 @@ class ResidentVisitorController extends Controller
             'status' => 'Approved',
             'qr_code_token' => Str::uuid()->toString(),
             'approved_by' => $resident->name,
+            'approved_at' => now(),
         ]);
 
         try {
@@ -232,6 +238,7 @@ class ResidentVisitorController extends Controller
         $log->update([
             'status' => 'Approved',
             'approved_by' => $resident->name,
+            'approved_at' => now(),
             // Note: entry_time will be set by guard upon check-in
         ]);
 
@@ -274,4 +281,59 @@ class ResidentVisitorController extends Controller
 
         return redirect()->back()->with('success', 'Delivery request rejected.');
     }
+
+    /**
+     * Cancel an approved visit request.
+     */
+    public function cancelVisit(Visit $visit)
+    {
+        $resident = Auth::guard('resident')->user();
+        $resident->loadMissing('houseUnit');
+
+        $unitNumber = $resident->houseUnit->formatted_unit;
+        if ($visit->unit_number !== $unitNumber || $visit->status !== 'Approved') {
+            abort(403);
+        }
+
+        $visit->update([
+            'status' => 'Cancelled',
+        ]);
+
+        try {
+            broadcast(new VisitStatusUpdated($visit->id, 'Cancelled', null, $visit->unit_number));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'Visit request cancelled.');
+    }
+
+    /**
+     * Cancel an approved delivery request.
+     */
+    public function cancelDelivery(DeliveryLog $log)
+    {
+        $resident = Auth::guard('resident')->user();
+        $resident->loadMissing('houseUnit');
+
+        $deliveryUnitNumber = $resident->houseUnit->formatted_unit;
+        if ($log->destination !== $deliveryUnitNumber || $log->status !== 'Approved') {
+            abort(403);
+        }
+
+        $log->update([
+            'status' => 'Cancelled',
+        ]);
+
+        $log->run?->refreshStatus();
+
+        try {
+            broadcast(new DeliveryStatusUpdated($log->id, 'Cancelled'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Broadcasting failed: '.$e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'Delivery request cancelled.');
+    }
 }
+

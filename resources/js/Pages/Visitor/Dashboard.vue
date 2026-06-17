@@ -13,7 +13,7 @@ const props = defineProps({
 
 const form = useForm({
     unit_number: '',
-    purpose: 'Visit Friend/Family',
+    purpose: 'Friends/Family',
     host_name: '',
 });
 
@@ -198,8 +198,9 @@ onUnmounted(() => {
                         <div class="mb-6">
                             <label class="block text-gray-850 dark:text-gray-250 text-sm font-black uppercase tracking-wider mb-2">Purpose</label>
                             <select v-model="form.purpose" class="shadow border border-gray-200 dark:border-gray-800 rounded-xl w-full py-3 px-4 text-gray-800 dark:text-gray-200 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-950 transition-all font-bold mb-3">
-                                <option>Visit Friend/Family</option>
-                                <option>Other</option>
+                                <option value="Friends/Family">Friends / Family</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Other">Other</option>
                             </select>
 
                             <!-- Custom Purpose Text Box -->
@@ -242,7 +243,7 @@ onUnmounted(() => {
                                     'text-blue-600 dark:text-blue-400': visit.status === 'Approved',
                                     'text-green-600 dark:text-green-400': visit.status === 'Checked In',
                                     'text-gray-550 dark:text-gray-400': visit.status === 'Checked Out',
-                                    'text-red-650 dark:text-red-400': visit.status === 'Rejected',
+                                    'text-red-655 dark:text-red-400': visit.status === 'Rejected' || visit.status === 'Expired',
                                     'text-orange-600 dark:text-orange-400': visit.status === 'Cancelled',
                                 }" class="font-black text-xs uppercase tracking-wider">{{ visit.status }}</span>
                             </div>

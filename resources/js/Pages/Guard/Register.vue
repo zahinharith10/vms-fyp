@@ -11,6 +11,51 @@ defineProps({
 
 const registrationType = ref('visitor'); // 'visitor' or 'delivery'
 
+const purposeOption = ref('Friends/Family');
+const customPurpose = ref('');
+
+// Citizen type state for each form
+const visitorCitizenType = ref('citizen');
+const visitorCountry = ref('');
+const deliveryCitizenType = ref('citizen');
+const deliveryCountry = ref('');
+const deliveryOtherCompany = ref('');
+
+// IC input mask: ######-##-####
+const formatICFor = (formRef, e) => {
+    let digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+    let masked = digits;
+    if (digits.length > 6) masked = digits.slice(0, 6) + '-' + digits.slice(6);
+    if (digits.length > 8) masked = digits.slice(0, 6) + '-' + digits.slice(6, 8) + '-' + digits.slice(8);
+    formRef.ic_number = masked;
+};
+
+const deliveryMode = ref('single'); // 'single' or 'multi'
+const tempDeliveryUnit = ref('');
+const tempDeliveryHost = ref('');
+const deliveryStops = ref([]); // Array of { unit_number, host_name }
+
+const addDeliveryStop = () => {
+    if (!tempDeliveryUnit.value || !tempDeliveryHost.value.trim()) return;
+
+    if (deliveryStops.value.some(stop => stop.unit_number === tempDeliveryUnit.value)) {
+        alert('This unit is already added.');
+        return;
+    }
+
+    deliveryStops.value.push({
+        unit_number: tempDeliveryUnit.value,
+        host_name: tempDeliveryHost.value.trim(),
+    });
+
+    tempDeliveryUnit.value = '';
+    tempDeliveryHost.value = '';
+};
+
+const removeDeliveryStop = (index) => {
+    deliveryStops.value.splice(index, 1);
+};
+
 const visitorForm = useForm({
     name: '',
     email: '',
@@ -31,8 +76,11 @@ const deliveryForm = useForm({
     company: '',
     vehicle_number: '',
     ic_number: '',
-    unit_number: '', // Optional for delivery
+    delivery_type: 'single',
+    unit_number: '',
+    unit_numbers: [],
     host_name: '',
+    host_names: [],
     face_descriptor: null,
     photo: null,
 });
@@ -52,8 +100,13 @@ const onFaceDetected = (detection) => {
 };
 
 const submitVisitor = async () => {
+    visitorForm.clearErrors();
     if (!currentDescriptor.value) return;
-    
+
+    visitorForm.purpose = purposeOption.value === 'Other'
+        ? (customPurpose.value || 'Other')
+        : purposeOption.value;
+
     visitorForm.face_descriptor = currentDescriptor.value;
     
     if (faceCaptureRef.value) {
@@ -82,8 +135,25 @@ const submitVisitor = async () => {
 };
 
 const submitDelivery = async () => {
+    deliveryForm.clearErrors();
     if (!currentDescriptor.value) return;
-    
+
+    // If "Others" selected, use the typed name instead
+    if (deliveryForm.company === 'Others') {
+        deliveryForm.company = deliveryOtherCompany.value.trim() || 'Others';
+    }
+
+    deliveryForm.delivery_type = deliveryMode.value;
+    if (deliveryMode.value === 'single') {
+        deliveryForm.unit_numbers = [];
+        deliveryForm.host_names = [];
+    } else {
+        deliveryForm.unit_number = '';
+        deliveryForm.host_name = 'Multi-stop'; // dummy to pass validation
+        deliveryForm.unit_numbers = deliveryStops.value.map(stop => stop.unit_number);
+        deliveryForm.host_names = deliveryStops.value.map(stop => stop.host_name);
+    }
+
     deliveryForm.face_descriptor = currentDescriptor.value;
     
     if (faceCaptureRef.value) {
@@ -162,9 +232,52 @@ const submitDelivery = async () => {
                                         <div v-if="visitorForm.errors.phone" class="text-red-500 text-xs mt-1">{{ visitorForm.errors.phone }}</div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / ID Number</label>
-                                        <input v-model="visitorForm.ic_number" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold dark:placeholder-gray-500" placeholder="Enter IC Number">
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Identity Type</label>
+                                        <div class="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-2">
+                                            <button type="button" @click="visitorCitizenType = 'citizen'; visitorForm.ic_number = ''; visitorCountry = ''"
+                                                class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all"
+                                                :class="visitorCitizenType === 'citizen' ? 'bg-indigo-600 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-400'">
+                                                🇲🇾 MY / PR
+                                            </button>
+                                            <button type="button" @click="visitorCitizenType = 'international'; visitorForm.ic_number = ''; visitorCountry = ''"
+                                                class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all border-l border-gray-200 dark:border-gray-700"
+                                                :class="visitorCitizenType === 'international' ? 'bg-indigo-600 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-400'">
+                                                🌍 Intl
+                                            </button>
+                                        </div>
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                                            {{ visitorCitizenType === 'citizen' ? 'IC Number' : 'Passport Number' }}
+                                        </label>
+                                        <input v-if="visitorCitizenType === 'citizen'"
+                                            :value="visitorForm.ic_number"
+                                            @input="formatICFor(visitorForm, $event)"
+                                            type="text"
+                                            class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold dark:placeholder-gray-500"
+                                            placeholder="e.g. 950101-14-1234" maxlength="14" />
+                                        <input v-else
+                                            v-model="visitorForm.ic_number"
+                                            type="text"
+                                            class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold dark:placeholder-gray-500"
+                                            placeholder="Enter Passport Number" />
                                         <div v-if="visitorForm.errors.ic_number" class="text-red-500 text-xs mt-1">{{ visitorForm.errors.ic_number }}</div>
+                                    </div>
+                                    <div v-if="visitorCitizenType === 'international'">
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Country of Origin</label>
+                                        <select v-model="visitorCountry" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold text-sm">
+                                            <option value="">Select Country</option>
+                                            <option>Australia</option><option>Bangladesh</option><option>Brunei</option>
+                                            <option>Cambodia</option><option>Canada</option><option>China</option>
+                                            <option>France</option><option>Germany</option><option>India</option>
+                                            <option>Indonesia</option><option>Iran</option><option>Japan</option>
+                                            <option>South Korea</option><option>Kuwait</option><option>Laos</option>
+                                            <option>Myanmar</option><option>Nepal</option><option>Nigeria</option>
+                                            <option>Oman</option><option>Pakistan</option><option>Philippines</option>
+                                            <option>Qatar</option><option>Russia</option><option>Saudi Arabia</option>
+                                            <option>Singapore</option><option>South Africa</option><option>Spain</option>
+                                            <option>Sri Lanka</option><option>Thailand</option><option>Turkey</option>
+                                            <option>UAE</option><option>UK</option><option>Ukraine</option>
+                                            <option>USA</option><option>Vietnam</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Vehicle Plate Number</label>
@@ -188,7 +301,21 @@ const submitDelivery = async () => {
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Purpose of Visit</label>
-                                        <textarea v-model="visitorForm.purpose" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold" rows="2"></textarea>
+                                        <select v-model="purposeOption" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold mb-2" required>
+                                            <option value="Friends/Family">Friends / Family</option>
+                                            <option value="Maintenance">Maintenance</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                        <div v-if="purposeOption === 'Other'" class="mt-1">
+                                            <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Please specify</label>
+                                            <input
+                                                v-model="customPurpose"
+                                                type="text"
+                                                placeholder="Enter purpose here..."
+                                                class="w-full bg-gray-50 dark:bg-gray-800 border-indigo-200 dark:border-indigo-900/40 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 font-bold"
+                                                required
+                                            />
+                                        </div>
                                         <div v-if="visitorForm.errors.purpose" class="text-red-500 text-xs mt-1">{{ visitorForm.errors.purpose }}</div>
                                     </div>
                                 </div>
@@ -222,42 +349,192 @@ const submitDelivery = async () => {
                                         </div>
                                         <div>
                                             <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Company</label>
-                                            <input v-model="deliveryForm.company" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold dark:placeholder-gray-500" placeholder="Lalamove / Grab">
+                                            <select v-model="deliveryForm.company" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold text-sm" required>
+                                                <option value="">Select Company</option>
+                                                <option value="Grab">Grab</option>
+                                                <option value="Shopee">Shopee</option>
+                                                <option value="FoodPanda">FoodPanda</option>
+                                                <option value="Lalamove">Lalamove</option>
+                                                <option value="DHL">DHL</option>
+                                                <option value="PosLaju">PosLaju</option>
+                                                <option value="J&T">J&T</option>
+                                                <option value="Others">Others</option>
+                                            </select>
+                                            <input
+                                                v-if="deliveryForm.company === 'Others'"
+                                                v-model="deliveryOtherCompany"
+                                                type="text"
+                                                class="w-full mt-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold text-sm px-3 py-2"
+                                                placeholder="Please specify company name"
+                                            />
                                             <div v-if="deliveryForm.errors.company" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.company }}</div>
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / ID Number</label>
-                                        <input v-model="deliveryForm.ic_number" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold">
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Identity Type</label>
+                                        <div class="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-2">
+                                            <button type="button" @click="deliveryCitizenType = 'citizen'; deliveryForm.ic_number = ''; deliveryCountry = ''"
+                                                class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all"
+                                                :class="deliveryCitizenType === 'citizen' ? 'bg-orange-600 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-400'">
+                                                🇲🇾 MY / PR
+                                            </button>
+                                            <button type="button" @click="deliveryCitizenType = 'international'; deliveryForm.ic_number = ''; deliveryCountry = ''"
+                                                class="flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider transition-all border-l border-gray-200 dark:border-gray-700"
+                                                :class="deliveryCitizenType === 'international' ? 'bg-orange-600 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-400'">
+                                                🌍 Intl
+                                            </button>
+                                        </div>
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                                            {{ deliveryCitizenType === 'citizen' ? 'IC Number' : 'Passport Number' }}
+                                        </label>
+                                        <input v-if="deliveryCitizenType === 'citizen'"
+                                            :value="deliveryForm.ic_number"
+                                            @input="formatICFor(deliveryForm, $event)"
+                                            type="text"
+                                            class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold"
+                                            placeholder="e.g. 950101-14-1234" maxlength="14" />
+                                        <input v-else
+                                            v-model="deliveryForm.ic_number"
+                                            type="text"
+                                            class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold"
+                                            placeholder="Enter Passport Number" />
                                         <div v-if="deliveryForm.errors.ic_number" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.ic_number }}</div>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Vehicle No.</label>
-                                            <input v-model="deliveryForm.vehicle_number" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold">
-                                            <div v-if="deliveryForm.errors.vehicle_number" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.vehicle_number }}</div>
+                                    <div v-if="deliveryCitizenType === 'international'">
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Country of Origin</label>
+                                        <select v-model="deliveryCountry" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold text-sm">
+                                            <option value="">Select Country</option>
+                                            <option>Australia</option><option>Bangladesh</option><option>Brunei</option>
+                                            <option>Cambodia</option><option>Canada</option><option>China</option>
+                                            <option>France</option><option>Germany</option><option>India</option>
+                                            <option>Indonesia</option><option>Iran</option><option>Japan</option>
+                                            <option>South Korea</option><option>Kuwait</option><option>Laos</option>
+                                            <option>Myanmar</option><option>Nepal</option><option>Nigeria</option>
+                                            <option>Oman</option><option>Pakistan</option><option>Philippines</option>
+                                            <option>Qatar</option><option>Russia</option><option>Saudi Arabia</option>
+                                            <option>Singapore</option><option>South Africa</option><option>Spain</option>
+                                            <option>Sri Lanka</option><option>Thailand</option><option>Turkey</option>
+                                            <option>UAE</option><option>UK</option><option>Ukraine</option>
+                                            <option>USA</option><option>Vietnam</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Vehicle No.</label>
+                                        <input v-model="deliveryForm.vehicle_number" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold">
+                                        <div v-if="deliveryForm.errors.vehicle_number" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.vehicle_number }}</div>
+                                    </div>
+
+                                    <!-- Single / Multi Toggle -->
+                                    <div>
+                                        <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Delivery Type</p>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                @click="deliveryMode = 'single'"
+                                                class="flex flex-col items-center rounded-2xl border-2 p-3 transition-all"
+                                                :class="deliveryMode === 'single'
+                                                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950 dark:border-orange-600 shadow-md ring-2 ring-orange-200 dark:ring-orange-850'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-orange-350 dark:hover:border-orange-600'"
+                                            >
+                                                <span class="text-xl mb-1">📦</span>
+                                                <span class="text-xs font-black uppercase" :class="deliveryMode === 'single' ? 'text-orange-700 dark:text-orange-300' : 'text-gray-600 dark:text-gray-400'">Single</span>
+                                                <span class="text-[9px] mt-0.5 text-gray-400 dark:text-gray-500">One unit only</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click="deliveryMode = 'multi'"
+                                                class="flex flex-col items-center rounded-2xl border-2 p-3 transition-all"
+                                                :class="deliveryMode === 'multi'
+                                                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-950 dark:border-orange-600 shadow-md ring-2 ring-orange-200 dark:ring-orange-850'
+                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-orange-350 dark:hover:border-orange-600'"
+                                            >
+                                                <span class="text-xl mb-1">🛒</span>
+                                                <span class="text-xs font-black uppercase" :class="deliveryMode === 'multi' ? 'text-orange-700 dark:text-orange-300' : 'text-gray-600 dark:text-gray-400'">Many</span>
+                                                <span class="text-[9px] mt-0.5 text-gray-400 dark:text-gray-500">Several units</span>
+                                            </button>
                                         </div>
+                                    </div>
+
+                                    <!-- Conditional Inputs: Single Mode -->
+                                    <div v-if="deliveryMode === 'single'" class="space-y-4">
                                         <div>
-                                            <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Unit (Opt)</label>
+                                            <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Destination Unit</label>
                                             <select v-model="deliveryForm.unit_number" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold px-2 py-2 text-sm">
-                                                <option value="">Select Unit (Optional)</option>
+                                                <option value="">Select Unit</option>
                                                 <option v-for="unit in units" :key="unit.id" :value="unit.formatted_unit">
                                                     {{ unit.formatted_unit }}
                                                 </option>
                                             </select>
                                             <div v-if="deliveryForm.errors.unit_number" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.unit_number }}</div>
                                         </div>
+                                        <div>
+                                            <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Person to Meet (Host Name)</label>
+                                            <input v-model="deliveryForm.host_name" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold dark:placeholder-gray-500" placeholder="Who are you delivering to?">
+                                            <div v-if="deliveryForm.errors.host_name" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.host_name }}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label class="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Person to Meet (Host Name - Opt)</label>
-                                        <input v-model="deliveryForm.host_name" type="text" class="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold dark:placeholder-gray-500" placeholder="Who are you delivering to?">
-                                        <div v-if="deliveryForm.errors.host_name" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.host_name }}</div>
+
+                                    <!-- Conditional Inputs: Multi Mode -->
+                                    <div v-else class="space-y-4">
+                                        <div class="bg-orange-50/50 dark:bg-orange-950/20 border border-orange-100/60 dark:border-orange-900/30 rounded-2xl p-4 space-y-3">
+                                            <p class="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest">Add Destination Stops</p>
+                                            
+                                            <div>
+                                                <label class="block text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Select Stop Unit</label>
+                                                <select v-model="tempDeliveryUnit" class="w-full bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold text-xs">
+                                                    <option value="">Select Unit</option>
+                                                    <option v-for="unit in units" :key="unit.id" :value="unit.formatted_unit">
+                                                        {{ unit.formatted_unit }}
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Resident to Visit</label>
+                                                <input v-model="tempDeliveryHost" type="text" placeholder="Resident full name for this unit" class="w-full bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-xl focus:ring-orange-500 focus:border-orange-500 font-bold text-xs">
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                @click="addDeliveryStop"
+                                                :disabled="!tempDeliveryUnit || !tempDeliveryHost.trim()"
+                                                class="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider transition-all disabled:opacity-50"
+                                            >
+                                                ➕ ADD STOP
+                                            </button>
+                                        </div>
+
+                                        <!-- Stops List -->
+                                        <div class="space-y-2">
+                                            <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                                                Stops Added ({{ deliveryStops.length }})
+                                            </p>
+                                            <ul v-if="deliveryStops.length > 0" class="space-y-2">
+                                                <li
+                                                    v-for="(stop, index) in deliveryStops"
+                                                    :key="stop.unit_number"
+                                                    class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 dark:text-gray-200"
+                                                >
+                                                    <div class="flex flex-col">
+                                                        <span class="text-orange-600 dark:text-orange-450 font-black">UNIT {{ stop.unit_number }}</span>
+                                                        <span class="text-gray-400 dark:text-gray-500">👤 {{ stop.host_name }}</span>
+                                                    </div>
+                                                    <button type="button" class="text-red-500 font-black uppercase text-[10px]" @click="removeDeliveryStop(index)">
+                                                        Remove
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                            <p v-else class="text-xs text-gray-400 italic text-center py-2">No stops added yet. (Min 2 required)</p>
+                                            
+                                            <div v-if="deliveryForm.errors.unit_numbers" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.unit_numbers }}</div>
+                                            <div v-if="deliveryForm.errors.host_names" class="text-red-500 text-xs mt-1">{{ deliveryForm.errors.host_names }}</div>
+                                        </div>
                                     </div>
                                 </div>
                                 <button 
                                     @click="submitDelivery"
-                                    :disabled="!isFaceDetected || deliveryForm.processing"
-                                    class="mt-8 w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-100 dark:shadow-none transition-all disabled:opacity-50"
+                                    :disabled="!isFaceDetected || deliveryForm.processing || (deliveryMode === 'multi' && deliveryStops.length < 2) || (deliveryMode === 'single' && (!deliveryForm.unit_number || !deliveryForm.host_name))"
+                                    class="mt-8 w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-100 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {{ deliveryForm.processing ? 'PROCESSING...' : '✅ REGISTER & REQUEST ENTRY' }}
                                 </button>

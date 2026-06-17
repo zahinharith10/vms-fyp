@@ -12,6 +12,25 @@ const props = defineProps({
 const delivery = props.delivery || usePage().props.auth.user;
 const isEditing = ref(false);
 
+// Detect citizen type from stored value (dashes = IC, otherwise passport)
+const detectType = (ic) => ic && /^\d{6}-\d{2}-\d{4}$/.test(ic) ? 'citizen' : 'international';
+const citizenType = ref(detectType(delivery.ic_number || ''));
+const countryOfOrigin = ref('');
+
+// IC input mask: ######-##-####
+const formatIC = (e) => {
+    let digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+    let masked = digits;
+    if (digits.length > 6) masked = digits.slice(0, 6) + '-' + digits.slice(6);
+    if (digits.length > 8) masked = digits.slice(0, 6) + '-' + digits.slice(6, 8) + '-' + digits.slice(8);
+    form.ic_number = masked;
+};
+
+const onCitizenTypeChange = () => {
+    form.ic_number = '';
+    countryOfOrigin.value = '';
+};
+
 const form = useForm({
     _method: 'PATCH',
     name: delivery.name,
@@ -146,14 +165,57 @@ const cancelEdit = () => {
                                 <div v-if="form.errors.phone" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.phone }}</div>
                             </div>
 
-                            <!-- IC Number -->
-                            <div>
-                                <label for="ic_number" class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">IC Number</label>
-                                <input id="ic_number" type="text" v-model="form.ic_number"
+                            <!-- Identity Type Toggle + IC/Passport -->
+                            <div class="md:col-span-2">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Identity Type</label>
+                                <div class="flex rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-850 mb-3" :class="!isEditing ? 'opacity-60 pointer-events-none' : ''">
+                                    <button type="button" @click="citizenType = 'citizen'; onCitizenTypeChange()"
+                                        class="flex-1 py-3 text-xs font-black uppercase tracking-wider transition-all"
+                                        :class="citizenType === 'citizen' ? 'bg-orange-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'">
+                                        🇲🇾 Malaysian / PR
+                                    </button>
+                                    <button type="button" @click="citizenType = 'international'; onCitizenTypeChange()"
+                                        class="flex-1 py-3 text-xs font-black uppercase tracking-wider transition-all border-l border-gray-100 dark:border-gray-855"
+                                        :class="citizenType === 'international' ? 'bg-orange-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'">
+                                        🌍 International
+                                    </button>
+                                </div>
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                                    {{ citizenType === 'citizen' ? 'IC Number' : 'Passport Number' }}
+                                </label>
+                                <input v-if="citizenType === 'citizen'"
+                                    :value="form.ic_number"
+                                    @input="formatIC"
                                     :disabled="!isEditing"
                                     :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
-                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner" required />
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner"
+                                    placeholder="e.g. 950101-14-1234" maxlength="14" required />
+                                <input v-else
+                                    v-model="form.ic_number"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 shadow-none cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner"
+                                    placeholder="Enter Passport Number" required />
+                                <p v-if="citizenType === 'citizen'" class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1">Format: ######-##-#### (12 digits)</p>
                                 <div v-if="form.errors.ic_number" class="mt-2 text-xs text-red-500 font-black italic uppercase tracking-widest">{{ form.errors.ic_number }}</div>
+                            </div>
+
+                            <!-- Country of Origin (International only) -->
+                            <div v-if="citizenType === 'international'" class="md:col-span-2">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Country of Origin</label>
+                                <select v-model="countryOfOrigin" :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-100 dark:bg-gray-800/50 border-transparent text-gray-400 dark:text-gray-500 cursor-not-allowed font-black italic tracking-widest' : 'bg-gray-55 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 focus:border-orange-500 focus:ring-orange-500 text-gray-700 dark:text-white border-gray-100 dark:border-gray-700 font-bold']"
+                                    class="block w-full rounded-2xl py-4 px-4 shadow-inner">
+                                    <option value="">Select Country</option>
+                                    <option>Australia</option><option>Bangladesh</option><option>Brunei</option>
+                                    <option>Cambodia</option><option>Canada</option><option>China</option>
+                                    <option>France</option><option>Germany</option><option>India</option>
+                                    <option>Indonesia</option><option>Japan</option><option>Laos</option>
+                                    <option>Myanmar</option><option>New Zealand</option><option>Philippines</option>
+                                    <option>Singapore</option><option>South Korea</option><option>Thailand</option>
+                                    <option>United Kingdom</option><option>United States</option><option>Vietnam</option>
+                                    <option>Other</option>
+                                </select>
                             </div>
 
                             <!-- Delivery Company -->

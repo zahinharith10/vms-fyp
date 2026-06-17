@@ -12,19 +12,39 @@ const props = defineProps({
     isCurrentUser: Boolean,
 });
 
-// Check if visitor profile is completed
+// Check if visitor profile is completed (phone must also be present and not a placeholder)
 const isProfileComplete = computed(() => {
     return props.visitor && 
            props.visitor.photo && 
            props.visitor.ic_number && 
            props.visitor.face_descriptor && 
            props.visitor.vehicle_number && 
-           props.visitor.vehicle_number !== '-';
+           props.visitor.vehicle_number !== '-' &&
+           props.visitor.phone &&
+           props.visitor.phone !== '-';
 });
+
+const detectType = (ic) => ic && /^\d{6}-\d{2}-\d{4}$/.test(ic) ? 'citizen' : 'international';
+const citizenType = ref(detectType(props.visitor?.ic_number || ''));
+const countryOfOrigin = ref('');
+
+const formatIC = (e) => {
+    let digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+    let masked = digits;
+    if (digits.length > 6) masked = digits.slice(0, 6) + '-' + digits.slice(6);
+    if (digits.length > 8) masked = digits.slice(0, 6) + '-' + digits.slice(6, 8) + '-' + digits.slice(8);
+    form.ic_number = masked;
+};
+
+const onCitizenTypeChange = () => {
+    form.ic_number = '';
+    countryOfOrigin.value = '';
+};
 
 const form = useForm({
     ic_number: props.visitor?.ic_number || '',
     vehicle_number: props.visitor?.vehicle_number && props.visitor.vehicle_number !== '-' ? props.visitor.vehicle_number : '',
+    phone: props.visitor?.phone && props.visitor.phone !== '-' ? props.visitor.phone : '',
     face_descriptor: null,
     photo: null,
 });
@@ -123,8 +143,26 @@ const verifyVerificationOtp = async () => {
             <h1 class="text-2xl font-black text-gray-800 dark:text-white tracking-tighter uppercase italic mt-2">Sri Ayu Residency</h1>
         </div>
 
+        <!-- Expired Pass View -->
+        <div v-if="visit.status === 'Expired'" class="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800">
+            <!-- Banner -->
+            <div class="bg-gradient-to-r from-red-500 to-red-650 p-6 text-white text-center">
+                <span class="text-5xl block mb-2">⚠️</span>
+                <h2 class="text-xl font-bold uppercase tracking-wide">Pass Expired</h2>
+                <p class="text-xs text-red-100 mt-1">This guest pass is no longer valid</p>
+            </div>
+            <div class="p-8 text-center space-y-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-semibold leading-relaxed">
+                    This pre-approved pass has expired. Pre-approved guest passes are only valid for 24 hours after approval.
+                </p>
+                <div class="p-4 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900 rounded-2xl text-xs font-bold text-red-850 dark:text-red-400 text-left">
+                    Please contact the resident of unit <span class="font-black underline">{{ visit.unit_number }}</span> to request a new entry pass.
+                </div>
+            </div>
+        </div>
+
         <!-- Secure Email Verification View (If not logged in as the correct visitor) -->
-        <div v-if="!isCurrentUser" class="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800">
+        <div v-else-if="!isCurrentUser" class="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800">
             <!-- Banner -->
             <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 p-6 text-white text-center">
                 <span class="text-5xl block mb-2">🔒</span>
@@ -263,18 +301,74 @@ const verifyVerificationOtp = async () => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Left Column: Details -->
                     <div class="space-y-4">
-                        <!-- IC Number -->
+                        <!-- Identity Type Toggle + IC/Passport -->
                         <div>
-                            <label for="ic_number" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC/Passport Number</label>
-                            <input 
-                                id="ic_number" 
-                                type="text" 
-                                placeholder="Enter IC or Passport"
-                                v-model="form.ic_number" 
+                            <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Identity Type</label>
+                            <div class="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 mb-3">
+                                <button type="button" @click="citizenType = 'citizen'; onCitizenTypeChange()"
+                                    class="flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all"
+                                    :class="citizenType === 'citizen' ? 'bg-indigo-600 text-white' : 'bg-gray-55 dark:bg-gray-800 text-gray-400 hover:bg-gray-100'">
+                                    🇲🇾 Malaysian / PR
+                                </button>
+                                <button type="button" @click="citizenType = 'international'; onCitizenTypeChange()"
+                                    class="flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all border-l border-gray-200 dark:border-gray-700"
+                                    :class="citizenType === 'international' ? 'bg-indigo-600 text-white' : 'bg-gray-55 dark:bg-gray-800 text-gray-400 hover:bg-gray-100'">
+                                    🌍 International
+                                </button>
+                            </div>
+                            
+                            <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                                {{ citizenType === 'citizen' ? 'IC Number' : 'Passport Number' }}
+                            </label>
+                            <input v-if="citizenType === 'citizen'"
+                                :value="form.ic_number"
+                                @input="formatIC"
+                                type="text"
+                                placeholder="e.g. 950101-14-1234"
+                                maxlength="14"
                                 class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
                                 required 
                             />
+                            <input v-else
+                                v-model="form.ic_number"
+                                type="text"
+                                placeholder="Enter Passport Number"
+                                class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
+                                required 
+                            />
+                            <p v-if="citizenType === 'citizen'" class="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mt-1">Format: ######-##-#### (12 digits)</p>
                             <div v-if="form.errors.ic_number" class="text-red-500 text-xs mt-1 font-bold">{{ form.errors.ic_number }}</div>
+                        </div>
+
+                        <!-- Country of Origin (International only) -->
+                        <div v-if="citizenType === 'international'">
+                            <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Country of Origin</label>
+                            <select v-model="countryOfOrigin"
+                                class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4">
+                                <option value="">Select Country</option>
+                                <option>Australia</option><option>Bangladesh</option><option>Brunei</option>
+                                <option>Cambodia</option><option>Canada</option><option>China</option>
+                                <option>France</option><option>Germany</option><option>India</option>
+                                <option>Indonesia</option><option>Japan</option><option>Laos</option>
+                                <option>Myanmar</option><option>New Zealand</option><option>Philippines</option>
+                                <option>Singapore</option><option>South Korea</option><option>Thailand</option>
+                                <option>United Kingdom</option><option>United States</option><option>Vietnam</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div>
+                            <label for="phone" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Phone Number <span class="text-red-500">*</span></label>
+                            <input 
+                                id="phone" 
+                                type="tel" 
+                                placeholder="e.g. 0123456789"
+                                v-model="form.phone" 
+                                class="block w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-bold text-gray-700 dark:text-gray-300 py-3 px-4" 
+                                required 
+                            />
+                            <div v-if="form.errors.phone" class="text-red-500 text-xs mt-1 font-bold">{{ form.errors.phone }}</div>
                         </div>
 
                         <!-- Vehicle Plate -->

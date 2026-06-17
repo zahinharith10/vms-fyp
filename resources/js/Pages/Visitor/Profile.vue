@@ -1,12 +1,17 @@
 <script setup>
 import VisitorAuthenticatedLayout from '@/Layouts/VisitorAuthenticatedLayout.vue';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import FaceCapture from '@/Components/FaceCapture.vue';
 
 const page = usePage();
 const visitor = page.props.visitor || page.props.auth.user;
 const isEditing = ref(false);
+
+// Detect citizen type from stored value (dashes = IC, otherwise passport)
+const detectType = (ic) => ic && /^\d{6}-\d{2}-\d{4}$/.test(ic) ? 'citizen' : 'international';
+const citizenType = ref(detectType(visitor?.ic_number || ''));
+const countryOfOrigin = ref('');
 
 const form = useForm({
     _method: 'PATCH',
@@ -17,6 +22,20 @@ const form = useForm({
     face_descriptor: null,
     photo: null,
 });
+
+// IC input mask: ######-##-####
+const formatIC = (e) => {
+    let digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+    let masked = digits;
+    if (digits.length > 6) masked = digits.slice(0, 6) + '-' + digits.slice(6);
+    if (digits.length > 8) masked = digits.slice(0, 6) + '-' + digits.slice(6, 8) + '-' + digits.slice(8);
+    form.ic_number = masked;
+};
+
+const onCitizenTypeChange = () => {
+    form.ic_number = '';
+    countryOfOrigin.value = '';
+};
 
 const status = ref(null);
 const showFaceCapture = ref(false);
@@ -156,14 +175,63 @@ const cancelEdit = () => {
                                 <div v-if="form.errors.phone" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.phone }}</div>
                             </div>
 
-                            <!-- IC Number -->
-                            <div>
-                                <label for="ic_number" class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">IC / Identification Number</label>
-                                <input id="ic_number" type="text" v-model="form.ic_number"
+                            <!-- Identity Type Toggle + IC/Passport -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Identity Type</label>
+                                <div class="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 mb-3" :class="!isEditing ? 'opacity-60 pointer-events-none' : ''">
+                                    <button type="button" @click="citizenType = 'citizen'; onCitizenTypeChange()"
+                                        class="flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all"
+                                        :class="citizenType === 'citizen' ? 'bg-purple-600 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 hover:bg-gray-100'">
+                                        🇲🇾 Malaysian / PR
+                                    </button>
+                                    <button type="button" @click="citizenType = 'international'; onCitizenTypeChange()"
+                                        class="flex-1 py-2 text-xs font-black uppercase tracking-wider transition-all border-l border-gray-200 dark:border-gray-700"
+                                        :class="citizenType === 'international' ? 'bg-purple-600 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 hover:bg-gray-100'">
+                                        🌍 International
+                                    </button>
+                                </div>
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">
+                                    {{ citizenType === 'citizen' ? 'IC Number' : 'Passport Number' }}
+                                </label>
+                                <input v-if="citizenType === 'citizen'"
+                                    :value="form.ic_number"
+                                    @input="formatIC"
                                     :disabled="!isEditing"
                                     :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
-                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold" placeholder="Required" required />
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold"
+                                    placeholder="e.g. 950101-14-1234" maxlength="14" required />
+                                <input v-else
+                                    v-model="form.ic_number"
+                                    :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 shadow-none cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold"
+                                    placeholder="Enter Passport Number" required />
+                                <p v-if="citizenType === 'citizen'" class="text-xs text-gray-400 mt-1">Format: ######-##-#### (12 digits)</p>
                                 <div v-if="form.errors.ic_number" class="mt-2 text-sm text-red-600 dark:text-red-400 font-bold">{{ form.errors.ic_number }}</div>
+                            </div>
+
+                            <!-- Country of Origin (International only) -->
+                            <div v-if="citizenType === 'international'" class="md:col-span-2">
+                                <label class="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Country of Origin</label>
+                                <select v-model="countryOfOrigin" :disabled="!isEditing"
+                                    :class="[!isEditing ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent text-gray-500 dark:text-gray-400 cursor-not-allowed' : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200']"
+                                    class="block w-full focus:border-purple-500 focus:ring-purple-500 rounded-xl shadow-sm font-bold">
+                                    <option value="">Select Country</option>
+                                    <option>Australia</option><option>Bangladesh</option><option>Brunei</option>
+                                    <option>Cambodia</option><option>Canada</option><option>China</option>
+                                    <option>France</option><option>Germany</option><option>India</option>
+                                    <option>Indonesia</option><option>Iran</option><option>Iraq</option>
+                                    <option>Italy</option><option>Japan</option><option>South Korea</option>
+                                    <option>Kuwait</option><option>Laos</option><option>Myanmar</option>
+                                    <option>Nepal</option><option>Netherlands</option><option>New Zealand</option>
+                                    <option>Nigeria</option><option>Oman</option><option>Pakistan</option>
+                                    <option>Philippines</option><option>Qatar</option><option>Russia</option>
+                                    <option>Saudi Arabia</option><option>Singapore</option><option>South Africa</option>
+                                    <option>Spain</option><option>Sri Lanka</option><option>Taiwan</option>
+                                    <option>Thailand</option><option>Turkey</option><option>UAE</option>
+                                    <option>UK</option><option>Ukraine</option><option>USA</option>
+                                    <option>Vietnam</option><option>Yemen</option>
+                                </select>
                             </div>
 
                             <!-- Vehicle Number -->

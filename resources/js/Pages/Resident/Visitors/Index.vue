@@ -49,6 +49,29 @@ const closeShareModal = () => {
     }, 200);
 };
 
+// --- Confirmation Modal ---
+const confirmModal = ref({
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirm',
+    confirmClass: 'bg-indigo-600 hover:bg-indigo-700',
+    action: null,
+});
+
+const openConfirm = ({ title, message, confirmLabel = 'Confirm', confirmClass = 'bg-indigo-600 hover:bg-indigo-700', action }) => {
+    confirmModal.value = { open: true, title, message, confirmLabel, confirmClass, action };
+};
+
+const closeConfirm = () => {
+    confirmModal.value = { open: false, title: '', message: '', confirmLabel: 'Confirm', confirmClass: 'bg-indigo-600 hover:bg-indigo-700', action: null };
+};
+
+const executeConfirm = () => {
+    if (confirmModal.value.action) confirmModal.value.action();
+    closeConfirm();
+};
+
 const shareUrl = computed(() => {
     if (!selectedShareVisit.value) return '';
     return `${window.location.origin}/pass/${selectedShareVisit.value.qr_code_token}`;
@@ -299,7 +322,7 @@ onUnmounted(() => {
                                                     :class="{
                                                         'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': visit.status === 'Pending',
                                                         'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400': visit.status === 'Approved',
-                                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': visit.status === 'Rejected',
+                                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': visit.status === 'Rejected' || visit.status === 'Cancelled' || visit.status === 'Expired',
                                                         'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': visit.status === 'Checked In',
                                                         'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400': visit.status === 'Checked Out'
                                                     }">
@@ -371,25 +394,29 @@ onUnmounted(() => {
                                             >
                                                 Share Pass
                                             </button>
+                                            <!-- Cancel Option for Approved Guests -->
+                                            <button 
+                                                v-if="visit.status === 'Approved'"
+                                                @click="openConfirm({ title: 'Cancel Visit Request?', message: `Are you sure you want to cancel the visit request for ${visit.visitor?.name || 'this visitor'}? This cannot be undone.`, confirmLabel: 'Yes, Cancel', confirmClass: 'bg-red-600 hover:bg-red-700', action: () => router.post(route('resident.visitors.cancel', visit.id)) })"
+                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition"
+                                            >
+                                                Cancel
+                                            </button>
  
                                             <!-- Approval Buttons (Only for Pending) -->
                                             <template v-if="visit.status === 'Pending'">
-                                                <Link 
-                                                    :href="route('resident.visitors.approve', visit.id)" 
-                                                    method="post" 
-                                                    as="button"
+                                                <button 
+                                                    @click="openConfirm({ title: 'Approve Visit?', message: `Are you sure you want to approve the visit request from ${visit.visitor?.name || 'this visitor'}?`, confirmLabel: 'Yes, Approve', confirmClass: 'bg-green-600 hover:bg-green-700', action: () => router.post(route('resident.visitors.approve', visit.id)) })"
                                                     class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition"
                                                 >
                                                     Approve
-                                                </Link>
-                                                <Link 
-                                                    :href="route('resident.visitors.reject', visit.id)" 
-                                                    method="post" 
-                                                    as="button"
+                                                </button>
+                                                <button 
+                                                    @click="openConfirm({ title: 'Reject Visit?', message: `Are you sure you want to reject the visit request from ${visit.visitor?.name || 'this visitor'}?`, confirmLabel: 'Yes, Reject', confirmClass: 'bg-orange-600 hover:bg-orange-700', action: () => router.post(route('resident.visitors.reject', visit.id)) })"
                                                     class="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 bg-orange-50 dark:bg-orange-900/30 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition"
                                                 >
                                                     Reject
-                                                </Link>
+                                                </button>
                                             </template>
                                         </div>
                                     </td>
@@ -461,7 +488,7 @@ onUnmounted(() => {
                                 </template>
 
                                 <tr v-if="(activeTab === 'pending' ? pendingVisits : historyVisits).length === 0">
-                                    <td colspan="9" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No {{ activeTab === 'pending' ? 'pending requests' : 'visitors' }} found.</td>
+                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No {{ activeTab === 'pending' ? 'pending requests' : 'visitors' }} found.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -515,11 +542,11 @@ onUnmounted(() => {
                                             :class="{
                                                 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': log.status === 'Pending',
                                                 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400': log.status === 'Approved',
-                                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': log.status === 'Rejected',
-                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': log.status === 'Checked In' || log.entry_time,
-                                                'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400': log.exit_time
+                                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': log.status === 'Rejected' || log.status === 'Cancelled' || log.status === 'Expired',
+                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': (log.status === 'Checked In' || log.entry_time) && log.status !== 'Cancelled' && log.status !== 'Expired',
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400': log.exit_time && log.status !== 'Cancelled' && log.status !== 'Expired'
                                             }">
-                                            {{ log.exit_time ? 'Completed' : (log.entry_time ? 'In Progress' : log.status) }}
+                                            {{ log.status === 'Cancelled' ? 'Cancelled' : (log.status === 'Expired' ? 'Expired' : (log.exit_time ? 'Completed' : (log.entry_time ? 'In Progress' : log.status))) }}
                                         </span>
                                         <div v-if="log.approved_by" class="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-1">
                                             by {{ log.approved_by }}
@@ -537,30 +564,35 @@ onUnmounted(() => {
                                         <div v-if="!log.entry_time && !log.exit_time" class="text-gray-400 dark:text-gray-500 italic">—</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-right text-sm font-medium">
-                                        <!-- Approval Buttons (Only for Pending) -->
-                                        <template v-if="log.status === 'Pending'">
-                                            <Link 
-                                                :href="route('resident.deliveries.approve', log.id)" 
-                                                method="post" 
-                                                as="button"
-                                                class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded mr-2 font-bold"
+                                        <div class="flex items-center justify-end gap-2 flex-nowrap">
+                                            <!-- Approval Buttons (Only for Pending) -->
+                                            <template v-if="log.status === 'Pending'">
+                                                <button 
+                                                    @click="openConfirm({ title: 'Approve Delivery?', message: `Are you sure you want to approve the delivery request from ${log.personnel?.name || 'this courier'}?`, confirmLabel: 'Yes, Approve', confirmClass: 'bg-green-600 hover:bg-green-700', action: () => router.post(route('resident.deliveries.approve', log.id)) })"
+                                                    class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition"
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button 
+                                                    @click="openConfirm({ title: 'Reject Delivery?', message: `Are you sure you want to reject the delivery request from ${log.personnel?.name || 'this courier'}?`, confirmLabel: 'Yes, Reject', confirmClass: 'bg-orange-600 hover:bg-orange-700', action: () => router.post(route('resident.deliveries.reject', log.id)) })"
+                                                    class="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 bg-orange-50 dark:bg-orange-900/30 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition"
+                                                >
+                                                    Reject
+                                                </button>
+                                            </template>
+                                            <!-- Cancel Option for Approved Deliveries -->
+                                            <button 
+                                                v-if="log.status === 'Approved'"
+                                                @click="openConfirm({ title: 'Cancel Delivery?', message: `Are you sure you want to cancel the delivery from ${log.personnel?.name || 'this courier'}? This cannot be undone.`, confirmLabel: 'Yes, Cancel', confirmClass: 'bg-red-600 hover:bg-red-700', action: () => router.post(route('resident.deliveries.cancel', log.id)) })"
+                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition"
                                             >
-                                                Approve
-                                            </Link>
-                                            <Link 
-                                                :href="route('resident.deliveries.reject', log.id)" 
-                                                method="post" 
-                                                as="button"
-                                                class="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 bg-orange-50 dark:bg-orange-900/30 px-3 py-1 rounded font-bold"
-                                            >
-                                                Reject
-                                            </Link>
-                                        </template>
-                                        <span v-else class="text-gray-400 dark:text-gray-500 italic text-xs">No actions</span>
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="(activeTab === 'pending' ? pendingDeliveries : historyDeliveries).length === 0">
-                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No {{ activeTab === 'pending' ? 'pending delivery requests' : 'delivery logs' }} found.</td>
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No {{ activeTab === 'pending' ? 'pending delivery requests' : 'delivery logs' }} found.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -776,5 +808,62 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
+
+        <!-- ====== Confirmation Modal ====== -->
+        <Transition
+            enter-active-class="transition ease-out duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition ease-in duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div v-if="confirmModal.open" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <!-- Backdrop -->
+                <div @click="closeConfirm" class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+
+                <!-- Modal Card -->
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0 scale-95"
+                    enter-to-class="opacity-100 scale-100"
+                    leave-active-class="transition ease-in duration-150"
+                    leave-from-class="opacity-100 scale-100"
+                    leave-to-class="opacity-0 scale-95"
+                >
+                    <div v-if="confirmModal.open" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-sm w-full border border-gray-100 dark:border-gray-800 overflow-hidden">
+                        <!-- Header -->
+                        <div class="px-6 pt-6 pb-4 flex items-start gap-4">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-2xl bg-yellow-50 dark:bg-yellow-900/30 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-base font-black text-gray-900 dark:text-gray-100 tracking-tight">{{ confirmModal.title }}</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{{ confirmModal.message }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="px-6 pb-6 flex items-center justify-end gap-3">
+                            <button
+                                @click="closeConfirm"
+                                class="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                            >
+                                No, Go Back
+                            </button>
+                            <button
+                                @click="executeConfirm"
+                                :class="['px-5 py-2.5 rounded-xl text-sm font-black text-white transition-all shadow-sm', confirmModal.confirmClass]"
+                            >
+                                {{ confirmModal.confirmLabel }}
+                            </button>
+                        </div>
+                    </div>
+                </Transition>
+            </div>
+        </Transition>
+
     </ResidentAuthenticatedLayout>
 </template>

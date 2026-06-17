@@ -170,7 +170,7 @@ class GuardScanController extends Controller
             'visitors_today' => Visit::where('check_in_time', '>=', $today)->count() + DeliveryLog::where('entry_time', '>=', $today)->count(),
             'active_visitors' => Visit::where('status', 'Checked In')->count() + DeliveryLog::where('entry_time', '!=', null)->whereNull('exit_time')->count(),
             'pending_approvals' => Visit::where('status', 'Pending')->count() + DeliveryLog::where('status', 'Pending')->count(),
-            'approved_upcoming' => Visit::where('status', 'Approved')->count() + DeliveryLog::where('status', 'Approved')->whereNull('entry_time')->count(),
+            'approved_upcoming' => Visit::where('status', 'Approved')->active()->count() + DeliveryLog::where('status', 'Approved')->whereNull('entry_time')->active()->count(),
             'occupied_parking' => $occupiedLotsMap->count(),
             'total_parking' => 15,
         ];
@@ -178,6 +178,7 @@ class GuardScanController extends Controller
         $approvedDeliveries = DeliveryLog::with('personnel')
             ->where('status', 'Approved')
             ->whereNull('entry_time')
+            ->active()
             ->get();
 
         return Inertia::render('Guard/Dashboard', [
@@ -206,14 +207,16 @@ class GuardScanController extends Controller
                 ->where('id', $runId)
                 ->first();
 
-            if (! $run || $run->logs->isEmpty()) {
+            // Exclude expired logs
+            $activeLogs = $run->logs->filter(fn ($log) => !$log->is_expired);
+            if ($activeLogs->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid delivery QR code. No matching trip found.',
-                ], 404);
+                    'message' => 'This delivery QR code/trip has expired. Deliveries must be checked in within 24 hours of approval.',
+                ], 410);
             }
 
-            $primaryLog = $run->logs->first();
+            $primaryLog = $activeLogs->first();
 
             return response()->json([
                 'success' => true,
@@ -223,12 +226,12 @@ class GuardScanController extends Controller
                     'run_id' => $run->id,
                     'is_delivery_run' => true,
                     'is_multi' => $run->type === 'multi',
-                    'destinations' => $run->logs->pluck('destination')->values()->all(),
+                    'destinations' => $activeLogs->pluck('destination')->values()->all(),
                     'visitor_name' => $run->personnel->name ?? 'Unknown',
                     'visitor_phone' => $run->personnel->phone ?? '-',
                     'visitor_photo' => $run->personnel->photo ?? null,
                     'unit_number' => $run->type === 'multi'
-                        ? $run->logs->count().' units'
+                        ? $activeLogs->count().' units'
                         : $primaryLog->destination,
                     'purpose' => $run->type === 'multi'
                         ? 'Multi-stop delivery ('.($run->personnel->company ?? 'Unknown').')'
@@ -252,6 +255,13 @@ class GuardScanController extends Controller
                     'success' => false,
                     'message' => 'Invalid delivery QR code. No matching log found.',
                 ], 404);
+            }
+
+            if ($log->is_expired) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This delivery QR code has expired. Deliveries must be checked in within 24 hours of approval.',
+                ], 410);
             }
 
             return response()->json([
@@ -286,6 +296,13 @@ class GuardScanController extends Controller
             ], 404);
         }
 
+        if ($visit->status === 'Expired') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This QR code/pass has expired. Passes are only valid for 24 hours after approval.',
+            ], 410);
+        }
+
         return response()->json([
             'success' => true,
             'is_delivery' => false,
@@ -316,6 +333,13 @@ class GuardScanController extends Controller
 
         $visit = Visit::findOrFail($request->visit_id);
 
+        if ($visit->status === 'Expired') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This guest pass QR code has expired.',
+            ], 400);
+        }
+
         if (! in_array($visit->status, ['Approved', 'Temporarily Out'])) {
             return response()->json([
                 'success' => false,
@@ -327,7 +351,9 @@ class GuardScanController extends Controller
         $hasVehicle = $visitor && ! empty($visitor->vehicle_number) && $visitor->vehicle_number !== '-' && strtolower($visitor->vehicle_number) !== 'n/a';
 
         $parkingLotNumber = $visit->parking_lot_number;
-        if ($hasVehicle && is_null($parkingLotNumber)) {
+        $parkOutside = $request->boolean('park_outside', false);
+
+        if ($visit->status === 'Approved' && $hasVehicle && is_null($parkingLotNumber) && !$parkOutside) {
             // Find occupied parking lots
             $occupiedLots = Visit::whereIn('status', ['Checked In', 'Temporarily Out'])
                 ->whereNotNull('parking_lot_number')
@@ -420,12 +446,14 @@ class GuardScanController extends Controller
 
         if ($request->filled('run_id')) {
             $run = DeliveryRun::with('logs')->findOrFail($request->run_id);
-            $logsToCheckIn = $run->logs->filter(fn (DeliveryLog $log) => in_array($log->status, ['Approved', 'Temporarily Out'], true));
+            $logsToCheckIn = $run->logs->filter(fn (DeliveryLog $log) => 
+                in_array($log->status, ['Approved', 'Temporarily Out'], true) && !$log->is_expired
+            );
 
             if ($logsToCheckIn->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No approved delivery stops are ready for check-in.',
+                    'message' => 'No approved delivery stops are ready/active for check-in.',
                 ], 400);
             }
 
@@ -449,6 +477,13 @@ class GuardScanController extends Controller
         }
 
         $log = DeliveryLog::findOrFail($request->log_id);
+
+        if ($log->is_expired) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This delivery has expired.',
+            ], 400);
+        }
 
         if (! in_array($log->status, ['Approved', 'Temporarily Out'], true)) {
             return response()->json([
@@ -753,9 +788,40 @@ class GuardScanController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:visitors',
-            'phone' => 'required|string|unique:visitors',
-            'ic_number' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $email = strtolower(trim($value));
+                    if (\App\Models\Visitor::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Visitor.');
+                        return;
+                    }
+                    if (\App\Models\DeliveryPersonnel::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Delivery Personnel.');
+                        return;
+                    }
+                    if (\App\Models\Guard::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Guard.');
+                        return;
+                    }
+                    if (\App\Models\Resident::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Resident.');
+                        return;
+                    }
+                },
+            ],
+            'phone' => [
+                'required',
+                'string',
+                'unique:visitors',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'vehicle_number' => 'required|string|max:20',
             'unit_number' => [
                 'required',
@@ -792,6 +858,9 @@ class GuardScanController extends Controller
             'purpose' => 'required|string',
             'face_descriptor' => 'required',
             'photo' => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $photoPath = null;
@@ -844,47 +913,127 @@ class GuardScanController extends Controller
             ]);
         }
 
-        $request->validate([
+        if ($request->has('unit_numbers') && is_array($request->unit_numbers)) {
+            $normalized = array_map(fn($val) => $normalizeUnit($val), $request->unit_numbers);
+            $request->merge(['unit_numbers' => $normalized]);
+        }
+
+        $isMulti = $request->input('delivery_type') === 'multi';
+
+        $rules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:delivery_personnels',
-            'phone' => 'required|string|unique:delivery_personnels',
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $email = strtolower(trim($value));
+                    if (\App\Models\Visitor::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Visitor.');
+                        return;
+                    }
+                    if (\App\Models\DeliveryPersonnel::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Delivery Personnel.');
+                        return;
+                    }
+                    if (\App\Models\Guard::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Guard.');
+                        return;
+                    }
+                    if (\App\Models\Resident::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Resident.');
+                        return;
+                    }
+                },
+            ],
+            'phone' => [
+                'required',
+                'string',
+                'unique:delivery_personnels',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
             'company' => 'required|string',
             'vehicle_number' => 'required|string',
-            'ic_number' => 'required|string|unique:delivery_personnels',
-            'unit_number' => [
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/',
+                function ($attribute, $value, $fail) {
+                    $exists = DeliveryPersonnel::all()->contains(function ($personnel) use ($value) {
+                        return $personnel->ic_number === $value;
+                    });
+                    if ($exists) {
+                        $fail('The ' . str_replace('_', ' ', $attribute) . ' has already been taken.');
+                    }
+                },
+            ],
+            'delivery_type' => 'required|in:single,multi',
+            'face_descriptor' => 'required',
+            'photo' => 'nullable|image|max:2048',
+        ];
+
+        if ($isMulti) {
+            $rules['unit_numbers'] = 'required|array|min:2';
+            $rules['unit_numbers.*'] = [
                 'required',
                 'string',
                 function ($attribute, $value, $fail) {
                     $parts = explode('-', $value);
                     if (count($parts) !== 3) {
                         $fail('The '.$attribute.' must be in the format Block-Floor-House Number.');
-
                         return;
                     }
-
                     foreach ($parts as $part) {
                         if (! ctype_digit(trim($part)) || (int) trim($part) <= 0) {
                             $fail('Each part of the '.$attribute.' must be a positive integer.');
-
                             return;
                         }
                     }
-
                     [$block, $floor, $unit] = array_map('trim', $parts);
-
                     $exists = \App\Models\HouseUnit::where('block', $block)
                         ->where('floor', $floor)
                         ->where('unit_number', $unit)
                         ->exists();
-
                     if (! $exists) {
                         $fail('The selected house unit does not exist.');
                     }
-                },
-            ],
-            'host_name' => 'nullable|string|max:255',
-            'face_descriptor' => 'required',
-            'photo' => 'nullable|image|max:2048',
+                }
+            ];
+            $rules['host_names'] = 'required|array|min:2';
+            $rules['host_names.*'] = 'required|string|max:255';
+        } else {
+            $rules['unit_number'] = [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $parts = explode('-', $value);
+                    if (count($parts) !== 3) {
+                        $fail('The '.$attribute.' must be in the format Block-Floor-House Number.');
+                        return;
+                    }
+                    foreach ($parts as $part) {
+                        if (! ctype_digit(trim($part)) || (int) trim($part) <= 0) {
+                            $fail('Each part of the '.$attribute.' must be a positive integer.');
+                            return;
+                        }
+                    }
+                    [$block, $floor, $unit] = array_map('trim', $parts);
+                    $exists = \App\Models\HouseUnit::where('block', $block)
+                        ->where('floor', $floor)
+                        ->where('unit_number', $unit)
+                        ->exists();
+                    if (! $exists) {
+                        $fail('The selected house unit does not exist.');
+                    }
+                }
+            ];
+            $rules['host_name'] = 'required|string|max:255';
+        }
+
+        $request->validate($rules, [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
+            'unit_numbers.min' => 'You must add at least 2 destinations for multi-stop delivery.',
+            'host_names.min' => 'You must add at least 2 host names for multi-stop delivery.',
         ]);
 
         $photoPath = null;
@@ -897,7 +1046,7 @@ class GuardScanController extends Controller
             'email' => $request->email,
             'phone' => $request->phone,
             'company' => $request->company,
-            'vehicle_type' => 'Other', // Default or could be a field
+            'vehicle_type' => 'Other',
             'vehicle_number' => $request->vehicle_number,
             'ic_number' => $request->ic_number,
             'face_descriptor' => json_encode($request->face_descriptor),
@@ -905,38 +1054,45 @@ class GuardScanController extends Controller
             'status' => 'Active',
         ]);
 
-        $parts = explode('-', $request->unit_number);
-        [$block, $floor, $unit] = array_map('trim', $parts);
-        $houseUnit = \App\Models\HouseUnit::where('block', $block)
-            ->where('floor', $floor)
-            ->where('unit_number', $unit)
-            ->first();
+        $destinations = $isMulti
+            ? array_values(array_unique($request->input('unit_numbers', [])))
+            : [$request->string('unit_number')->toString()];
 
-        // Check auto-approve toggle for any resident in this unit
-        $autoApprover = $houseUnit
-            ? $houseUnit->residents()->where('auto_approve_deliveries', true)->first()
-            : null;
+        $hostNameParam = $isMulti
+            ? $request->input('host_names')
+            : $request->string('host_name')->toString();
 
-        $hasAutoApprove = !is_null($autoApprover);
-        $status = $hasAutoApprove ? 'Approved' : 'Pending';
-        $approvedBy = $hasAutoApprove ? $autoApprover->name . ' (Auto-Approved)' : null;
+        $deliveryTripService = new \App\Services\DeliveryTripService();
+        $run = $deliveryTripService->createRun(
+            $delivery,
+            $request->input('delivery_type'),
+            $destinations,
+            $hostNameParam
+        );
 
-        $log = DeliveryLog::create([
-            'delivery_personnel_id' => $delivery->id,
-            'destination' => $request->unit_number ?? 'N/A',
-            'host_name' => $request->host_name,
-            'status' => $status,
-            'approved_by' => $approvedBy,
-        ]);
+        $firstLog = $run->logs()->first();
 
-        $message = $hasAutoApprove
-            ? 'Delivery registered successfully. Auto-approved by resident!'
-            : 'Delivery registered successfully. Waiting for resident approval.';
+        $approvedCount = $run->logs->where('status', 'Approved')->count();
+        $pendingCount = $run->logs->where('status', 'Pending')->count();
+
+        if ($isMulti) {
+            $message = "Multi-stop trip registered with {$run->logs->count()} units.";
+            if ($approvedCount > 0) {
+                $message .= " {$approvedCount} auto-approved.";
+            }
+            if ($pendingCount > 0) {
+                $message .= " {$pendingCount} waiting for resident approval.";
+            }
+        } else {
+            $message = $approvedCount > 0
+                ? 'Delivery registered successfully. Auto-approved by resident!'
+                : 'Delivery registered successfully. Waiting for resident approval.';
+        }
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'redirect' => route('guard.scan.verify-delivery', $log->id),
+            'redirect' => route('guard.scan.verify-delivery', $firstLog->id),
         ]);
     }
 

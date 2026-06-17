@@ -27,10 +27,22 @@ class DeliveryPersonnelController extends Controller
             'company' => 'required|string', // Grab, Shopee, etc.
             'vehicle_type' => 'required|string',
             'vehicle_number' => 'required|string',
-            'phone' => 'required|string',
-            'ic_number' => 'required|string|unique:delivery_personnels',
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'unique:delivery_personnels',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'photo' => 'nullable|image|max:2048',
             'status' => 'required|string',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $photoPath = null;
@@ -64,10 +76,22 @@ class DeliveryPersonnelController extends Controller
             'company' => 'required|string',
             'vehicle_type' => 'required|string',
             'vehicle_number' => 'required|string',
-            'phone' => 'required|string',
-            'ic_number' => 'required|string|unique:delivery_personnels,ic_number,' . $personnel->id,
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'unique:delivery_personnels,ic_number,' . $personnel->id,
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'photo' => 'nullable|image|max:2048',
             'status' => 'required|string',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $data = $request->except(['photo']);
@@ -82,6 +106,18 @@ class DeliveryPersonnelController extends Controller
         $personnel->update($data);
 
         return redirect()->route('admin.delivery.personnel.index')->with('success', 'Details updated successfully.');
+    }
+
+    public function show(DeliveryPersonnel $personnel)
+    {
+        $personnel->load(['logs' => function($q) {
+            $q->orderBy('created_at', 'desc');
+        }]);
+
+        return Inertia::render('Admin/Delivery/Personnel/Show', [
+            'personnel' => $personnel,
+            'logs' => $personnel->logs
+        ]);
     }
 
     public function destroy(DeliveryPersonnel $personnel)

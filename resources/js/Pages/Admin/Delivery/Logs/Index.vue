@@ -1,7 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import Modal from '@/Components/Modal.vue';
+import { Head, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { formatMalaysiaDate, formatMalaysiaTime } from '@/utils/datetime';
 
@@ -9,35 +8,8 @@ const props = defineProps({
     logs: Array,
 });
 
-const selectedPersonnel = ref(null);
-const isModalOpen = ref(false);
-const isPhotoZoomOpen = ref(false);
-
 const filterStatus = ref('All');
 const searchQuery = ref('');
-
-const openModal = (personnel) => {
-    selectedPersonnel.value = personnel;
-    isModalOpen.value = true;
-};
-
-const closeModal = () => {
-    isModalOpen.value = false;
-    isPhotoZoomOpen.value = false;
-    setTimeout(() => {
-        selectedPersonnel.value = null;
-    }, 200);
-};
-
-const openPhotoZoom = () => {
-    if (selectedPersonnel.value?.photo) {
-        isPhotoZoomOpen.value = true;
-    }
-};
-
-const closePhotoZoom = () => {
-    isPhotoZoomOpen.value = false;
-};
 
 const getStatusLabel = (log) => {
     if (log.exit_time) return 'Completed';
@@ -165,22 +137,23 @@ const filteredLogs = computed(() => {
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Arrival/Entry</th>
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Exit</th>
                                         <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Duration</th>
+                                        <th class="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-100">
                                     <tr v-for="log in filteredLogs" :key="log.id" class="hover:bg-gray-50 transition-colors">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 mr-3 cursor-pointer" @click="openModal(log.personnel)">
+                                                <Link :href="route('admin.delivery.personnel.show', log.personnel.id)" class="h-8 w-8 rounded-full overflow-hidden bg-gray-100 mr-3 flex-shrink-0 block">
                                                     <img v-if="log.personnel.photo" :src="'/storage/' + log.personnel.photo" class="h-full w-full object-cover" />
                                                     <div v-else class="h-full w-full flex items-center justify-center text-xs font-bold text-gray-400">
                                                         {{ log.personnel.name.charAt(0) }}
                                                     </div>
-                                                </div>
+                                                </Link>
                                                 <div>
-                                                    <div class="text-sm font-bold text-gray-900 cursor-pointer hover:text-indigo-600 font-bold transition-colors" @click="openModal(log.personnel)">
+                                                    <Link :href="route('admin.delivery.personnel.show', log.personnel.id)" class="text-sm font-bold text-gray-900 hover:text-indigo-600 transition-colors">
                                                         {{ log.personnel.name }}
-                                                    </div>
+                                                    </Link>
                                                     <div class="text-xs text-gray-500">{{ log.personnel.phone }}</div>
                                                     <div class="text-xs text-gray-400 mt-0.5">{{ log.personnel.email }}</div>
                                                 </div>
@@ -224,9 +197,15 @@ const filteredLogs = computed(() => {
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-bold text-indigo-600">
                                             {{ formatDuration(log) }}
                                         </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <Link :href="route('admin.delivery.logs.show', log.id)" class="inline-flex items-center px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-bold border border-indigo-100 transition-colors gap-1">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                View
+                                            </Link>
+                                        </td>
                                     </tr>
                                     <tr v-if="filteredLogs.length === 0">
-                                        <td colspan="7" class="px-6 py-8 text-center text-gray-500 italic">
+                                        <td colspan="8" class="px-6 py-8 text-center text-gray-500 italic">
                                             No delivery history found matching your criteria.
                                         </td>
                                     </tr>
@@ -239,101 +218,5 @@ const filteredLogs = computed(() => {
         </div>
     </AuthenticatedLayout>
 
-    <!-- Personnel Info Modal -->
-    <Modal :show="isModalOpen" @close="closeModal" maxWidth="lg">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h3 class="text-lg font-bold text-indigo-600">Personnel Information</h3>
-                <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            
-            <div v-if="selectedPersonnel" class="grid grid-cols-2 gap-6">
-                <div class="space-y-4">
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Name</p>
-                        <p class="text-lg font-bold text-gray-900">{{ selectedPersonnel.name }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone</p>
-                        <p class="text-gray-700 font-bold">{{ selectedPersonnel.phone }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email</p>
-                        <p class="text-gray-700 font-bold break-all">{{ selectedPersonnel.email || 'N/A' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Company</p>
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-lg">{{ selectedPersonnel.company }}</span>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">IC Number</p>
-                        <p class="text-gray-700">{{ selectedPersonnel.ic_number || 'N/A' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plate Number</p>
-                        <p class="text-gray-900 font-bold uppercase tracking-wider">{{ selectedPersonnel.vehicle_number || 'N/A' }}</p>
-                    </div>
-                </div>
-                
-                <div class="flex flex-col items-center justify-center bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div class="w-32 h-40 rounded-xl overflow-hidden shadow-lg border-2 border-white mb-4 cursor-pointer hover:scale-105 transition duration-200 group relative" @click="openPhotoZoom">
-                        <img v-if="selectedPersonnel.photo" :src="'/storage/' + selectedPersonnel.photo" class="w-full h-full object-cover">
-                        <div v-else class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 italic text-xs">No Photo</div>
-                        <div v-if="selectedPersonnel.photo" class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-200">
-                            <span class="text-white text-xs font-bold bg-black/60 px-2 py-1 rounded-md">Zoom 🔍</span>
-                        </div>
-                    </div>
-                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-tighter">Biometric ID Profile</p>
-                </div>
-            </div>
-        </div>
-    </Modal>
 
-    <!-- Photo Zoom Lightbox -->
-    <Teleport to="body">
-        <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition ease-in duration-150"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
-            <div
-                v-if="isPhotoZoomOpen && selectedPersonnel?.photo"
-                class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-zoom-out"
-                @click="closePhotoZoom"
-            >
-                <Transition
-                    enter-active-class="transition ease-out duration-200"
-                    enter-from-class="opacity-0 scale-75"
-                    enter-to-class="opacity-100 scale-100"
-                    leave-active-class="transition ease-in duration-150"
-                    leave-from-class="opacity-100 scale-100"
-                    leave-to-class="opacity-0 scale-75"
-                >
-                    <div v-if="isPhotoZoomOpen" class="relative" @click.stop>
-                        <img
-                            :src="'/storage/' + selectedPersonnel.photo"
-                            class="max-h-[85vh] max-w-[85vw] rounded-2xl shadow-2xl object-contain"
-                            :alt="selectedPersonnel.name"
-                        />
-                        <button
-                            @click="closePhotoZoom"
-                            class="absolute -top-3 -right-3 bg-white rounded-full h-8 w-8 flex items-center justify-center shadow-lg hover:bg-gray-100 transition"
-                        >
-                            <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <p class="text-center text-white/70 text-sm mt-3 font-semibold">{{ selectedPersonnel.name }}</p>
-                    </div>
-                </Transition>
-            </div>
-        </Transition>
-    </Teleport>
 </template>

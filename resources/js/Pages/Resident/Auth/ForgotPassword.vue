@@ -1,5 +1,13 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
+
+const goBack = () => {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        window.location.href = '/resident/login';
+    }
+};
 
 defineProps({
     status: {
@@ -53,9 +61,9 @@ const submit = () => {
         </div>
         
         <div class="mt-4 text-center">
-            <Link href="/resident/login" class="text-sm text-gray-600 hover:text-gray-900 underline">
-                &larr; Back to Login
-            </Link>
+            <button @click="goBack" class="text-sm text-gray-600 hover:text-gray-900 underline">
+                &larr; Back
+            </button>
         </div>
     </div>
 </template>

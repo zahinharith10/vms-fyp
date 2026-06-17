@@ -45,7 +45,7 @@ const filteredGroups = computed(() => {
             return group.run.status === filterStatus.value ||
                    group.logs.some(l => l.status === filterStatus.value);
         }
-        const displayStatus = group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status)
+        const displayStatus = group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status) && group.log.status !== 'Expired'
             ? 'Completed' : group.log.status;
         return displayStatus === filterStatus.value;
     });
@@ -53,7 +53,7 @@ const filteredGroups = computed(() => {
 
 const getRunDisplayStatus = (group) => {
     if (group.type === 'multi') return group.run.status;
-    return group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status)
+    return group.log.exit_time && !CANCELLED_STATUSES.includes(group.log.status) && group.log.status !== 'Expired'
         ? 'Completed'
         : group.log.status;
 };
@@ -97,6 +97,7 @@ const formatDuration = (mins) => {
                             <option value="Completed">Completed</option>
                             <option value="Rejected">Rejected</option>
                             <option value="Cancelled">Cancelled</option>
+                            <option value="Expired">Expired</option>
                         </select>
                     </div>
                 </div>
@@ -116,7 +117,7 @@ const formatDuration = (mins) => {
                                     'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400': getRunDisplayStatus(group) === 'Approved',
                                     'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400': getRunDisplayStatus(group) === 'Checked In' || getRunDisplayStatus(group) === 'Completed',
                                     'bg-gray-150 dark:bg-gray-800 text-gray-800 dark:text-gray-300': getRunDisplayStatus(group) === 'Checked Out',
-                                    'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400': getRunDisplayStatus(group) === 'Rejected',
+                                    'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400': getRunDisplayStatus(group) === 'Rejected' || getRunDisplayStatus(group) === 'Expired',
                                     'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400': getRunDisplayStatus(group) === 'Cancelled',
                                 }" class="px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider">
                                     {{ getRunDisplayStatus(group) }}
@@ -156,7 +157,7 @@ const formatDuration = (mins) => {
                                             'text-blue-600 dark:text-blue-400': log.status === 'Approved',
                                             'text-green-600 dark:text-green-400': log.status === 'Checked In',
                                             'text-gray-500 dark:text-gray-400': log.status === 'Checked Out',
-                                            'text-red-500 dark:text-red-400': CANCELLED_STATUSES.includes(log.status),
+                                            'text-red-500 dark:text-red-400': CANCELLED_STATUSES.includes(log.status) || log.status === 'Expired',
                                         }" class="text-[10px] font-black uppercase tracking-wider">
                                             {{ log.status }}
                                         </span>
@@ -205,7 +206,7 @@ const formatDuration = (mins) => {
                                 Cancel
                             </button>
 
-                            <span v-if="['Rejected', 'Checked Out', 'Cancelled', 'Completed'].includes(getRunDisplayStatus(group))" class="text-sm text-gray-400 dark:text-gray-500 italic px-2">
+                            <span v-if="['Rejected', 'Checked Out', 'Cancelled', 'Completed', 'Expired'].includes(getRunDisplayStatus(group))" class="text-sm text-gray-400 dark:text-gray-500 italic px-2">
                                 No Actions
                             </span>
                         </div>

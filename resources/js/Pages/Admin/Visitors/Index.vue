@@ -109,29 +109,29 @@ const confirmDelete = () => {
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="visitor in visitors?.data || []" :key="visitor.id" class="hover:bg-gray-50 transition-colors duration-150">
                                     <td class="px-6 py-4 whitespace-no-wrap">
-                                        <img
-                                            v-if="visitor.photo"
-                                            :src="'/storage/' + visitor.photo"
-                                            class="h-10 w-10 rounded-full object-cover cursor-pointer ring-2 ring-transparent hover:ring-indigo-400 transition"
-                                            @click="openViewModal(visitor)"
-                                            alt="Photo"
-                                        />
-                                        <div
-                                            v-else
-                                            class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 cursor-pointer hover:bg-indigo-100 transition"
-                                            @click="openViewModal(visitor)"
-                                        >
-                                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
+                                        <Link :href="route('admin.visitors.show', visitor.id)">
+                                            <img
+                                                v-if="visitor.photo"
+                                                :src="'/storage/' + visitor.photo"
+                                                class="h-10 w-10 rounded-full object-cover cursor-pointer ring-2 ring-transparent hover:ring-indigo-400 transition"
+                                                alt="Photo"
+                                            />
+                                            <div
+                                                v-else
+                                                class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 cursor-pointer hover:bg-indigo-100 transition"
+                                            >
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
+                                        </Link>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap">
                                         <!-- Clickable Name -->
-                                        <button @click="openViewModal(visitor)" class="text-left group">
+                                        <Link :href="route('admin.visitors.show', visitor.id)" class="text-left group">
                                             <div class="text-sm font-semibold text-indigo-600 group-hover:text-indigo-800 group-hover:underline transition-colors duration-150">{{ visitor.name }}</div>
                                             <div class="text-xs text-gray-400">{{ visitor.phone || 'No phone' }}</div>
-                                        </button>
+                                        </Link>
                                     </td>
                                     <td class="px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-700">
                                         {{ visitor.email || '-' }}

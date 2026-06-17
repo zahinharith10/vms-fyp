@@ -16,7 +16,8 @@ const filteredLogs = computed(() => {
     return props.logs.filter(log => {
         const matchesStatus = filterStatus.value === 'All' || log.status === filterStatus.value;
         const matchesSearch = log.visitor.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                             log.unit_number.toLowerCase().includes(searchQuery.value.toLowerCase());
+                             log.unit_number.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                             (log.visitor.vehicle_number && log.visitor.vehicle_number.toLowerCase().includes(searchQuery.value.toLowerCase()));
         return matchesStatus && matchesSearch;
     });
 });
@@ -198,7 +199,7 @@ const formatMinutes = (totalMins) => {
                                                     </div>
                                                     <div>
                                                         <div class="text-sm font-bold text-gray-900">{{ log.visitor.name }}</div>
-                                                        <div class="text-xs text-gray-500">{{ log.visitor.phone }}</div>
+                                                        <div class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">{{ log.visitor.vehicle_number || 'No Vehicle' }}</div>
                                                     </div>
                                                 </div>
                                             </td>

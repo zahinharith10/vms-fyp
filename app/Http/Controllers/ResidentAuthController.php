@@ -29,8 +29,8 @@ class ResidentAuthController extends Controller
             'pending_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Pending')->count(),
             'pending_deliveries' => \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->where('status', 'Pending')->count(),
             'active_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Checked In')->count() + \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->whereNotNull('entry_time')->whereNull('exit_time')->count(),
-            'upcoming_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Approved')->count(),
-            'upcoming_deliveries' => \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->where('status', 'Approved')->whereNull('entry_time')->count(),
+            'upcoming_visitors' => \App\Models\Visit::where('unit_number', $unitNumber)->where('status', 'Approved')->active()->count(),
+            'upcoming_deliveries' => \App\Models\DeliveryLog::where('destination', $deliveryUnitNumber)->where('status', 'Approved')->whereNull('entry_time')->active()->count(),
         ];
         
         $stats['pending_requests'] = $stats['pending_visitors'] + $stats['pending_deliveries'];
@@ -128,9 +128,16 @@ class ResidentAuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:residents,email,' . $resident->id,
-            'phone' => 'required|string|max:20',
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
             'password' => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
             'auto_approve_deliveries' => 'nullable|boolean',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
         ]);
 
         $resident->name = $request->name;

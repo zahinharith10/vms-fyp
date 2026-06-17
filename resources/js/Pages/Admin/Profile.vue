@@ -17,6 +17,7 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (!confirm('Are you sure you want to save changes to your profile?')) return;
     form.patch(route('admin.profile.update'), {
         preserveScroll: true,
         onSuccess: () => {

@@ -109,7 +109,14 @@ onUnmounted(() => {
                                 </div>
                                 <div>
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Parking Lot</p>
-                                    <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">{{ log.parking_lot_number ? '🅿️ Lot ' + log.parking_lot_number : 'N/A' }}</p>
+                                    <p class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">
+                                        {{ log.parking_lot_number 
+                                            ? '🅿️ Lot ' + log.parking_lot_number 
+                                            : (log.vehicle_number && log.vehicle_number !== '-' && log.vehicle_number.toLowerCase() !== 'n/a' && !log.is_delivery 
+                                                ? '🚗 Outside' 
+                                                : 'N/A') 
+                                        }}
+                                    </p>
                                 </div>
                                 <div class="col-span-3">
                                     <p class="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Purpose</p>

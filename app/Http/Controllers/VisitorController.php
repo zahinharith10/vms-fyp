@@ -21,7 +21,6 @@ class VisitorController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('ic_number', 'like', "%{$search}%")
                   ->orWhere('vehicle_number', 'like', "%{$search}%");
             });
         }
@@ -47,12 +46,25 @@ class VisitorController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:255|unique:visitors',
-            'ic_number' => 'required|string|max:255',
+            'phone' => [
+                'nullable',
+                'string',
+                'max:255',
+                'unique:visitors',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'vehicle_number' => 'nullable|string|max:255',
             'photo' => 'nullable|image|max:2048',
             // Face descriptor is optional in simpler CRUD, or can be added later
             'face_descriptor' => 'nullable' 
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $photoPath = null;
@@ -83,16 +95,42 @@ class VisitorController extends Controller
     }
 
     /**
+     * Display the specified visitor.
+     */
+    public function show(Visitor $visitor)
+    {
+        $visitor->load('visits');
+        
+        return Inertia::render('Admin/Visitors/Show', [
+            'visitor' => $visitor,
+            'visits' => $visitor->visits()->with('sessions')->latest('created_at')->get()
+        ]);
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Visitor $visitor)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:255|unique:visitors,phone,' . $visitor->id,
-            'ic_number' => 'required|string|max:255',
+            'phone' => [
+                'nullable',
+                'string',
+                'max:255',
+                'unique:visitors,phone,' . $visitor->id,
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'vehicle_number' => 'nullable|string|max:255',
             'photo' => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $data = $request->except(['photo']);

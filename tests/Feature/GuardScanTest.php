@@ -234,3 +234,69 @@ test('guard cannot check in visitor with vehicle when all 15 parking slots are f
     ]);
 });
 
+test('guard can check in visitor with vehicle as drop off/park outside even when parking is full', function () {
+    $guard = Guard::create([
+        'name' => 'Guard John',
+        'employee_id' => 'G123',
+        'ic_number' => '900101-14-1234',
+        'phone' => '0123456789',
+        'shift' => 'Morning',
+        'email' => 'john@sriayu.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    // Create 15 already checked in visits with parking lot numbers
+    for ($i = 1; $i <= 15; $i++) {
+        $visitor = Visitor::create([
+            'name' => 'Visitor ' . $i,
+            'phone' => '01122334' . str_pad($i, 2, '0', STR_PAD_LEFT),
+            'ic_number' => '950505-10-56' . str_pad($i, 2, '0', STR_PAD_LEFT),
+            'vehicle_number' => 'PLATE' . $i,
+        ]);
+
+        Visit::create([
+            'visitor_id' => $visitor->id,
+            'unit_number' => '44-1-01',
+            'purpose' => 'Social',
+            'status' => 'Checked In',
+            'check_in_time' => now(),
+            'parking_lot_number' => $i,
+            'qr_code_token' => 'TOKEN_OCCUPIED_' . $i,
+        ]);
+    }
+
+    // Create a 16th visitor with a vehicle who wants to park outside
+    $visitor16 = Visitor::create([
+        'name' => 'Visitor 16',
+        'phone' => '0112233499',
+        'ic_number' => '950505-10-9999',
+        'vehicle_number' => 'PLATE16',
+    ]);
+
+    $visit16 = Visit::create([
+        'visitor_id' => $visitor16->id,
+        'unit_number' => '44-1-01',
+        'purpose' => 'Social',
+        'status' => 'Approved',
+        'qr_code_token' => 'TOKEN_16',
+    ]);
+
+    // Send checkin request with park_outside = true
+    $response = $this->actingAs($guard, 'guard')
+        ->postJson(route('guard.scan.checkin'), [
+            'visit_id' => $visit16->id,
+            'park_outside' => true,
+        ]);
+
+    $response->assertStatus(200);
+    $response->assertJson([
+        'success' => true,
+        'message' => 'Visitor checked in successfully!',
+    ]);
+
+    $visit16->refresh();
+    expect($visit16->status)->toBe('Checked In');
+    expect($visit16->parking_lot_number)->toBeNull();
+});
+
+

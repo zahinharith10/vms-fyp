@@ -55,6 +55,7 @@ const formatDuration = (mins) => {
                             <option value="Checked Out">Checked Out</option>
                             <option value="Rejected">Rejected</option>
                             <option value="Cancelled">Cancelled</option>
+                            <option value="Expired">Expired</option>
                         </select>
                     </div>
                 </div>
@@ -71,7 +72,7 @@ const formatDuration = (mins) => {
                                     'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400': visit.status === 'Approved',
                                     'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400': visit.status === 'Checked In',
                                     'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300': visit.status === 'Checked Out',
-                                    'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400': visit.status === 'Rejected',
+                                    'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400': visit.status === 'Rejected' || visit.status === 'Expired',
                                     'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400': visit.status === 'Cancelled',
                                 }" class="px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider">
                                     {{ visit.status }}

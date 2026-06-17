@@ -27,6 +27,7 @@ class Guard extends Authenticatable implements CanResetPasswordContract
 
     protected $casts = [
         'password'  => 'hashed',
+        'ic_number' => 'encrypted',
     ];
 
     public function getShiftAttribute($value)

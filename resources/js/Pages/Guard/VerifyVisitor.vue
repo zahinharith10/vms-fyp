@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import GuardAuthenticatedLayout from '@/Layouts/GuardAuthenticatedLayout.vue';
 import FaceCapture from '@/Components/FaceCapture.vue';
 import Modal from '@/Components/Modal.vue';
@@ -21,6 +21,14 @@ const checkoutIsTemporary = ref(false);
 const visitData = ref(props.visit);
 const pollingInterval = ref(null);
 const hasTriggeredAutoCheckIn = ref(false);
+
+const isParkingFull = props.parking ? props.parking.available <= 0 : false;
+const parkingOption = ref(isParkingFull ? 'outside' : 'auto');
+
+const hasVehicle = () => {
+    const v = visitData.value?.visitor?.vehicle_number;
+    return v && v !== '-' && v.toLowerCase() !== 'n/a';
+};
 
 const startPolling = () => {
     if (pollingInterval.value) return;
@@ -122,7 +130,10 @@ const checkIn = async (bypassVerification = false) => {
             
         const payload = props.visit.is_delivery 
             ? (visitData.value.run_id ? { run_id: visitData.value.run_id } : { log_id: visitData.value.id })
-            : { visit_id: visitData.value.id };
+            : { 
+                visit_id: visitData.value.id,
+                park_outside: parkingOption.value === 'outside'
+              };
 
         const response = await axios.post(checkInRoute, payload);
         
@@ -193,7 +204,7 @@ const checkOut = async (isTemporary = false) => {
                             'bg-green-400 text-green-900': visitData.status === 'Checked In',
                             'bg-orange-400 text-orange-900': visitData.status === 'Temporarily Out',
                             'bg-gray-400 text-gray-900': visitData.status === 'Checked Out',
-                            'bg-red-400 text-red-900': visitData.status === 'Rejected'
+                            'bg-red-400 text-red-900': visitData.status === 'Rejected' || visitData.status === 'Cancelled' || visitData.status === 'Expired'
                         }"
                     >
                         {{ visitData.status }}
@@ -257,6 +268,51 @@ const checkOut = async (isTemporary = false) => {
                                 {{ parking.available > 0 ? `Auto Assign (${parking.available} free)` : '🚨 PARKING FULL' }}
                             </p>
                             <p v-else class="font-black text-gray-400 dark:text-gray-600 mt-1">N/A</p>
+                        </div>
+                    </div>
+
+                    <!-- Parking Option Selector (Only for approved visits with vehicles) -->
+                    <div v-if="!props.visit.is_delivery && hasVehicle() && visitData.status === 'Approved'" class="mb-8 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800/20 border border-gray-100 dark:border-gray-800/40">
+                        <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Parking Designation</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Option 1: Auto Assign -->
+                            <button
+                                type="button"
+                                @click="parkingOption = 'auto'"
+                                :disabled="isParkingFull"
+                                class="flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all duration-200"
+                                :class="parkingOption === 'auto'
+                                    ? 'bg-indigo-50/60 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-400 text-indigo-900 dark:text-indigo-300 shadow-sm'
+                                    : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed'"
+                            >
+                                <span class="text-2xl mb-1">🅿️</span>
+                                <span class="text-xs font-black uppercase tracking-wider">Auto-Assign Lot</span>
+                                <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+                                    {{ isParkingFull ? 'Full (0/15 slots)' : `${parking.available} lots free` }}
+                                </span>
+                            </button>
+
+                            <!-- Option 2: Drop Off & Park Outside -->
+                            <button
+                                type="button"
+                                @click="parkingOption = 'outside'"
+                                class="flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all duration-200"
+                                :class="parkingOption === 'outside'
+                                    ? 'bg-amber-50/60 dark:bg-amber-950/40 border-amber-500 dark:border-amber-400 text-amber-900 dark:text-amber-350 shadow-sm'
+                                    : 'bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900'"
+                            >
+                                <span class="text-2xl mb-1">🚗</span>
+                                <span class="text-xs font-black uppercase tracking-wider">Drop Off / Park Outside</span>
+                                <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">No visitor parking lot assigned</span>
+                            </button>
+                        </div>
+
+                        <!-- Warning message when parking is full -->
+                        <div v-if="isParkingFull" class="mt-3 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200/30 dark:border-amber-900/30 flex items-start">
+                             <span class="mr-2 text-sm">⚠️</span>
+                             <div class="text-[11px] text-amber-800 dark:text-amber-400 font-bold">
+                                 Visitor parking is full. Visitor is allowed to drop off or park outside.
+                             </div>
                         </div>
                     </div>
 
@@ -336,12 +392,7 @@ const checkOut = async (isTemporary = false) => {
                             </button>
                         </template>
                         
-                        <Link 
-                            :href="route('guard.scan')"
-                            class="col-span-2 text-center bg-gray-100 hover:bg-gray-250 dark:bg-gray-800 dark:hover:bg-gray-700/80 text-gray-800 dark:text-gray-200 font-black py-4 rounded-2xl transition-all duration-300 border border-gray-200 dark:border-gray-750 flex items-center justify-center gap-2"
-                        >
-                            🔄 SCAN NEW CODE
-                        </Link>
+
                     </div>
 
                     <!-- Warnings -->

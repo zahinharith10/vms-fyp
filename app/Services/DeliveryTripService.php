@@ -31,6 +31,7 @@ class DeliveryTripService
                 'destination' => $destination,
                 'status' => $status,
                 'host_name' => $logHostName,
+                'approved_at' => $status === 'Approved' ? now() : null,
             ]);
         }
 

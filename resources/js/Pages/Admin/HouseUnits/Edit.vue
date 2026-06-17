@@ -13,6 +13,7 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (!confirm('Are you sure you want to update this house unit?')) return;
     form.put(route('admin.units.update', props.unit.id));
 };
 </script>

@@ -15,6 +15,7 @@ class Visit extends Model
         'purpose',
         'host_name',
         'approved_by',
+        'approved_at',
         'status',
         'check_in_time',
         'check_out_time',
@@ -33,9 +34,46 @@ class Visit extends Model
         'first_check_out_time' => 'datetime',
         'second_check_in_time' => 'datetime',
         'second_check_out_time' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
-    protected $appends = ['total_duration_minutes', 'sessions_count'];
+    protected $appends = ['total_duration_minutes', 'sessions_count', 'is_expired'];
+
+    public function getIsExpiredAttribute()
+    {
+        if ($this->getRawOriginal('status') !== 'Approved') {
+            return false;
+        }
+        $approvalTime = $this->approved_at ?? $this->created_at;
+        return $approvalTime && $approvalTime->addHours(24)->isPast();
+    }
+
+    public function getStatusAttribute($value)
+    {
+        if ($value === 'Approved' && $this->is_expired) {
+            return 'Expired';
+        }
+        return $value;
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereIn('status', ['Pending', 'Checked In', 'Temporarily Out'])
+              ->orWhere(function ($sub) {
+                  $sub->where('status', 'Approved')
+                      ->where(function ($timeCheck) {
+                          $timeCheck->where(function ($sub2) {
+                              $sub2->whereNotNull('approved_at')
+                                   ->where('approved_at', '>=', now()->subHours(24));
+                          })->orWhere(function ($sub2) {
+                              $sub2->whereNull('approved_at')
+                                   ->where('created_at', '>=', now()->subHours(24));
+                          });
+                      });
+              });
+        });
+    }
 
     public function visitor()
     {
@@ -90,6 +128,14 @@ class Visit extends Model
 
     public function getSessionsCountAttribute()
     {
-        return $this->sessions->count() ?: 1;
+        if ($this->sessions->count() > 0) {
+            return $this->sessions->count();
+        }
+
+        if ($this->first_check_in_time || $this->check_in_time) {
+            return 1;
+        }
+
+        return 0;
     }
 }

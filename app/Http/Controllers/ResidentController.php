@@ -25,7 +25,6 @@ class ResidentController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('residents.name', 'like', "%{$search}%")
                   ->orWhere('residents.email', 'like', "%{$search}%")
-                  ->orWhere('residents.ic_number', 'like', "%{$search}%")
                   ->orWhere('residents.phone', 'like', "%{$search}%");
             });
         }
@@ -89,10 +88,42 @@ class ResidentController extends Controller
     {
         $request->validate([
             'name'         => 'required|string|max:255',
-            'phone'        => 'required|string|max:20',
-            'email'        => 'required|email|max:255|unique:residents',
+            'phone'        => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'email'        => [
+                'required',
+                'email',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $email = strtolower(trim($value));
+                    if (\App\Models\Visitor::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Visitor.');
+                        return;
+                    }
+                    if (\App\Models\DeliveryPersonnel::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Delivery Personnel.');
+                        return;
+                    }
+                    if (\App\Models\Guard::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Guard.');
+                        return;
+                    }
+                    if (\App\Models\Resident::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Resident.');
+                        return;
+                    }
+                },
+            ],
             'password'     => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
-            'ic_number'    => 'nullable|string|max:20',
+            'ic_number'    => [
+                'nullable',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'type'         => [
                 'required',
                 'string',
@@ -118,6 +149,9 @@ class ResidentController extends Controller
                 }
             ],
             'house_unit_id'=> 'required|exists:house_units,id',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $token = Str::random(60);
@@ -157,9 +191,18 @@ class ResidentController extends Controller
     {
         $request->validate([
             'name'         => 'required|string|max:255',
-            'phone'        => 'required|string|max:20',
+            'phone'        => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
             'email'        => 'nullable|email|max:255',
-            'ic_number'    => 'nullable|string|max:20',
+            'ic_number'    => [
+                'nullable',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'type'         => [
                 'required',
                 'string',
@@ -188,6 +231,9 @@ class ResidentController extends Controller
             'status'       => 'required|string|in:active,inactive',
             'house_unit_id'=> 'required|exists:house_units,id',
             'password'     => ['nullable', Password::min(8)->mixedCase()->numbers()->symbols()],
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $data = $request->except(['password']);

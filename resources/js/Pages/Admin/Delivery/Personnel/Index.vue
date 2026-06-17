@@ -85,20 +85,22 @@ const confirmDelete = () => {
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="p in personnel" :key="p.id" class="hover:bg-gray-50 transition-colors duration-150">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <img v-if="p.photo" :src="'/storage/' + p.photo" class="h-10 w-10 rounded-full object-cover cursor-pointer ring-2 ring-transparent hover:ring-indigo-400 transition" @click="openViewModal(p)" />
-                                        <div v-else class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 cursor-pointer hover:bg-indigo-100 transition" @click="openViewModal(p)">
-                                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
+                                        <Link :href="route('admin.delivery.personnel.show', p.id)">
+                                            <img v-if="p.photo" :src="'/storage/' + p.photo" class="h-10 w-10 rounded-full object-cover cursor-pointer ring-2 ring-transparent hover:ring-indigo-400 transition" />
+                                            <div v-else class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 cursor-pointer hover:bg-indigo-100 transition">
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
+                                        </Link>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <!-- Clickable Name -->
-                                        <button @click="openViewModal(p)" class="text-left group">
+                                        <Link :href="route('admin.delivery.personnel.show', p.id)" class="text-left group block">
                                             <div class="text-sm font-semibold text-indigo-600 group-hover:text-indigo-800 group-hover:underline transition-colors duration-150">{{ p.name }}</div>
-                                            <div class="text-xs text-gray-500">{{ p.phone }}</div>
+                                            <div class="text-xs text-gray-505">{{ p.phone }}</div>
                                             <div class="text-xs text-gray-400 mt-0.5">{{ p.email }}</div>
-                                        </button>
+                                        </Link>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">

@@ -1,6 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
+
+const goBack = () => {
+    if (window.history.length > 1) {
+        window.history.back();
+    } else {
+        router.visit(route('admin.visit-logs.index'));
+    }
+};
 import { computed } from 'vue';
 import { formatMalaysiaDate, formatMalaysiaTime } from '@/utils/datetime';
 
@@ -86,12 +94,12 @@ const getSessionLabel = (index, total) => {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center gap-3">
-                <Link :href="route('admin.visit-logs.index')" class="text-gray-400 hover:text-indigo-600 transition-colors">
+                <button @click="goBack" class="text-gray-400 hover:text-indigo-600 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                </Link>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Visit Pass #{{ visit.id }} Details</h2>
+                </button>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Visit Pass {{ visit.id }} Details</h2>
             </div>
         </template>
 
@@ -120,13 +128,19 @@ const getSessionLabel = (index, total) => {
                         <!-- Name and info area -->
                         <div class="pl-28 pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                                <h3 class="text-2xl font-black text-gray-900">{{ visit.visitor?.name ?? 'Unknown Visitor' }}</h3>
-                                <p class="text-sm text-gray-500 font-medium">Visitor Profile & Entry Log</p>
-                            </div>
-                            <div class="flex gap-3">
-                                <Link :href="route('admin.visit-logs.index')" class="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors shadow-sm">
-                                    Back to History
+                                <Link
+                                    :href="route('admin.visitors.show', visit.visitor?.id)"
+                                    class="group inline-flex items-center gap-2"
+                                    title="View visitor profile"
+                                >
+                                    <h3 class="text-2xl font-black text-gray-900 group-hover:text-indigo-600 transition-colors duration-200 underline-offset-2 group-hover:underline">
+                                        {{ visit.visitor?.name ?? 'Unknown Visitor' }}
+                                    </h3>
+                                    <svg class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
                                 </Link>
+                                <p class="text-sm text-gray-500 font-medium mt-0.5">Visitor Profile &amp; Entry Log — <span class="text-indigo-500 font-semibold">click name to view full profile</span></p>
                             </div>
                         </div>
                     </div>
@@ -202,7 +216,14 @@ const getSessionLabel = (index, total) => {
                                 </div>
                                 <div class="p-3 bg-gray-50 rounded-xl">
                                     <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Assigned Parking Lot</span>
-                                    <p class="text-sm font-black text-gray-800 mt-0.5">{{ visit.parking_lot_number || 'N/A' }}</p>
+                                    <p class="text-sm font-black text-gray-800 mt-0.5">
+                                        {{ visit.parking_lot_number 
+                                            ? 'Lot ' + visit.parking_lot_number 
+                                            : (visit.visitor?.vehicle_number && visit.visitor?.vehicle_number !== '-' && visit.visitor?.vehicle_number.toLowerCase() !== 'n/a' 
+                                                ? 'Outside / Drop Off' 
+                                                : 'N/A') 
+                                        }}
+                                    </p>
                                 </div>
                                 <div class="p-3 bg-gray-50 rounded-xl">
                                     <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Approved By</span>

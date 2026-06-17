@@ -65,4 +65,12 @@ class DeliveryLogController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function showLog(DeliveryLog $log)
+    {
+        $log->load('personnel');
+        return Inertia::render('Admin/Delivery/Logs/ShowLog', [
+            'log' => $log,
+        ]);
+    }
 }

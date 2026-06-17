@@ -21,7 +21,6 @@ class GuardController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('employee_id', 'like', "%{$search}%")
-                  ->orWhere('ic_number', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
@@ -46,19 +45,53 @@ class GuardController extends Controller
             'ic_number' => [
                 'required',
                 'string',
-                'unique:guards',
+                function ($attribute, $value, $fail) {
+                    $exists = Guard::all()->contains(function ($guard) use ($value) {
+                        return $guard->ic_number === $value;
+                    });
+                    if ($exists) {
+                        $fail('The ' . str_replace('_', ' ', $attribute) . ' has already been taken.');
+                    }
+                },
                 // Regex: Matches MyKad (12 digits with optional hyphens) OR Passport (6-20 alphanumeric, MUST contain at least one letter)
                 'regex:/^(\d{6}-?\d{2}-?\d{4})|(?=.*[A-Z])[A-Z0-9]{6,20}$/'
             ],
-            'phone' => 'required|string',
-            'email' => 'required|email|unique:guards',
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $email = strtolower(trim($value));
+                    if (\App\Models\Visitor::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Visitor.');
+                        return;
+                    }
+                    if (\App\Models\DeliveryPersonnel::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Delivery Personnel.');
+                        return;
+                    }
+                    if (\App\Models\Guard::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Guard.');
+                        return;
+                    }
+                    if (\App\Models\Resident::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Resident.');
+                        return;
+                    }
+                },
+            ],
             'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
             'shift' => 'required|array',
             'shift.*' => 'required|string|in:Morning,Afternoon,Night',
             'status' => 'required|string',
             'photo' => 'nullable|image|max:2048',
         ], [
-            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 900101-14-1234) or a valid Passport Number (must contain letters, e.g. A1234567).'
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 900101-14-1234) or a valid Passport Number (must contain letters, e.g. A1234567).',
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
         ]);
 
         // Auto-generate Employee ID: G-YYYY-001
@@ -106,11 +139,22 @@ class GuardController extends Controller
             'ic_number' => [
                 'required',
                 'string',
-                'unique:guards,ic_number,' . $guard->id,
+                function ($attribute, $value, $fail) use ($guard) {
+                    $exists = Guard::where('id', '!=', $guard->id)->get()->contains(function ($otherGuard) use ($value) {
+                        return $otherGuard->ic_number === $value;
+                    });
+                    if ($exists) {
+                        $fail('The ' . str_replace('_', ' ', $attribute) . ' has already been taken.');
+                    }
+                },
                 // Regex: Matches MyKad (12 digits with optional hyphens) OR Passport (6-20 alphanumeric, MUST contain at least one letter)
                 'regex:/^(\d{6}-?\d{2}-?\d{4})|(?=.*[A-Z])[A-Z0-9]{6,20}$/'
             ],
-            'phone' => 'required|string',
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
             'email' => 'required|email|unique:guards,email,' . $guard->id,
             'shift' => 'required|array',
             'shift.*' => 'required|string|in:Morning,Afternoon,Night',
@@ -118,7 +162,8 @@ class GuardController extends Controller
             'photo' => 'nullable|image|max:2048',
             'password' => ['nullable', Password::min(8)->mixedCase()->numbers()->symbols()],
         ], [
-            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 900101-14-1234) or a valid Passport Number (must contain letters, e.g. A1234567).'
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 900101-14-1234) or a valid Passport Number (must contain letters, e.g. A1234567).',
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
         ]);
 
         $data = $request->except(['password', 'photo']);

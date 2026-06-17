@@ -139,12 +139,46 @@ class VisitorAuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|unique:visitors',
-            'email' => 'required|email|unique:visitors,email|unique:delivery_personnels,email',
-            'ic_number' => 'required|string|max:255',
+            'phone' => [
+                'required',
+                'string',
+                'unique:visitors',
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'email' => [
+                'required',
+                'email',
+                function ($attribute, $value, $fail) {
+                    $email = strtolower(trim($value));
+                    if (\App\Models\Visitor::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Visitor.');
+                        return;
+                    }
+                    if (\App\Models\DeliveryPersonnel::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Delivery Personnel.');
+                        return;
+                    }
+                    if (\App\Models\Guard::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Guard.');
+                        return;
+                    }
+                    if (\App\Models\Resident::whereRaw('LOWER(email) = ?', [$email])->exists()) {
+                        $fail('This email is already registered as a Resident.');
+                        return;
+                    }
+                },
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'vehicle_number' => 'required|string|max:20',
             'face_descriptor' => 'required', // JSON string
             'photo' => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $photoPath = null;
@@ -177,8 +211,8 @@ class VisitorAuthController extends Controller
 
         // ENFORCEMENT: If name, photo, or ic_number is missing, the visitor cannot access the dashboard or QR code.
         // They are redirected to the Profile page to complete their identity verification.
-        if (empty($visitor->name) || empty($visitor->photo) || empty($visitor->ic_number)) {
-            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details (including IC Number) and upload a photo before proceeding.');
+        if (empty($visitor->name) || empty($visitor->photo) || empty($visitor->ic_number) || empty($visitor->phone)) {
+            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details (including phone number, IC Number) and upload a photo before proceeding.');
         }
 
         // Build a nested map: block → floor → [unit_numbers]
@@ -194,7 +228,7 @@ class VisitorAuthController extends Controller
             }]),
             'houseUnits' => $unitMap,
             'hasActiveVisit' => \App\Models\Visit::where('visitor_id', $visitor->id)
-                 ->whereIn('status', ['Pending', 'Approved', 'Checked In', 'Temporarily Out'])
+                 ->active()
                  ->exists(),
         ]);
     }
@@ -203,8 +237,8 @@ class VisitorAuthController extends Controller
     {
         $visitor = Auth::guard('visitor')->user();
 
-        if (empty($visitor->name) || empty($visitor->photo) || empty($visitor->ic_number)) {
-            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details (including IC Number) and upload a photo before proceeding.');
+        if (empty($visitor->name) || empty($visitor->photo) || empty($visitor->ic_number) || empty($visitor->phone)) {
+            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details (including phone number, IC Number) and upload a photo before proceeding.');
         }
 
         return Inertia::render('Visitor/History', [
@@ -227,11 +261,24 @@ class VisitorAuthController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20|unique:visitors,phone,' . $visitor->id,
-            'ic_number' => 'required|string|max:20',
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                'unique:visitors,phone,' . $visitor->id,
+                'regex:/^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/'
+            ],
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
             'vehicle_number' => 'required|string|max:20',
             'face_descriptor' => 'nullable', // Array or JSON string
             'photo' => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).',
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
         ]);
 
         $visitor->name = $request->name;
@@ -272,14 +319,19 @@ class VisitorAuthController extends Controller
     public function showQr(Visit $visit)
     {
         $visitor = Auth::guard('visitor')->user();
-        // Security: Prevent access to QR codes if the identity is not fully set (missing photo/name/ic)
-        if (empty($visitor->name) || empty($visitor->photo) || empty($visitor->ic_number)) {
-            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details (including IC Number) and upload a photo before proceeding.');
+        // Security: Prevent access to QR codes if the identity is not fully set (missing phone/photo/name/ic)
+        if (empty($visitor->name) || empty($visitor->photo) || empty($visitor->ic_number) || empty($visitor->phone)) {
+            return redirect()->route('visitor.profile')->with('info', 'Please complete your profile details (including phone number, IC Number) and upload a photo before proceeding.');
         }
 
         // Security: only show QR if it belongs to the authenticated visitor
 
         // Only show QR for Approved, Checked In, or Temporarily Out visits
+        if ($visit->status === 'Expired') {
+            return redirect()->route('visitor.dashboard')
+                ->with('error', 'This guest pass QR code has expired.');
+        }
+
         if (!in_array($visit->status, ['Approved', 'Checked In', 'Temporarily Out'])) {
             return redirect()->route('visitor.dashboard')
                 ->with('error', 'QR code is not available for this visit status.');
@@ -327,8 +379,14 @@ class VisitorAuthController extends Controller
             }
         }
 
+        // Even if authenticated, hide the QR if the visitor's phone is missing/placeholder.
+        // This forces them to go through the profile completion form first.
+        $phoneComplete = $isCurrentUser && 
+            !empty($visit->visitor->phone) && 
+            $visit->visitor->phone !== '-';
+
         $passToken = $visit->qr_code_token;
-        if (!$isCurrentUser) {
+        if (!$phoneComplete) {
             $visit->qr_code_token = 'HIDDEN';
         }
 
@@ -336,7 +394,7 @@ class VisitorAuthController extends Controller
             'visit' => $visit,
             'visitor' => $visit->visitor,
             'hostName' => $hostName,
-            'qrCodeSvg' => $isCurrentUser ? (string) QrCode::size(300)->generate($passToken) : null,
+            'qrCodeSvg' => $phoneComplete ? (string) QrCode::size(300)->generate($passToken) : null,
             'isCurrentUser' => $isCurrentUser,
         ]);
     }
@@ -358,10 +416,18 @@ class VisitorAuthController extends Controller
         $visitor = $visit->visitor;
 
         $request->validate([
-            'ic_number' => 'required|string|max:20',
+            'ic_number' => [
+                'required',
+                'string',
+                'regex:/^(?:\d{6}-\d{2}-\d{4}|\d{12}|[a-zA-Z0-9]{6,20})$/'
+            ],
+            'phone' => 'required|string|regex:/^[0-9+\-\s]{7,20}$/',
             'vehicle_number' => 'required|string|max:20',
             'face_descriptor' => 'required', // Array/JSON string
             'photo' => 'required|image|max:4096',
+        ], [
+            'ic_number.regex' => 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234) or a valid Passport Number (6-20 alphanumeric characters).',
+            'phone.regex' => 'Please enter a valid phone number (digits, +, -, spaces only).',
         ]);
 
         $photoPath = null;
@@ -377,6 +443,7 @@ class VisitorAuthController extends Controller
 
         $visitor->update([
             'ic_number' => $request->ic_number,
+            'phone' => $request->phone,
             'vehicle_number' => $request->vehicle_number,
             'face_descriptor' => $descriptor,
             'photo' => $photoPath ?: $visitor->photo,

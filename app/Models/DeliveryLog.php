@@ -18,14 +18,52 @@ class DeliveryLog extends Model
         'destination',
         'host_name',
         'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
         'entry_time' => 'datetime',
         'exit_time' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
-    protected $appends = ['total_duration_minutes'];
+    protected $appends = ['total_duration_minutes', 'is_expired'];
+
+    public function getIsExpiredAttribute()
+    {
+        if ($this->getRawOriginal('status') !== 'Approved') {
+            return false;
+        }
+        $approvalTime = $this->approved_at ?? $this->created_at;
+        return $approvalTime && $approvalTime->addHours(24)->isPast();
+    }
+
+    public function getStatusAttribute($value)
+    {
+        if ($value === 'Approved' && $this->is_expired) {
+            return 'Expired';
+        }
+        return $value;
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereIn('status', ['Pending', 'Checked In', 'Temporarily Out'])
+              ->orWhere(function ($sub) {
+                  $sub->where('status', 'Approved')
+                      ->where(function ($timeCheck) {
+                          $timeCheck->where(function ($sub2) {
+                              $sub2->whereNotNull('approved_at')
+                                   ->where('approved_at', '>=', now()->subHours(24));
+                          })->orWhere(function ($sub2) {
+                              $sub2->whereNull('approved_at')
+                                   ->where('created_at', '>=', now()->subHours(24));
+                          });
+                      });
+              });
+        });
+    }
 
     public function getTotalDurationMinutesAttribute()
     {
