@@ -177,7 +177,7 @@ const todayDelta = props.stats.today_visits - props.stats.yesterday_visits;
     <Head title="Admin Dashboard" />
 
     <AuthenticatedLayout>
-        <template #header>SS
+        <template #header>
             <h2 class="font-bold text-2xl text-slate-800 leading-tight">Admin Main Dashboard</h2>
         </template>
 
