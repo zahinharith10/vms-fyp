@@ -53,8 +53,48 @@ const onFaceDetected = (detection) => {
     }
 };
 
+const validateForm = () => {
+    let isValid = true;
+    form.clearErrors();
+
+    // Validate phone number (Malaysian format: e.g., 012-3456789 or 011-12345678)
+    const phoneRegex = /^(?:\+?6)?01[0-9](?:[- ]?\d){7,8}$/;
+    if (!form.phone) {
+        form.setError('phone', 'The phone number field is required.');
+        isValid = false;
+    } else if (!phoneRegex.test(form.phone)) {
+        form.setError('phone', 'The phone number must be a valid Malaysian mobile number (e.g. 012-3456789 or 011-12345678).');
+        isValid = false;
+    }
+
+    // Validate IC / Passport number
+    if (citizenType.value === 'citizen') {
+        const icRegex = /^(?:\d{6}-\d{2}-\d{4}|\d{12})$/;
+        if (!form.ic_number) {
+            form.setError('ic_number', 'The IC number field is required.');
+            isValid = false;
+        } else if (!icRegex.test(form.ic_number)) {
+            form.setError('ic_number', 'The IC Number must be a valid Malaysian IC (e.g. 950101-14-1234).');
+            isValid = false;
+        }
+    } else {
+        const passportRegex = /^[a-zA-Z0-9]{6,20}$/;
+        if (!form.ic_number) {
+            form.setError('ic_number', 'The Passport number field is required.');
+            isValid = false;
+        } else if (!passportRegex.test(form.ic_number)) {
+            form.setError('ic_number', 'The Passport Number must be 6-20 alphanumeric characters.');
+            isValid = false;
+        }
+    }
+
+    return isValid;
+};
+
 const captureAndSubmit = async () => {
     if (!currentDescriptor.value) return;
+
+    if (!validateForm()) return;
 
     // If "Others" selected, use the typed name instead
     if (form.company === 'Others') {
