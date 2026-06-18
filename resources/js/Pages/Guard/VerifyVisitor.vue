@@ -16,11 +16,14 @@ const isLoading = ref(false);
 const faceVerified = ref(false);
 const verificationError = ref(null);
 const showSuccessModal = ref(false);
+const showFailureModal = ref(false);
+const lastFailurePopupTime = ref(0);
 const showCheckoutModal = ref(false);
 const checkoutIsTemporary = ref(false);
 const visitData = ref(props.visit);
 const pollingInterval = ref(null);
 const hasTriggeredAutoCheckIn = ref(false);
+const liveDistanceScore = ref(null);
 
 const isParkingFull = props.parking ? props.parking.available <= 0 : false;
 const parkingOption = ref(isParkingFull ? 'outside' : 'auto');
@@ -86,6 +89,7 @@ onBeforeUnmount(() => {
 const handleFaceDetected = (detection) => {
     if (!detection || !visitData.value?.visitor?.face_descriptor) {
         faceVerified.value = false;
+        liveDistanceScore.value = null;
         return;
     }
 
@@ -95,12 +99,14 @@ const handleFaceDetected = (detection) => {
             : visitData.value.visitor.face_descriptor;
             
         const distance = euclideanDistance(detection.descriptor, Object.values(storedDescriptor));
+        liveDistanceScore.value = distance;
         
         // Threshold of 0.6 is common for face recognition
         if (distance < 0.5) {
             faceVerified.value = true;
             verificationError.value = null;
             showSuccessModal.value = true;
+            showFailureModal.value = false;
 
             // Automatically trigger check-in if Approved or Temporarily Out
             if ((visitData.value.status === 'Approved' || visitData.value.status === 'Temporarily Out') && !hasTriggeredAutoCheckIn.value) {
@@ -112,6 +118,13 @@ const handleFaceDetected = (detection) => {
         } else {
             faceVerified.value = false;
             verificationError.value = "Face does not match visitor records.";
+            
+            // Trigger failure popup if cooldown has expired (5 seconds)
+            const now = Date.now();
+            if (!showFailureModal.value && !showSuccessModal.value && (now - lastFailurePopupTime.value > 5000)) {
+                showFailureModal.value = true;
+                lastFailurePopupTime.value = now;
+            }
         }
     } catch (err) {
         console.error("Verification error:", err);
@@ -327,6 +340,26 @@ const checkOut = async (isTemporary = false) => {
                                 <FaceCapture :allow-upload="false" @face-detected="handleFaceDetected" />
                             </div>
 
+                            <!-- Live Distance Score -->
+                            <div v-if="liveDistanceScore !== null" class="mt-4 p-3 bg-slate-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-800/50 flex justify-between items-center text-xs font-bold transition-all duration-300">
+                                <span class="text-gray-500 dark:text-gray-400 flex items-center">
+                                    <span class="mr-1.5">📊</span> Euclidean Distance:
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    <span 
+                                        class="px-2.5 py-0.5 rounded-full font-black text-xs"
+                                        :class="liveDistanceScore < 0.5 
+                                            ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400' 
+                                            : 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400'"
+                                    >
+                                        {{ liveDistanceScore.toFixed(4) }}
+                                    </span>
+                                    <span class="text-[10px] text-gray-400 dark:text-gray-500">
+                                        (Threshold: &lt; 0.50)
+                                    </span>
+                                </div>
+                            </div>
+
                             <!-- Success Banner -->
                             <div v-if="faceVerified" class="mt-4 p-3 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border border-green-200/30 rounded-xl flex items-center justify-between font-bold text-sm">
                                 <span class="flex items-center"><span class="mr-2">✅</span> Identity Verified: Match Confirmed</span>
@@ -346,7 +379,7 @@ const checkOut = async (isTemporary = false) => {
                             </div>
                             
                             <!-- Pending Banner -->
-                            <div v-else class="mt-4 p-3 bg-indigo-100/60 dark:bg-indigo-950/40 text-indigo-750 dark:text-indigo-300 border border-indigo-200/20 rounded-xl flex items-center font-bold text-sm animate-pulse">
+                            <div v-else class="mt-4 p-3 bg-indigo-100/60 dark:bg-indigo-950/40 text-indigo-755 dark:text-indigo-300 border border-indigo-200/20 rounded-xl flex items-center font-bold text-sm animate-pulse">
                                 <span class="mr-2">🔍</span> Waiting for face detection...
                             </div>
                         </div>
@@ -426,6 +459,38 @@ const checkOut = async (isTemporary = false) => {
                         <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-600 dark:border-green-400 border-t-transparent"></div>
                         <span class="text-sm font-black text-green-700 dark:text-green-400 uppercase tracking-widest">Checking In...</span>
                     </div>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- ❌ Face Match → Failure Modal -->
+        <Modal :show="showFailureModal" max-width="md" @close="showFailureModal = false">
+            <div class="p-8 text-center dark:bg-gray-900">
+                <div class="mx-auto flex items-center justify-center h-28 w-28 rounded-full bg-red-50 dark:bg-red-950/40 border-2 border-red-200 dark:border-red-800/50 mb-6 shadow-lg">
+                    <span class="text-6xl">❌</span>
+                </div>
+                <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+                    Face Match Failed!
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+                    The scanned face does not match the registered face records for
+                    <span class="font-extrabold text-red-600 dark:text-red-400">{{ visitData.visitor.name }}</span>.
+                </p>
+                <div class="flex gap-4">
+                    <button
+                        @click="showFailureModal = false"
+                        class="flex-1 bg-slate-650 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 text-white font-black py-3.5 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-md"
+                    >
+                        Try Again
+                    </button>
+                    <!-- If it's a delivery trip, face match is optional, so allow bypass -->
+                    <button
+                        v-if="props.visit.is_delivery"
+                        @click="showFailureModal = false; checkIn(true);"
+                        class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-black py-3.5 rounded-2xl uppercase tracking-widest text-xs transition-all shadow-md"
+                    >
+                        Bypass Entry
+                    </button>
                 </div>
             </div>
         </Modal>
