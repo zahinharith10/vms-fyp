@@ -87,6 +87,12 @@ onBeforeUnmount(() => {
 });
 
 const handleFaceDetected = (detection) => {
+    // If a modal is already open or auto-check-in is in progress, ignore new detections
+    // to prevent background scanning from overriding/toggling the state unexpectedly.
+    if (showSuccessModal.value || showFailureModal.value || hasTriggeredAutoCheckIn.value) {
+        return;
+    }
+
     if (!detection || !visitData.value?.visitor?.face_descriptor) {
         faceVerified.value = false;
         liveDistanceScore.value = null;
